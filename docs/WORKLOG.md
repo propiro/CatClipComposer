@@ -2,6 +2,16 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Versioned and compact portable package
+
+- Audited the recovered implementation against the complete dockable-editor, catalog, metadata, project/recovery, layered-render, output-profile, and portability request.
+- Added shared 0.1.0 assembly/file/informational metadata for every project and exposed it in the main-window title/status bars plus CLI text/JSON output.
+- Changed portable publishing to validated single-file GUI/CLI executables so managed/native runtime files no longer clutter the package root.
+- Made a complete FFmpeg pair the normal package requirement, retained an explicit application-only escape hatch, and added nonfree/GPL/license/build-info guards.
+- Verified by Release build, CLI version/help checks, assembly metadata inspection, package layout checks, published CLI execution, and FFmpeg packaging guard smokes.
+- Closed: `VERSION-001`, `DEPLOY-002`, `AUD-VERSION-001`, and `AUD-PORTABLE-002`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Editable render layers, output presets, and portable publish
 
 - Connected five persisted project tracks to one shared Core render mapper consumed by WPF and the headless CLI.

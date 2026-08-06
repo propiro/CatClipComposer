@@ -55,6 +55,10 @@ The repository does not include FFmpeg binaries. Users configure `ffmpeg.exe`; `
 - GPL builds, which may be used personally as an explicit opt-in but are not required;
 - nonfree builds, which are not an accepted redistributable dependency.
 
+## Application versioning
+
+`Directory.Build.props` supplies version 0.1.0 to the WPF, CLI, Core, and Infrastructure projects, including assembly, file, and informational metadata. User-visible version strings are resolved from the Core assembly metadata so the main-window title/status bars and headless output cannot drift from the built components.
+
 FFmpeg documents its native `mpeg4` encoder as usable without the GPL `libxvid` wrapper and documents `h264_mf` as a Media Foundation encoder. YouTube lists MPEG4 as a supported upload format and recommends MP4/H.264/AAC for optimal uploads. These sources establish the default/optional preset boundary; a distributor must still audit the exact configured FFmpeg binary.
 
 - FFmpeg native MPEG-4 and encoder documentation: <https://ffmpeg.org/ffmpeg-all.html>

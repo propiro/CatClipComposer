@@ -26,11 +26,12 @@ Options may appear before or after the command. Option names and commands are ca
 | `--config <file>` | Override the INI path. The default is `CatClipComposer.ini` beside the CLI executable. |
 | `--data <folder>` | Override the data folder containing `catalog.db`, `thumbnails`, `previews`, and recovery. The default comes from the INI metadata folder. |
 | `--json` | Write one JSON result document to stdout and suppress progress output. Errors are also JSON on stdout. |
+| `--version` | Show the shared application/component version without creating a database or data directory. Combine with `--json` for structured output. |
 | `--help` | Show help without creating a database or data directory. Combine with `--json` for structured help and exit-code metadata. |
 
 Deploy the GUI and CLI executables to the same directory when they should use one default INI. During development their build output directories differ, so pass `--config` explicitly to share a file. Both use the same default local application-data catalog unless `--data` is supplied.
 
-All commands except help initialize the selected SQLite catalog. Human-readable results use stdout, while progress and diagnostics use stderr. In JSON mode stdout contains exactly one JSON document and no progress lines.
+All commands except help/version initialize the selected SQLite catalog. Human-readable results use stdout, while progress and diagnostics use stderr. In JSON mode stdout contains exactly one JSON document and no progress lines.
 
 ## Commands
 

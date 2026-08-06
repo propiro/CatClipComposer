@@ -83,7 +83,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
 | CLI command modules | Config, scan, list, metadata, project render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
-| Portable publisher | Compose a one-folder GUI/CLI/runtime/docs/thirdparty layout | Build-time script only; exact external-tool licensing remains an explicit release audit. |
+| Portable publisher | Compose two single-file entry points plus INI/docs/thirdparty layout | Build-time script validates output safety and tool licensing flags; exact external-tool licensing remains an explicit release audit. |
 | Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |
 | INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
 

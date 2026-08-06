@@ -1,5 +1,6 @@
 using CatClipComposer.Cli.CommandLine;
 using CatClipComposer.Cli.Commands;
+using CatClipComposer.Core;
 using CatClipComposer.Infrastructure.Composition;
 
 namespace CatClipComposer.Cli;
@@ -21,9 +22,16 @@ internal sealed class CliApplication(
         try
         {
             var invocation = CliParser.Parse(arguments);
+            if (invocation.HasOption("version") || invocation.Command == "version")
+            {
+                invocation.EnsureOnlyOptions("version", "json");
+                await WriteVersionAsync(invocation.HasOption("json"));
+                return CliExitCodes.Success;
+            }
+
             if (invocation.HasOption("help") || invocation.Command is null or "help")
             {
-                invocation.EnsureOnlyOptions("help", "json");
+                invocation.EnsureOnlyOptions("help", "version", "json");
                 await WriteUsageAsync(invocation.HasOption("json"));
                 return CliExitCodes.Success;
             }
@@ -175,9 +183,10 @@ internal sealed class CliApplication(
             return CliJson.WriteAsync(_output, new
             {
                 name = "Cat Clip Composer headless CLI",
+                version = ProductInfo.Version,
                 usage = "CatClipComposer.Cli <command> [options]",
-                commands = new[] { "config", "scan", "list", "history", "tag", "usage", "project", "render" },
-                commonOptions = new[] { "--config <file>", "--data <folder>", "--json", "--help" },
+                commands = new[] { "version", "config", "scan", "list", "history", "tag", "usage", "project", "render" },
+                commonOptions = new[] { "--config <file>", "--data <folder>", "--json", "--version", "--help" },
                 exitCodes = new
                 {
                     success = CliExitCodes.Success,
@@ -191,13 +200,14 @@ internal sealed class CliApplication(
         }
 
         return _output.WriteLineAsync(
-            """
-        Cat Clip Composer headless CLI
+            $"""
+        Cat Clip Composer headless CLI {ProductInfo.DisplayVersion}
 
         Usage:
           CatClipComposer.Cli <command> [options]
 
         Commands:
+          version                Show the application version without initializing data.
           config                 Show resolved paths and effective INI settings.
           scan                   Scan configured source folders into the catalog.
           list [--all]           List available catalog clips; --all includes missing clips.
@@ -211,6 +221,7 @@ internal sealed class CliApplication(
           --config <file>        Override the INI path (default: executable directory).
           --data <folder>        Override the SQLite/cache data folder.
           --json                 Write one machine-readable JSON document to stdout.
+          --version              Show the application version without initializing data.
           --help                 Show this help without initializing application data.
 
         Render options:
@@ -238,6 +249,14 @@ internal sealed class CliApplication(
         Progress and diagnostics use stderr; command results use stdout.
         """);
     }
+
+    private Task WriteVersionAsync(bool json) => json
+        ? CliJson.WriteAsync(_output, new
+        {
+            name = ProductInfo.Name,
+            version = ProductInfo.Version
+        })
+        : _output.WriteLineAsync($"{ProductInfo.Name} {ProductInfo.DisplayVersion}");
 
     private static string GetDetailedMessage(Exception exception) =>
         exception.InnerException is null

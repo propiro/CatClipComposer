@@ -49,7 +49,8 @@ The application should work for personal use and remain suitable for possible co
 | Catalog | Tags, contact-sheet previews, and project-use metadata | Done | Searchable normalized tags, cached sheets, and successful-export project identity/history. |
 | Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Done | Add/edit/remove controls project through the shared render mapper into verified FFmpeg output. |
 | Output | Resolution/aspect/codec/quality/frame-rate presets | Done | Seven common presets plus validated custom values stored per project. |
-| Deployment | One-folder deployment with external tools under `thirdparty` | Done | Framework-dependent/self-contained publisher plus optional audited-tool copy and automatic discovery. |
+| Deployment | One-folder deployment with external tools under `thirdparty` | Done | Framework-dependent/self-contained single-file publisher requires an audited tool pair unless application-only packaging is explicit. |
+| Versioning | Shared application/component version visible to users | Done | Central 0.1.0 assembly/file metadata, main-window title/status display, and headless version output. |
 | Editing | Trim and per-clip volume | Partial | Per-clip volume is done; trimming remains deferred under `EDIT-001`. |
 
 ## Definition of an MVP release

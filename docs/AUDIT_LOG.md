@@ -1,5 +1,19 @@
 # Audit log
 
+## AUDIT-2026-08-06-018 — Recovered feature audit, versioning, and compact deployment
+
+Scope: the full prior user request, `VERSION-001`, `DEPLOY-002`, `AUD-VERSION-001`, and `AUD-PORTABLE-002`.
+
+Findings and verification:
+
+- The prior four feature commits contain working implementations for the compact warm-monochrome UI, persisted four-slot docking, virtualized drag/drop browser, SQLite metadata plus file previews, versioned projects/recovery, export-only usage history, layered FFmpeg effects, and output profiles.
+- Explicit software/component versioning had been missed; shared 0.1.0 assembly/file/informational metadata now drives the main title/status bars and CLI text/JSON output.
+- The old publisher left hundreds of managed/runtime files in the root. Single-file publishing now produces only the GUI and CLI executables there, with the INI and organized `docs`/`thirdparty` folders.
+- A complete tool pair is required unless the publisher is explicitly asked for an application-only package. Nonfree builds are rejected; GPL builds require a named opt-in; exact notices and build information remain part of the release gate.
+- Release build completed with zero warnings/errors and the dependency audit reported no known vulnerable packages. CLI and portable-package smokes passed.
+
+Result: the missed version requirement and tidy binary layout are closed. `AUD-RELEASE-FFMPEG-001` remains open until an exact LGPL-compatible redistribution binary and its notices are selected.
+
 ## AUDIT-2026-08-06-017 — Portable deployment
 
 Scope: `DEPLOY-001`, runtime completeness, tool boundary, and redistributable-build guardrails.

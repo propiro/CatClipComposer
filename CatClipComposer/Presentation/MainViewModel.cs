@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Data;
+using CatClipComposer.Core;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 
@@ -56,6 +57,10 @@ public sealed class MainViewModel : ObservableObject
     public ICollectionView MediaView { get; }
 
     public ApplicationSettings Settings => _settings;
+
+    public string ApplicationVersion => ProductInfo.DisplayVersion;
+
+    public string WindowTitle => ProductInfo.WindowTitle;
 
     public string ProjectName => _project.Name;
 

@@ -1,7 +1,7 @@
 <Window x:Class="CatClipComposer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Cat Clip Composer"
+        Title="{Binding WindowTitle}"
         Width="1440"
         Height="900"
         MinWidth="1040"
@@ -540,7 +540,12 @@
         </Grid>
 
         <Grid Grid.Row="2" Margin="7,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
             <ProgressBar Height="2"
+                         Grid.ColumnSpan="2"
                          VerticalAlignment="Top"
                          Maximum="100"
                          Value="{Binding ScanProgress, Mode=OneWay}"
@@ -549,6 +554,12 @@
                        FontSize="10"
                        Foreground="{StaticResource MutedTextBrush}"
                        Text="{Binding StatusText}" />
+            <TextBlock Grid.Column="1"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center"
+                       FontSize="10"
+                       Foreground="{StaticResource FaintTextBrush}"
+                       Text="{Binding ApplicationVersion}" />
         </Grid>
     </Grid>
 </Window>
