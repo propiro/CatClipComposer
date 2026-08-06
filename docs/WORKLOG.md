@@ -2,6 +2,16 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — UI text readability correction
+
+- Reproduced the reported unreadable button labels in a 1440x900 runtime capture.
+- Removed the light-filled primary action treatment and used a darker warm-neutral surface with an explicit high-contrast text color in the template visual tree.
+- Added readable disabled button surfaces/text, strengthened secondary/tertiary neutral colors, enabled layout rounding, and raised the smallest main-workspace labels from 8-9 px to 10 px.
+- Preserved the compact one-pixel-corner layout and blue-free palette while bumping every application component to 0.1.1.
+- Verified with clean Release builds, application startup, title/version inspection, and a second 1440x900 runtime capture with no clipping.
+- Closed: `UI-002` and `AUD-UX-002`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Versioned and compact portable package
 
 - Audited the recovered implementation against the complete dockable-editor, catalog, metadata, project/recovery, layered-render, output-profile, and portability request.

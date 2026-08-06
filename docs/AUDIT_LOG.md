@@ -1,5 +1,18 @@
 # Audit log
 
+## AUDIT-2026-08-06-019 — Button and small-text readability
+
+Scope: reported unreadable main-window text, especially button labels; `UI-002` and `AUD-UX-002`.
+
+Findings and verification:
+
+- The primary button style used a light fill while WPF string content did not reliably receive its intended dark foreground, producing light-on-light labels such as Export and Add clip.
+- Primary actions now use a dark warm-neutral fill and an explicit light foreground on the template visual tree. Normal and disabled templates also own readable foreground/background pairs instead of reducing the whole control to 45% opacity.
+- Muted/faint palette values were raised while remaining achromatic, header controls moved to 11 px, and the main workspace no longer uses 8-9 px labels.
+- A clean Release build and two 1440x900 runtime captures verified the failure and the correction. The final window retained its compact geometry without clipping.
+
+Result: `UI-002` and `AUD-UX-002` closed; application/component version advanced to 0.1.1.
+
 ## AUDIT-2026-08-06-018 — Recovered feature audit, versioning, and compact deployment
 
 Scope: the full prior user request, `VERSION-001`, `DEPLOY-002`, `AUD-VERSION-001`, and `AUD-PORTABLE-002`.

@@ -11,9 +11,10 @@
         <SolidColorBrush x:Key="PreviewBrush" Color="#0C0C0C" />
         <SolidColorBrush x:Key="BorderBrush" Color="#3C3A35" />
         <SolidColorBrush x:Key="StrongBorderBrush" Color="#5A564E" />
-        <SolidColorBrush x:Key="TextBrush" Color="#E6E2DA" />
-        <SolidColorBrush x:Key="MutedTextBrush" Color="#97928A" />
-        <SolidColorBrush x:Key="FaintTextBrush" Color="#6E6A64" />
+        <SolidColorBrush x:Key="TextBrush" Color="#F1EEE8" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#C0BBB2" />
+        <SolidColorBrush x:Key="FaintTextBrush" Color="#9B968E" />
+        <SolidColorBrush x:Key="DisabledTextBrush" Color="#A39E95" />
         <SolidColorBrush x:Key="AccentBrush" Color="#C8C0B2" />
         <SolidColorBrush x:Key="AccentDarkBrush" Color="#A79F91" />
         <SolidColorBrush x:Key="SelectionBrush" Color="#3A3833" />
@@ -21,18 +22,20 @@
 
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#191918" />
         <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#272623" />
-        <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#E6E2DA" />
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#F1EEE8" />
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#514D46" />
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#F2EEE7" />
         <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#3A3833" />
         <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="#20201E" />
-        <SolidColorBrush x:Key="{x:Static SystemColors.MenuTextBrushKey}" Color="#E6E2DA" />
+        <SolidColorBrush x:Key="{x:Static SystemColors.MenuTextBrushKey}" Color="#F1EEE8" />
 
         <Style TargetType="Window">
             <Setter Property="Background" Value="{StaticResource WindowBrush}" />
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
         </Style>
 
@@ -54,6 +57,7 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -62,6 +66,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
+                                TextElement.Foreground="{StaticResource TextBrush}"
                                 CornerRadius="1">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -76,7 +81,10 @@
                                 <Setter TargetName="ButtonBorder" Property="Background" Value="#111110" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#242421" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#403E39" />
+                                <Setter TargetName="ButtonBorder" Property="TextElement.Foreground" Value="{StaticResource DisabledTextBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -85,9 +93,9 @@
         </Style>
 
         <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-            <Setter Property="Foreground" Value="#151513" />
+            <Setter Property="Background" Value="#555149" />
+            <Setter Property="BorderBrush" Value="#777066" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -97,6 +105,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
+                                TextElement.Foreground="{StaticResource TextBrush}"
                                 CornerRadius="1">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -104,13 +113,16 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="PrimaryBorder" Property="Background" Value="#DED6C8" />
+                                <Setter TargetName="PrimaryBorder" Property="Background" Value="#686158" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="PrimaryBorder" Property="Background" Value="#918A7E" />
+                                <Setter TargetName="PrimaryBorder" Property="Background" Value="#3D3934" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="PrimaryBorder" Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                                <Setter TargetName="PrimaryBorder" Property="Background" Value="#2F2E2B" />
+                                <Setter TargetName="PrimaryBorder" Property="BorderBrush" Value="#46433E" />
+                                <Setter TargetName="PrimaryBorder" Property="TextElement.Foreground" Value="{StaticResource DisabledTextBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -121,8 +133,8 @@
         <Style x:Key="HeaderButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="MinHeight" Value="22" />
             <Setter Property="Padding" Value="6,2" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>

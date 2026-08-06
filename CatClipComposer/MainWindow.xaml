@@ -33,7 +33,7 @@
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock FontSize="16" FontWeight="SemiBold" Text="CAT CLIP COMPOSER" />
                     <TextBlock Margin="0,1,0,0"
-                               FontSize="10"
+                               FontSize="11"
                                Foreground="{StaticResource MutedTextBrush}"
                                Text="{Binding SourceSummary}" />
                 </StackPanel>
@@ -174,7 +174,7 @@
                                             <Grid>
                                                 <TextBlock HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"
-                                                           FontSize="9"
+                                                           FontSize="10"
                                                            Foreground="{StaticResource FaintTextBrush}"
                                                            Text="NO PREVIEW" />
                                                 <Image Source="{Binding ThumbnailPath}" Stretch="UniformToFill" />
@@ -182,13 +182,13 @@
                                                         VerticalAlignment="Top"
                                                         Padding="3,1"
                                                         Background="#CC151513">
-                                                    <TextBlock FontSize="9" Text="{Binding Index, StringFormat=# {0}}" />
+                                                    <TextBlock FontSize="10" Text="{Binding Index, StringFormat=# {0}}" />
                                                 </Border>
                                                 <Border HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
                                                         Padding="3,1"
                                                         Background="#DD151513">
-                                                    <TextBlock FontSize="9" Text="{Binding DurationText}" />
+                                                    <TextBlock FontSize="10" Text="{Binding DurationText}" />
                                                 </Border>
                                             </Grid>
                                         </Border>
@@ -198,11 +198,11 @@
                                                        ToolTip="{Binding FullPath}"
                                                        Text="{Binding FileName}" />
                                             <TextBlock Margin="0,3,0,0"
-                                                       FontSize="10"
+                                                       FontSize="11"
                                                        Foreground="{StaticResource MutedTextBrush}"
                                                        Text="{Binding DimensionsText}" />
                                             <TextBlock Margin="0,2,0,0"
-                                                       FontSize="10"
+                                                       FontSize="11"
                                                        Foreground="{StaticResource FaintTextBrush}"
                                                        TextTrimming="CharacterEllipsis"
                                                        ToolTip="{Binding TagsText}"
@@ -214,7 +214,7 @@
                         </ListBox>
                         <TextBlock Grid.Row="2"
                                    Margin="7,2,0,0"
-                                   FontSize="10"
+                                   FontSize="11"
                                    Foreground="{StaticResource MutedTextBrush}"
                                    Text="{Binding CatalogSummary}" />
                     </Grid>
@@ -285,7 +285,7 @@
                                            ToolTip="{Binding SelectedMedia.FullPath}"
                                            Text="{Binding SelectedMedia.FileName}" />
                                 <TextBlock Margin="0,2,0,0"
-                                           FontSize="10"
+                                           FontSize="11"
                                            Foreground="{StaticResource MutedTextBrush}"
                                            Text="{Binding SelectedMedia.DimensionsText}" />
                             </StackPanel>
@@ -334,7 +334,7 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock FontSize="10" FontWeight="SemiBold" Text="PROJECT TRACKS" />
+                        <TextBlock FontSize="11" FontWeight="SemiBold" Text="PROJECT TRACKS" />
                         <TextBlock Grid.Row="1"
                                    Foreground="{StaticResource MutedTextBrush}"
                                    Text="{Binding Timeline.TotalText}" />
@@ -349,13 +349,13 @@
                                         BorderBrush="{StaticResource BorderBrush}">
                                     <StackPanel>
                                         <TextBlock x:Name="LayerTitle"
-                                                   FontSize="10"
+                                                   FontSize="11"
                                                    FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"
                                                    Text="{Binding Title}" />
                                         <TextBlock x:Name="LayerDetail"
                                                    Margin="0,2,0,0"
-                                                   FontSize="9"
+                                                   FontSize="10"
                                                    Foreground="{StaticResource MutedTextBrush}"
                                                    TextTrimming="CharacterEllipsis"
                                                    Text="{Binding Detail}" />
@@ -443,11 +443,11 @@
                                 <ColumnDefinition />
                                 <ColumnDefinition />
                             </Grid.ColumnDefinitions>
-                            <TextBlock FontSize="9" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisStartText}" />
-                            <TextBlock Grid.Column="1" HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisQuarterText}" />
-                            <TextBlock Grid.Column="2" HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisHalfText}" />
-                            <TextBlock Grid.Column="3" HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisThreeQuarterText}" />
-                            <TextBlock Grid.Column="4" HorizontalAlignment="Right" FontSize="9" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisEndText}" />
+                            <TextBlock FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisStartText}" />
+                            <TextBlock Grid.Column="1" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisQuarterText}" />
+                            <TextBlock Grid.Column="2" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisHalfText}" />
+                            <TextBlock Grid.Column="3" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisThreeQuarterText}" />
+                            <TextBlock Grid.Column="4" HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisEndText}" />
                         </Grid>
                     </Grid>
                     <Grid Grid.Row="2" Margin="6,0,6,6">
@@ -459,8 +459,8 @@
                                 BorderBrush="{StaticResource BorderBrush}"
                                 BorderThickness="1,1,0,1">
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock HorizontalAlignment="Center" FontSize="9" FontWeight="SemiBold" Text="VIDEO" />
-                                <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource FaintTextBrush}" Text="V1" />
+                                <TextBlock HorizontalAlignment="Center" FontSize="10" FontWeight="SemiBold" Text="VIDEO" />
+                                <TextBlock HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource FaintTextBrush}" Text="V1" />
                             </StackPanel>
                         </Border>
                         <ListBox x:Name="TimelineListBox"
@@ -503,7 +503,7 @@
                                                         VerticalAlignment="Top"
                                                         Padding="3,1"
                                                         Background="#DD151513">
-                                                    <TextBlock FontSize="9" FontWeight="SemiBold" Text="{Binding Order, StringFormat=# {0}}" />
+                                                    <TextBlock FontSize="10" FontWeight="SemiBold" Text="{Binding Order, StringFormat=# {0}}" />
                                                 </Border>
                                             </Grid>
                                             <Grid Grid.Row="1" Margin="5,3">
@@ -512,20 +512,20 @@
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel>
-                                                    <TextBlock FontSize="9"
+                                                    <TextBlock FontSize="10"
                                                                FontWeight="SemiBold"
                                                                TextTrimming="CharacterEllipsis"
                                                                ToolTip="{Binding FileName}"
                                                                Text="{Binding FileName}" />
                                                     <TextBlock Margin="0,2,0,0"
-                                                               FontSize="8"
+                                                               FontSize="10"
                                                                Foreground="{StaticResource FaintTextBrush}"
                                                                Text="{Binding KindText}" />
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="1"
                                                            Margin="4,0,0,0"
                                                            VerticalAlignment="Center"
-                                                           FontSize="9"
+                                                           FontSize="10"
                                                            Foreground="{StaticResource AccentBrush}"
                                                            Text="{Binding DurationText}" />
                                             </Grid>
@@ -551,13 +551,13 @@
                          Value="{Binding ScanProgress, Mode=OneWay}"
                          Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" />
             <TextBlock VerticalAlignment="Center"
-                       FontSize="10"
+                       FontSize="11"
                        Foreground="{StaticResource MutedTextBrush}"
                        Text="{Binding StatusText}" />
             <TextBlock Grid.Column="1"
                        Margin="8,0,0,0"
                        VerticalAlignment="Center"
-                       FontSize="10"
+                       FontSize="11"
                        Foreground="{StaticResource FaintTextBrush}"
                        Text="{Binding ApplicationVersion}" />
         </Grid>
