@@ -13,6 +13,7 @@ public sealed class FfmpegPreviewSheetGenerator(AppPaths paths) : IPreviewSheetG
         DateTime lastWriteUtc,
         int slideCount,
         string ffmpegPath,
+        bool forceRecreate = false,
         CancellationToken cancellationToken = default)
     {
         if (duration <= TimeSpan.Zero)
@@ -25,7 +26,7 @@ public sealed class FfmpegPreviewSheetGenerator(AppPaths paths) : IPreviewSheetG
         var cacheKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             $"{filePath.ToUpperInvariant()}|{lastWriteUtc.Ticks}|{slideCount}")));
         var outputPath = Path.Combine(paths.PreviewFolder, $"{cacheKey}.jpg");
-        if (File.Exists(outputPath))
+        if (!forceRecreate && File.Exists(outputPath))
         {
             return outputPath;
         }

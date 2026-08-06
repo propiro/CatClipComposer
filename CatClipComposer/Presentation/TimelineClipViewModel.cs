@@ -1,5 +1,6 @@
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Utilities;
+using CatClipComposer.Core.Plugins;
 using System.IO;
 
 namespace CatClipComposer.Presentation;
@@ -23,7 +24,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         VideoFitMode fitMode = VideoFitMode.Fit,
         double fadeInSeconds = 0,
         double fadeOutSeconds = 0,
-        double volume = 1)
+        double volume = 1,
+        string pluginId = "")
     {
         Kind = kind;
         SourcePath = sourcePath;
@@ -36,6 +38,7 @@ public sealed class TimelineClipViewModel : ObservableObject
         _fadeInSeconds = fadeInSeconds;
         _fadeOutSeconds = fadeOutSeconds;
         _volume = volume;
+        PluginId = pluginId;
     }
 
     public Guid InstanceId { get; }
@@ -57,6 +60,8 @@ public sealed class TimelineClipViewModel : ObservableObject
     public double FadeOutSeconds => _fadeOutSeconds;
 
     public double Volume => _volume;
+
+    public string PluginId { get; }
 
     public int Order
     {
@@ -90,10 +95,11 @@ public sealed class TimelineClipViewModel : ObservableObject
         int order) => new(
             RenderSegmentKind.StillImage,
             imagePath,
-            duration,
-            hasAudio: false,
+        duration,
+        hasAudio: false,
         media: null,
-        order);
+        order,
+        pluginId: BuiltInPluginIds.PngSplashScreen);
 
     public static TimelineClipViewModel FromProjectItem(
         ProjectTimelineItem item,
@@ -111,7 +117,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         item.FitMode,
         item.FadeInSeconds,
         item.FadeOutSeconds,
-        item.Volume);
+        item.Volume,
+        item.PluginId);
 
     public ProjectTimelineItem ToProjectItem(TimeSpan start) => new()
     {
@@ -128,7 +135,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         FitMode = FitMode,
         FadeInSeconds = FadeInSeconds,
         FadeOutSeconds = FadeOutSeconds,
-        Volume = Volume
+        Volume = Volume,
+        PluginId = PluginId
     };
 
     public RenderSegment ToRenderSegment() => new(

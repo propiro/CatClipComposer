@@ -17,6 +17,15 @@ internal static class ConfigCommand
             configurationExists = File.Exists(context.Services.Paths.ConfigurationPath),
             dataFolder = context.Services.Paths.DataFolder,
             databasePath = context.Services.Paths.DatabasePath,
+            plugins = context.Services.Plugins.Plugins.Select(plugin => new
+            {
+                plugin.Descriptor.Id,
+                plugin.Descriptor.Name,
+                plugin.Descriptor.Version,
+                stage = plugin.Descriptor.Stage.ToString(),
+                mediaTypes = plugin.Descriptor.MediaTypes.ToString()
+            }),
+            pluginDiagnostics = context.Services.Plugins.Diagnostics,
             settings = new
             {
                 sourceFolders = settings.SourceFolders,
@@ -49,6 +58,20 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Configuration exists: {response.configurationExists}");
         await context.Output.WriteLineAsync($"Data folder: {response.dataFolder}");
         await context.Output.WriteLineAsync($"Database: {response.databasePath}");
+        await context.Output.WriteLineAsync($"Loaded modules: {context.Services.Plugins.Plugins.Count}");
+        foreach (var plugin in context.Services.Plugins.Plugins)
+        {
+            await context.Output.WriteLineAsync(
+                $"  {plugin.Descriptor.Name} {plugin.Descriptor.Version} [{plugin.Descriptor.Stage}] ({plugin.Descriptor.Id})");
+        }
+
+        foreach (var diagnostic in context.Services.Plugins.Diagnostics.Where(message =>
+                     message.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
+                     message.Contains("not found", StringComparison.OrdinalIgnoreCase)))
+        {
+            await context.Output.WriteLineAsync($"  warning: {diagnostic}");
+        }
+
         await context.Output.WriteLineAsync($"Source folders: {settings.SourceFolders.Count.ToString(CultureInfo.InvariantCulture)}");
         foreach (var folder in settings.SourceFolders)
         {

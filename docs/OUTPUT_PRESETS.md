@@ -1,6 +1,6 @@
 # Project settings, output presets, and render layers
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
 Output settings belong to each `.nya`, so changing Preferences never silently changes a saved project's
 delivery format. **Project settings** edits the project name, target duration, preset, dimensions, frame
@@ -41,7 +41,8 @@ References:
 
 The layer panel represents Video, Overlay, Audio, Progress, and Effects tracks. Text, PNG/JPEG, music, and
 progress items can be independently added, timed, edited, enabled, or removed. Video and still items expose
-Fit, Fill, Stretch, or animated Blur Background plus fade-in, fade-out, and source volume.
+Fit, Fill, or Stretch plus fade-in, fade-out, and source volume. Source-derived blurred side fill is a
+separate configurable module on the Background timeline.
 
 Progress is a timeline effect, never a global preference. Each progress item can cover the whole project, a
 selected source segment, or a custom range and has its own solid/segmented/tick style, color, height, and

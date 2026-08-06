@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
 ## Repository modules
 
@@ -16,6 +16,9 @@ CatClipComposer
 
 CatClipComposer.Cli
     Headless command dispatch, text/JSON output, and process exit codes
+
+CatClipComposer.Plugins.BuiltIn
+    First-party dynamically loaded source and video-effect modules
 ```
 
 All modules remain in this repository. Git submodules are prohibited.
@@ -26,6 +29,8 @@ All modules remain in this repository. Git submodules are prohibited.
 WPF -----+
          +--> Core <-- Infrastructure
 CLI -----+          (implements Core contracts)
+
+Built-in plugins --> Core plugin contracts
 ```
 
 The executable modules may reference Core and Infrastructure for composition. Core must not reference WPF, SQLite, FFmpeg process details, or CLI concerns.
@@ -44,13 +49,28 @@ The executable modules may reference Core and Infrastructure for composition. Co
 ### Composition and render
 
 1. The GUI synchronizes timeline items into the versioned project; the CLI can load that same project or create ad-hoc ordered segments.
-2. `ProjectRenderMapper` projects enabled Video, Overlay, Audio, and Progress track items into one renderer plan without WPF/CLI duplication.
+2. `ProjectRenderMapper` projects enabled Background, Video, Overlay, Audio, Progress, and Effects track
+   items into one renderer plan without WPF/CLI duplication.
 3. Project output dimensions/FPS/encoder/quality/bitrates are copied into the render request, with narrow command-line overrides.
 4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
 5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
 6. FFmpeg renders to a unique partial path.
 7. A successful render atomically replaces the selected output.
 8. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
+
+### Plugin discovery and effect rendering
+
+1. Startup scans `plugins` beside the executable for assemblies implementing the versioned Core plugin
+   contract.
+2. Each plugin assembly receives its own non-collectible `AssemblyLoadContext` and dependency resolver;
+   the shared Core contract assembly stays in the default context.
+3. The catalog validates API version, stable ID, metadata, compatible tracks, and unique parameter keys.
+4. Project items persist a plugin ID and string parameter dictionary rather than a concrete module type.
+5. `ProjectRenderMapper` resolves and validates required source/effect modules. Background effects receive
+   the current source before fit/pad; filter and overlay effects receive the composited stream at their
+   declared stage.
+6. Plugins execute in-process and are trusted application extensions, not a security sandbox. Only modules
+   from trusted sources should be placed in the portable `plugins` folder.
 
 ### Project save and recovery
 
@@ -76,6 +96,12 @@ Each component is listed separately to keep its responsibility and boundary read
   summaries. Lane projection is kept in focused timeline presentation models; `MOD-001` is closed.
 - **`ProjectRenderMapper`:** Convert enabled persisted tracks/items into renderer values. It is pure Core
   code shared by GUI and CLI.
+- **Core plugin contracts:** Define versioned descriptors, media categories, render stages, track
+  compatibility, parameters, and video/audio/source interfaces without depending on WPF or Infrastructure.
+- **`PluginCatalog` / `PluginLoadContext`:** Discover and validate module assemblies and isolate their
+  private dependencies while sharing the Core API identity.
+- **Built-in plugin project:** Provide one class per background, video-filter, or PNG-source module. It has
+  no WPF, persistence, catalog, or process-launch responsibility.
 - **`FfmpegVideoRenderer`:** Validate and coordinate temporary render output.
 - **`FfmpegFilterGraphBuilder`:** Build normalization, concat, overlay, and progress filters.
 - **`FfmpegRenderCommandBuilder`:** Build argument-safe FFmpeg process configuration.
@@ -88,15 +114,15 @@ Each component is listed separately to keep its responsibility and boundary read
 - **WPF window code-behind:** Own window events, media transport, validation prompts, and dialog flow.
   Explorer launch and exception presentation are delegated; `MOD-004` is closed.
 - **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
-- **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary browser focus. Browser focus
-  never overwrites durable settings.
-- **Content browser:** Search cached metadata and recycle virtualized rows. It does not eagerly decode video;
+- **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary panel focus. Focus never
+  overwrites durable settings.
+- **Content browser:** Search cached metadata and recycle a virtualized tile grid. It does not eagerly decode video;
   full-width focus retains the timeline drop target.
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.
 - **Portable publisher:** Compose the two single-file entry points, INI, docs, mandatory pinned FFmpeg
-  payload, and custom-font folder. It validates hashes, license flags, versions, and required render
+  payload, plugin modules, and custom-font folder. It validates hashes, license flags, versions, and required render
   capabilities before publishing.
 - **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate
   splash progress, optional scan, recovery, and main-window handoff. `BOOT-001` is closed.
@@ -110,6 +136,23 @@ Each component is listed separately to keep its responsibility and boundary read
 - Persistence SQL stays in Infrastructure; domain state stays in Core.
 - Shared GUI/CLI behavior must live behind Core interfaces or in focused application services, never copied between executables.
 - Superseded implementations are deleted in the same change that replaces them.
+
+## Plugin design references
+
+The contract uses the same broad boundaries seen in established systems while staying intentionally smaller:
+
+- Microsoft's .NET plugin guidance uses a shared contract assembly, `AssemblyLoadContext`, and
+  `AssemblyDependencyResolver` for plugin dependency loading:
+  <https://learn.microsoft.com/en-us/dotnet/core/tutorials/creating-app-with-plugin-support>
+- OBS separates loadable modules from registered source/filter kinds and treats filters as processors of
+  source audio/video: <https://docs.obsproject.com/plugins> and <https://docs.obsproject.com/reference-modules>
+- OpenFX declares explicit effect contexts rather than one untyped callback:
+  <https://openfx.readthedocs.io/en/main/Reference/ofxImageEffectContexts.html>
+- MLT models processing as producers, filters, transitions, and consumers chained through a framework:
+  <https://www.mltframework.org/docs/framework/>
+
+Cat Clip Composer applies those ideas as a versioned descriptor plus separate video, audio, source, and
+overlay interfaces. It does not claim binary compatibility with OBS, OpenFX, or MLT.
 
 ## Final responsibility audit conclusion
 

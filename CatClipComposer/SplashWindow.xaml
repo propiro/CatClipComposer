@@ -5,6 +5,7 @@
         Width="760" Height="470"
         WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="Transparent"
+        Topmost="True"
         ShowInTaskbar="True" WindowStartupLocation="CenterScreen">
     <Border Background="{StaticResource WindowBrush}"
             BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">

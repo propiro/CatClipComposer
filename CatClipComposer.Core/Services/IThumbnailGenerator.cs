@@ -7,5 +7,6 @@ public interface IThumbnailGenerator
         TimeSpan duration,
         DateTime lastWriteUtc,
         string ffmpegPath,
+        bool forceRecreate = false,
         CancellationToken cancellationToken = default);
 }

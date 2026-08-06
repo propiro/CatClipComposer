@@ -37,12 +37,16 @@ public partial class App : Application
                 services.ProjectStore,
                 services.Catalog,
                 services.Scanner,
-                services.CompositionExporter);
+                services.CompositionExporter,
+                services.Plugins);
             MainWindow = mainWindow;
             await mainWindow.InitializeAsync(progress);
-            mainWindow.Show();
-            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            await splash.WaitForMinimumDisplayAsync();
+            splash.Topmost = false;
             splash.Close();
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            mainWindow.Show();
+            mainWindow.Activate();
         }
         catch (Exception exception)
         {

@@ -3,7 +3,7 @@ namespace CatClipComposer.Cli.CommandLine;
 internal static class CliParser
 {
     private static readonly HashSet<string> FlagOptions = new(
-        ["help", "version", "json", "all", "overwrite", "create", "clear-tags"],
+        ["help", "version", "json", "all", "overwrite", "create", "clear-tags", "regenerate-previews"],
         StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> ValueOptions = new(

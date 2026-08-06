@@ -1,5 +1,7 @@
 namespace CatClipComposer.Core.Models;
 
+public sealed record ScanOptions(bool RegeneratePreviews = false);
+
 public sealed record ScanProgress(
     int Processed,
     int Total,

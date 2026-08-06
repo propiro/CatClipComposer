@@ -241,6 +241,7 @@ internal sealed class CliApplication(
           --overwrite            Permit replacement when creating a project.
 
         Metadata options:
+          scan --regenerate-previews
           tag --clip <id> --tags "cat; funny"
           tag --clip <id> --clear-tags
           usage --clip <id>

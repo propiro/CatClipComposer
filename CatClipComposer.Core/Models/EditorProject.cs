@@ -2,6 +2,7 @@ namespace CatClipComposer.Core.Models;
 
 public enum ProjectTrackKind
 {
+    Background,
     Video,
     Overlay,
     Audio,
@@ -65,7 +66,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -81,6 +82,8 @@ public sealed class EditorProject
 
     public ProjectOutputSettings Output { get; set; } = new();
 
+    public string BackgroundColor { get; set; } = "#101010";
+
     public double TargetDurationMinutes { get; set; } = 15;
 
     public TimelineRulerMode TimelineRulerMode { get; set; } = TimelineRulerMode.TimeAndFrames;
@@ -95,11 +98,12 @@ public sealed class EditorProject
         Output = output,
         Tracks =
         [
-            new ProjectTrack { Name = "Video", Kind = ProjectTrackKind.Video, Order = 0 },
-            new ProjectTrack { Name = "Overlays", Kind = ProjectTrackKind.Overlay, Order = 1 },
-            new ProjectTrack { Name = "Audio", Kind = ProjectTrackKind.Audio, Order = 2 },
-            new ProjectTrack { Name = "Progress", Kind = ProjectTrackKind.Progress, Order = 3 },
-            new ProjectTrack { Name = "Effects", Kind = ProjectTrackKind.Effects, Order = 4 }
+            new ProjectTrack { Name = "Background", Kind = ProjectTrackKind.Background, Order = 0 },
+            new ProjectTrack { Name = "Video 1", Kind = ProjectTrackKind.Video, Order = 1 },
+            new ProjectTrack { Name = "Overlays 1", Kind = ProjectTrackKind.Overlay, Order = 2 },
+            new ProjectTrack { Name = "Audio 1", Kind = ProjectTrackKind.Audio, Order = 3 },
+            new ProjectTrack { Name = "Progress 1", Kind = ProjectTrackKind.Progress, Order = 4 },
+            new ProjectTrack { Name = "Effects 1", Kind = ProjectTrackKind.Effects, Order = 5 }
         ]
     };
 }
@@ -168,6 +172,10 @@ public sealed class ProjectTimelineItem
     public string ProgressColor { get; set; } = "#C8C0B2";
 
     public int ProgressHeight { get; set; } = 10;
+
+    public string PluginId { get; set; } = string.Empty;
+
+    public Dictionary<string, string> PluginParameters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public TimeSpan Start => TimeSpan.FromTicks(StartTicks);
 

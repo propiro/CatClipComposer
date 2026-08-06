@@ -6,22 +6,29 @@ namespace CatClipComposer.Presentation;
 
 public sealed class TimelineLaneViewModel
 {
-    public TimelineLaneViewModel(ProjectTrack track, IEnumerable<TimelineLaneItemViewModel> items)
+    public TimelineLaneViewModel(
+        ProjectTrack track,
+        int kindOrdinal,
+        IEnumerable<TimelineLaneItemViewModel> items)
     {
+        TrackId = track.Id;
         TrackKind = track.Kind;
         Name = track.Name.ToUpperInvariant();
         ShortName = track.Kind switch
         {
-            ProjectTrackKind.Video => "V1",
-            ProjectTrackKind.Overlay => "OV",
-            ProjectTrackKind.Audio => "A1",
-            ProjectTrackKind.Progress => "PB",
-            _ => "FX"
+            ProjectTrackKind.Background => $"BG{kindOrdinal}",
+            ProjectTrackKind.Video => $"V{kindOrdinal}",
+            ProjectTrackKind.Overlay => $"OV{kindOrdinal}",
+            ProjectTrackKind.Audio => $"A{kindOrdinal}",
+            ProjectTrackKind.Progress => $"PB{kindOrdinal}",
+            _ => $"FX{kindOrdinal}"
         };
         Items = new ObservableCollection<TimelineLaneItemViewModel>(items);
     }
 
     public ProjectTrackKind TrackKind { get; }
+
+    public Guid TrackId { get; }
 
     public string Name { get; }
 
@@ -47,11 +54,11 @@ public sealed class TimelineLaneItemViewModel
         Detail = $"{DurationFormatter.Format(item.Start)} + {DurationFormatter.Format(item.Duration)}";
         ThumbnailPath = clip?.ThumbnailPath;
         Left = Math.Max(0, item.Start.TotalSeconds * pixelsPerSecond);
-        Width = Math.Max(track.Kind == ProjectTrackKind.Video ? 112 : 54,
-            item.Duration.TotalSeconds * pixelsPerSecond);
-        Height = Math.Max(38, trackHeight - 5);
+        Width = Math.Max(20, item.Duration.TotalSeconds * pixelsPerSecond);
+        Height = Math.Max(22, trackHeight - 5);
         IsVideo = track.Kind == ProjectTrackKind.Video;
         IsSelected = isSelected;
+        TrackId = track.Id;
         ShowClipActions = IsVideo && isSelected;
         Background = track.Kind switch
         {
@@ -64,6 +71,8 @@ public sealed class TimelineLaneItemViewModel
     }
 
     public Guid Id { get; }
+
+    public Guid TrackId { get; }
 
     public ProjectTrackKind TrackKind { get; }
 

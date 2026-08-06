@@ -31,25 +31,26 @@ public sealed class ProjectLayerRowViewModel
         track,
         null,
         track.Name.ToUpperInvariant(),
-        $"{track.Items.Count} item(s){(track.IsEnabled ? string.Empty : " · disabled")}");
+        $"{track.Items.Count} item(s){(track.IsEnabled ? string.Empty : " | disabled")}");
 
     public static ProjectLayerRowViewModel ForItem(ProjectTrack track, ProjectTimelineItem item)
     {
         var details = item.Kind switch
         {
             ProjectItemKind.Video or ProjectItemKind.StillImage =>
-                $" · {item.FitMode} · fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s",
+                $" | {item.FitMode} | fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s",
             ProjectItemKind.TextOverlay =>
-                $" · {item.FontFamily}{(string.IsNullOrWhiteSpace(item.FontPath) ? string.Empty : " · CUSTOM")}",
-            ProjectItemKind.Audio => $" · volume {item.Volume:0.##}",
+                $" | {item.FontFamily}{(string.IsNullOrWhiteSpace(item.FontPath) ? string.Empty : " | CUSTOM")}",
+            ProjectItemKind.Audio => $" | volume {item.Volume:0.##}",
             ProjectItemKind.ProgressBar =>
-                $" · {item.ProgressBarStyle} · {item.ProgressColor} · {item.ProgressHeight}px · {item.ProgressBarPosition}",
+                $" | {item.ProgressBarStyle} | {item.ProgressColor} | {item.ProgressHeight}px | {item.ProgressBarPosition}",
+            ProjectItemKind.Effect => $" | plugin {item.PluginId}",
             _ => string.Empty
         };
         return new ProjectLayerRowViewModel(
             track,
             item,
             item.Name,
-            $"{DurationFormatter.Format(item.Start)} → {DurationFormatter.Format(item.Start + item.Duration)} · {item.Kind}{details}");
+            $"{DurationFormatter.Format(item.Start)} -> {DurationFormatter.Format(item.Start + item.Duration)} | {item.Kind}{details}");
     }
 }

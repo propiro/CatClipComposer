@@ -11,4 +11,30 @@
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CopyBuiltInPluginsToOutput"
+          AfterTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+    <ItemGroup>
+      <BuiltInPluginFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.dll" />
+      <BuiltInPluginFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json"
+                         Condition="Exists('$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json')" />
+    </ItemGroup>
+    <MakeDir Directories="$(TargetDir)plugins" />
+    <Copy SourceFiles="@(BuiltInPluginFile)"
+          DestinationFolder="$(TargetDir)plugins"
+          SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyBuiltInPluginsToPublish"
+          AfterTargets="Publish"
+          Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+    <ItemGroup>
+      <BuiltInPluginPublishFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.dll" />
+      <BuiltInPluginPublishFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json"
+                                Condition="Exists('$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json')" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)plugins" />
+    <Copy SourceFiles="@(BuiltInPluginPublishFile)"
+          DestinationFolder="$(PublishDir)plugins"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

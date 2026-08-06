@@ -60,7 +60,7 @@ public sealed class TimelineViewModel : ObservableObject
         get => _pixelsPerSecond;
         set
         {
-            var normalized = Math.Clamp(value, 1, 40);
+            var normalized = Math.Clamp(value, 0.1, 40);
             if (SetProperty(ref _pixelsPerSecond, normalized))
             {
                 RefreshRuler();
@@ -74,7 +74,7 @@ public sealed class TimelineViewModel : ObservableObject
         get => _trackHeight;
         set
         {
-            var normalized = Math.Clamp(value, 42, 110);
+            var normalized = Math.Clamp(value, 28, 110);
             if (SetProperty(ref _trackHeight, normalized))
             {
                 DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -83,6 +83,14 @@ public sealed class TimelineViewModel : ObservableObject
     }
 
     public double FramesPerSecond => _framesPerSecond;
+
+    public double SnapIncrement => _snapMode switch
+    {
+        TimelineSnapMode.Frame => 1 / _framesPerSecond,
+        TimelineSnapMode.TenthSecond => 0.1,
+        TimelineSnapMode.HalfSecond => 0.5,
+        _ => 1
+    };
 
     public TimelineRulerMode RulerMode => _rulerMode;
 
@@ -164,6 +172,24 @@ public sealed class TimelineViewModel : ObservableObject
         return clip;
     }
 
+    public TimelineClipViewModel AddMedia(MediaFile media, TimeSpan targetStart)
+    {
+        var insertionIndex = 0;
+        var position = TimeSpan.Zero;
+        while (insertionIndex < _clips.Count &&
+               position + TimeSpan.FromTicks(_clips[insertionIndex].Duration.Ticks / 2) <= targetStart)
+        {
+            position += _clips[insertionIndex].Duration;
+            insertionIndex++;
+        }
+
+        var clip = TimelineClipViewModel.FromMedia(media, insertionIndex + 1);
+        _clips.Insert(insertionIndex, clip);
+        SelectedClip = clip;
+        Reindex();
+        return clip;
+    }
+
     public TimelineClipViewModel AddStillImage(string imagePath, TimeSpan duration)
     {
         var insertIndex = SelectedClip is null
@@ -208,6 +234,82 @@ public sealed class TimelineViewModel : ObservableObject
             ? null
             : _clips[Math.Clamp(oldIndex, 0, _clips.Count - 1)];
         Reindex();
+        return true;
+    }
+
+    public bool Remove(IReadOnlyCollection<Guid> instanceIds)
+    {
+        var remove = _clips.Where(clip => instanceIds.Contains(clip.InstanceId)).ToList();
+        if (remove.Count == 0)
+        {
+            return false;
+        }
+
+        _suppressChanged = true;
+        try
+        {
+            foreach (var clip in remove)
+            {
+                _clips.Remove(clip);
+            }
+
+            SelectedClip = _clips.FirstOrDefault();
+            Reindex();
+        }
+        finally
+        {
+            _suppressChanged = false;
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    public bool MoveSelection(IReadOnlyCollection<Guid> instanceIds, TimeSpan targetStart)
+    {
+        var moving = _clips.Where(clip => instanceIds.Contains(clip.InstanceId)).ToList();
+        if (moving.Count == 0)
+        {
+            return false;
+        }
+
+        var remaining = _clips.Where(clip => !instanceIds.Contains(clip.InstanceId)).ToList();
+        var insertionIndex = 0;
+        var position = TimeSpan.Zero;
+        while (insertionIndex < remaining.Count &&
+               position + TimeSpan.FromTicks(remaining[insertionIndex].Duration.Ticks / 2) <= targetStart)
+        {
+            position += remaining[insertionIndex].Duration;
+            insertionIndex++;
+        }
+
+        var reordered = remaining.Take(insertionIndex)
+            .Concat(moving)
+            .Concat(remaining.Skip(insertionIndex))
+            .ToList();
+        if (reordered.Select(item => item.InstanceId).SequenceEqual(_clips.Select(item => item.InstanceId)))
+        {
+            return false;
+        }
+
+        _suppressChanged = true;
+        try
+        {
+            _clips.Clear();
+            foreach (var clip in reordered)
+            {
+                _clips.Add(clip);
+            }
+
+            SelectedClip = moving[0];
+            Reindex();
+        }
+        finally
+        {
+            _suppressChanged = false;
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
         return true;
     }
 

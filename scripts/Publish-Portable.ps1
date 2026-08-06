@@ -169,6 +169,12 @@ try {
 
     Copy-Item -LiteralPath $desktopFiles[0].FullName -Destination $packageRoot
     Copy-Item -LiteralPath $cliFiles[0].FullName -Destination $packageRoot
+    $pluginPublish = Join-Path $desktopPublish "plugins"
+    $builtInPlugin = Join-Path $pluginPublish "CatClipComposer.Plugins.BuiltIn.dll"
+    if (-not (Test-Path -LiteralPath $builtInPlugin)) {
+        throw "Desktop publish did not include the built-in plugin module: $builtInPlugin"
+    }
+    Copy-Item -LiteralPath $pluginPublish -Destination $packageRoot -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "CatClipComposer.ini.example") `
         -Destination (Join-Path $packageRoot "CatClipComposer.ini")
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "docs") `

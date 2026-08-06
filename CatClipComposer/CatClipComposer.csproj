@@ -11,6 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="..\CatClipComposer.Core\CatClipComposer.Core.csproj" />
     <ProjectReference Include="..\CatClipComposer.Infrastructure\CatClipComposer.Infrastructure.csproj" />
+    <ProjectReference Include="..\CatClipComposer.Plugins.BuiltIn\CatClipComposer.Plugins.BuiltIn.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

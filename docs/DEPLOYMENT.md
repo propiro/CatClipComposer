@@ -1,6 +1,6 @@
 # Portable one-folder deployment
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
 Cat Clip Composer always deploys its pinned FFmpeg runtime. Both normal builds and portable publishes place
 the tools under `thirdparty\ffmpeg`, separate from the application executables and configuration.
@@ -35,6 +35,8 @@ CatClipComposer/
 |-- CatClipComposer.ini
 |-- fonts/
 |   `-- README.txt
+|-- plugins/
+|   `-- CatClipComposer.Plugins.BuiltIn.dll
 |-- docs/
 |   |-- README.md
 |   `-- THIRD_PARTY_NOTICES.md
@@ -50,9 +52,10 @@ CatClipComposer/
         `-- MANIFEST.sha256
 ```
 
-The root contains only the GUI/CLI entry points and portable INI plus organized `fonts`, `docs`, and
-`thirdparty` subfolders.
+The root contains only the GUI/CLI entry points and portable INI plus organized `fonts`, `plugins`, `docs`,
+and `thirdparty` subfolders.
 Application assemblies, native SQLite, and the optional .NET runtime remain inside the single-file programs.
+Plugin assemblies remain replaceable under `plugins`; the publisher requires the built-in module assembly.
 FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
 interface-compatible build as required by the applicable license.
 
@@ -91,6 +94,7 @@ Before publishing, the script verifies:
 5. `drawtext`, native `mpeg4`, native `aac`, and `h264_mf` are available.
 6. The copied package payload still matches its manifest.
 7. The portable custom-font folder is included separately from the application executables.
+8. The built-in plugin module assembly is included under `plugins`.
 
 ## Updating FFmpeg
 

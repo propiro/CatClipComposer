@@ -1,6 +1,6 @@
 # Project files and crash recovery
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
 Cat Clip Composer stores editable work as versioned UTF-8 JSON with the `.nya` extension. Project files
 contain references and editing metadata; they do not copy or embed source videos, images, audio, fonts,
@@ -8,23 +8,32 @@ cached previews, or final exports.
 
 ## Normal projects
 
-Use **New**, **Open**, and **Save** in the main toolbar. New projects contain five stable track types:
+Use **New**, **Open**, and **Save** in the main toolbar. New projects contain six default track types:
 
-1. Video
-2. Overlays
-3. Audio
-4. Progress
-5. Effects
+1. Background
+2. Video
+3. Overlays
+4. Audio
+5. Progress
+6. Effects
 
-The video track round-trips ordered source clips and still images. The Layers/Used Clips panel adds, edits,
-and removes timed text, image, audio, and progress effects. Clip effects control fit/fill/stretch/animated
-blur, fades, and volume. A shared Core mapper projects the enabled track model into both GUI and headless
-renders.
+The first Video track is the sequential base composition. Additional Video tracks contain timed visual
+layers and their source audio. The Layers/Used Clips panel can create/remove tracks and add, edit, and remove
+timed text, image, audio, progress, and plugin effects. Clip effects control fit/fill/stretch, fades, and
+volume. A shared Core mapper projects the enabled track model into both GUI and headless renders.
 
-Schema version 2 adds the project target duration, timeline ruler and snap modes, installed/custom font
-selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
+Schema version 3 adds the project background color, Background timeline, multiple named tracks, and
+versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
+snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older schema-1
-JSON projects remain readable; saving them writes schema 2. The normal Open dialog prefers `.nya`.
+JSON projects remain readable; saving them writes schema 3. The normal Open dialog prefers `.nya`.
+An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
+module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
+
+The built-in Background blur effect reads the active source below the current project time and exposes
+saturation, lightness, hue, zoom, and Gaussian blur parameters. Plugin module IDs are saved in `.nya`; a
+missing or incompatible required module produces an explicit render error instead of silently changing the
+project.
 
 Source references use absolute paths and optional catalog media IDs. Loading resolves catalog media by ID
 first and path second. Missing source paths stay represented so they can be diagnosed or replaced later.

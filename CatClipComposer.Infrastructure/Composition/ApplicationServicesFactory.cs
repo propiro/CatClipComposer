@@ -1,7 +1,9 @@
 using CatClipComposer.Core.Services;
+using CatClipComposer.Core.Plugins;
 using CatClipComposer.Infrastructure.Configuration;
 using CatClipComposer.Infrastructure.Rendering;
 using CatClipComposer.Infrastructure.Projects;
+using CatClipComposer.Infrastructure.Plugins;
 
 namespace CatClipComposer.Infrastructure.Composition;
 
@@ -35,6 +37,7 @@ public static class ApplicationServicesFactory
             previewSheetGenerator);
         IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
         ICompositionExporter compositionExporter = new CompositionExportService(videoRenderer, catalog);
+        IPluginCatalog plugins = PluginCatalog.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
 
         return new ApplicationServices(
             paths,
@@ -42,6 +45,7 @@ public static class ApplicationServicesFactory
             projectStore,
             catalog,
             scanner,
-            compositionExporter);
+            compositionExporter,
+            plugins);
     }
 }

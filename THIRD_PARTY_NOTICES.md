@@ -59,6 +59,10 @@ never the normal packaged path.
 
 No paid runtime library is required by Cat Clip Composer. Open-source and public-domain components still retain their respective attribution, source-availability, redistribution, and other license requirements.
 
+The assembly under `plugins\CatClipComposer.Plugins.BuiltIn.dll` is first-party Cat Clip Composer code. It
+does not add a separate third-party library or notice obligation; its video processing is expressed through
+the separately distributed FFmpeg runtime described above.
+
 The Mr Cat splash photograph is a user-supplied application asset, not a third-party software component.
 Custom TTF/OTF files placed in the portable `fonts` folder are not bundled dependencies by default; anyone
 redistributing added fonts must follow each font's license.

@@ -25,13 +25,18 @@ internal sealed class FfmpegRenderCommandBuilder
         AddArguments(startInfo, "-hide_banner", "-loglevel", "error", "-y");
         AddInputs(startInfo, request);
 
-        foreach (var overlay in (request.TimedOverlays ?? []).Where(item => item.Kind == RenderOverlayKind.Image))
+        foreach (var overlay in (request.TimedOverlays ?? [])
+                     .Where(item => item.Kind is RenderOverlayKind.Image or RenderOverlayKind.Video))
         {
-            AddArguments(
-                startInfo,
-                "-loop", "1",
-                "-framerate", FormatNumber(request.FramesPerSecond),
-                "-i", overlay.SourcePath!);
+            if (overlay.Kind == RenderOverlayKind.Image)
+            {
+                AddArguments(
+                    startInfo,
+                    "-loop", "1",
+                    "-framerate", FormatNumber(request.FramesPerSecond));
+            }
+
+            AddArguments(startInfo, "-i", overlay.SourcePath!);
         }
 
         foreach (var audioLayer in request.AudioLayers ?? [])

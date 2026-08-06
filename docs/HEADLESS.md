@@ -1,6 +1,6 @@
 # Headless command-line interface
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-07
 
 `CatClipComposer.Cli` exposes catalog, metadata, project, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI/project schemas, FFmpeg renderer, and export-history transaction as the desktop application.
 
@@ -35,7 +35,8 @@ All commands except help/version initialize the selected SQLite catalog. Human-r
 
 ### `config`
 
-Shows the resolved INI path, whether the file exists, the resolved data/database paths, and all effective settings. A missing INI is valid and displays normalized defaults.
+Shows the resolved INI path, whether the file exists, the resolved data/database paths, loaded plugin
+modules/diagnostics, and all effective settings. A missing INI is valid and displays normalized defaults.
 
 ```powershell
 CatClipComposer.Cli.exe config
@@ -48,8 +49,12 @@ Scans the source folders in the selected INI, probes videos, generates static th
 
 ```powershell
 CatClipComposer.Cli.exe scan
+CatClipComposer.Cli.exe scan --regenerate-previews
 CatClipComposer.Cli.exe scan --json --config "D:\Portable\CatClipComposer.ini"
 ```
+
+Normal scanning keeps valid cached images. `--regenerate-previews` forces every static thumbnail and contact
+sheet to be rebuilt while catalog metadata is refreshed.
 
 A completed scan with any folder/file warning returns exit code `4`; its JSON result has `status: "completedWithWarnings"` and includes the ordered `errors` array.
 
@@ -112,7 +117,7 @@ Existing outputs are rejected with exit code `2` unless `--overwrite` is present
 ### `project`
 
 Creates or inspects a versioned `.nya` document. `--project-file <file>` is required. Add `--create`, optional
-`--project-name <name>`, and optional `--overwrite` to create a new empty five-track document; without
+`--project-name <name>`, and optional `--overwrite` to create a new empty six-track document; without
 `--create`, the command validates and prints the existing project. JSON includes identity, timestamps,
 output settings, ordered track metadata, and item counts.
 

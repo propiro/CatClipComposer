@@ -15,9 +15,11 @@ public sealed class MediaScanner(
 
     public async Task<ScanResult> ScanAsync(
         ApplicationSettings settings,
+        ScanOptions? options = null,
         IProgress<ScanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        options ??= new ScanOptions();
         var errors = new List<string>();
         var roots = NormalizeRoots(settings.SourceFolders, errors);
         var files = EnumerateFiles(roots, settings.IncludeSubfolders, errors);
@@ -53,7 +55,8 @@ public sealed class MediaScanner(
                 string? thumbnailPath;
                 string? previewSheetPath;
 
-                if (existing is not null &&
+                if (!options.RegeneratePreviews &&
+                    existing is not null &&
                     existing.FileSize == info.Length &&
                     existing.LastWriteUtc == info.LastWriteTimeUtc &&
                     existing.Duration > TimeSpan.Zero)
@@ -76,6 +79,7 @@ public sealed class MediaScanner(
                         metadata.Duration,
                         info.LastWriteTimeUtc,
                         settings.FfmpegPath,
+                        options.RegeneratePreviews,
                         cancellationToken);
                 }
 
@@ -85,6 +89,7 @@ public sealed class MediaScanner(
                     info.LastWriteTimeUtc,
                     settings.PreviewSlideCount,
                     settings.FfmpegPath,
+                    options.RegeneratePreviews,
                     cancellationToken);
 
                 var now = DateTime.UtcNow;

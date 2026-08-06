@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using CatClipComposer.Core.Models;
+using CatClipComposer.Core.Plugins;
 
 namespace CatClipComposer.Infrastructure.Rendering;
 
@@ -18,6 +19,14 @@ internal static class FfmpegFilterGraphBuilder
         var currentLabel = "joinedv";
         var stage = 0;
         var nextInputIndex = request.Segments.Count;
+        currentLabel = AddPluginEffects(
+            graph,
+            request,
+            width,
+            height,
+            currentLabel,
+            ref stage,
+            PluginRenderStage.Filter);
 
         var overlays = request.TimedOverlays ?? [];
         for (var index = 0; index < overlays.Count; index++)
@@ -53,6 +62,17 @@ internal static class FfmpegFilterGraphBuilder
                         overlay.Start,
                         overlay.Duration);
                     break;
+                case RenderOverlayKind.Video:
+                    currentLabel = AddVideoOverlay(
+                        graph,
+                        request,
+                        overlay,
+                        width,
+                        height,
+                        nextInputIndex++,
+                        currentLabel,
+                        stage++);
+                    break;
                 case RenderOverlayKind.ProgressBar:
                     currentLabel = AddTimedProgress(
                         graph,
@@ -69,6 +89,15 @@ internal static class FfmpegFilterGraphBuilder
                     break;
             }
         }
+
+        currentLabel = AddPluginEffects(
+            graph,
+            request,
+            width,
+            height,
+            currentLabel,
+            ref stage,
+            PluginRenderStage.Overlay);
 
         graph.Append(CultureInfo.InvariantCulture, $"[{currentLabel}]null[outv];");
         AddMixedAudio(graph, request, nextInputIndex);
@@ -112,22 +141,31 @@ internal static class FfmpegFilterGraphBuilder
         var fps = FormatNumber(request.FramesPerSecond);
         var common = $"trim=duration={seconds},setpts=PTS-STARTPTS,fps={fps}," +
                      $"format={GetPixelFormat(request.VideoEncoder)},setsar=1";
-        if (segment.FitMode == VideoFitMode.BlurBackground)
+        graph.Append(CultureInfo.InvariantCulture, $"[{index}:v:0]{common}[raw{index}];");
+        if (segment.BackgroundEffect is not null)
         {
-            graph.Append(CultureInfo.InvariantCulture, $"[{index}:v:0]{common}[raw{index}];");
-            graph.Append(CultureInfo.InvariantCulture, $"[raw{index}]split=2[bg{index}][fg{index}];");
-            graph.Append(CultureInfo.InvariantCulture,
-                $"[bg{index}]scale={width}:{height}:force_original_aspect_ratio=increase," +
-                $"crop={width}:{height},gblur=sigma=32[back{index}];");
-            graph.Append(CultureInfo.InvariantCulture,
-                $"[fg{index}]scale={width}:{height}:force_original_aspect_ratio=decrease[front{index}];");
-            graph.Append(CultureInfo.InvariantCulture,
-                $"[back{index}][front{index}]overlay=(W-w)/2:(H-h)/2:shortest=1[composed{index}];");
-            graph.Append(CultureInfo.InvariantCulture, $"[composed{index}]");
+            var effect = segment.BackgroundEffect;
+            var relativeStart = effect.Start - segment.TimelineStart;
+            var relativeEnd = effect.Start + effect.Duration - segment.TimelineStart;
+            var clippedStart = relativeStart < TimeSpan.Zero ? TimeSpan.Zero : relativeStart;
+            var clippedEnd = relativeEnd > segment.Duration ? segment.Duration : relativeEnd;
+            var pluginOutput = $"background{index}";
+            graph.Append(effect.Plugin.BuildFilterGraph(
+                new PluginVideoFilterContext(
+                    $"raw{index}",
+                    pluginOutput,
+                    width,
+                    height,
+                    request.FramesPerSecond,
+                    clippedStart,
+                    clippedEnd - clippedStart,
+                    request.BackgroundColor),
+                effect.Parameters));
+            graph.Append(CultureInfo.InvariantCulture, $"[{pluginOutput}]");
         }
         else
         {
-            graph.Append(CultureInfo.InvariantCulture, $"[{index}:v:0]");
+            graph.Append(CultureInfo.InvariantCulture, $"[raw{index}]");
             graph.Append(segment.FitMode switch
             {
                 VideoFitMode.Fill =>
@@ -135,14 +173,48 @@ internal static class FfmpegFilterGraphBuilder
                 VideoFitMode.Stretch => $"scale={width}:{height},",
                 _ =>
                     $"scale={width}:{height}:force_original_aspect_ratio=decrease," +
-                    $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=black,"
+                    $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color={NormalizeColor(request.BackgroundColor)},"
             });
-            graph.Append(common);
-            graph.Append(',');
         }
 
         AddFadeFilters(graph, segment.FadeInSeconds, segment.FadeOutSeconds, segment.Duration);
         graph.Append(CultureInfo.InvariantCulture, $"null[{outputLabel}];");
+    }
+
+    private static string AddPluginEffects(
+        StringBuilder graph,
+        RenderRequest request,
+        int width,
+        int height,
+        string currentLabel,
+        ref int stage,
+        PluginRenderStage targetStage)
+    {
+        foreach (var effect in (request.PluginEffects ?? [])
+                     .Where(effect => effect.Plugin.Descriptor.Stage == targetStage)
+                     .OrderBy(effect => effect.Start))
+        {
+            if (effect.Duration <= TimeSpan.Zero)
+            {
+                continue;
+            }
+
+            var outputLabel = $"plugin{stage++}";
+            graph.Append(effect.Plugin.BuildFilterGraph(
+                new PluginVideoFilterContext(
+                    currentLabel,
+                    outputLabel,
+                    width,
+                    height,
+                    request.FramesPerSecond,
+                    effect.Start,
+                    effect.Duration,
+                    request.BackgroundColor),
+                effect.Parameters));
+            currentLabel = outputLabel;
+        }
+
+        return currentLabel;
     }
 
     private static void AddFadeFilters(
@@ -242,6 +314,37 @@ internal static class FfmpegFilterGraphBuilder
         return $"stage{stage}";
     }
 
+    private static string AddVideoOverlay(
+        StringBuilder graph,
+        RenderRequest request,
+        RenderOverlay overlay,
+        int width,
+        int height,
+        int inputIndex,
+        string currentLabel,
+        int stage)
+    {
+        var seconds = FormatSeconds(overlay.Duration);
+        var start = FormatSeconds(overlay.Start);
+        graph.Append(CultureInfo.InvariantCulture,
+            $"[{inputIndex}:v:0]trim=duration={seconds},setpts=PTS-STARTPTS+{start}/TB," +
+            $"fps={FormatNumber(request.FramesPerSecond)},format={GetPixelFormat(request.VideoEncoder)},setsar=1,");
+        graph.Append(overlay.FitMode switch
+        {
+            VideoFitMode.Fill =>
+                $"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}",
+            VideoFitMode.Stretch => $"scale={width}:{height}",
+            _ =>
+                $"scale={width}:{height}:force_original_aspect_ratio=decrease," +
+                $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color={NormalizeColor(request.BackgroundColor)}"
+        });
+        graph.Append(CultureInfo.InvariantCulture, $"[layervideo{stage}];");
+        graph.Append(CultureInfo.InvariantCulture,
+            $"[{currentLabel}][layervideo{stage}]overlay=0:0:eof_action=pass:repeatlast=0:" +
+            $"enable='between(t,{start},{FormatSeconds(overlay.Start + overlay.Duration)})'[stage{stage}];");
+        return $"stage{stage}";
+    }
+
     private static string AddTextOverlay(
         StringBuilder graph,
         string overlayTextPath,
@@ -283,7 +386,7 @@ internal static class FfmpegFilterGraphBuilder
         var startSeconds = FormatSeconds(start);
         var seconds = FormatSeconds(duration);
         var barHeight = Math.Clamp(height, 2, 100);
-        var barColor = NormalizeProgressColor(color);
+        var barColor = NormalizeColor(color);
         var pattern = style switch
         {
             ProgressBarStyle.Segmented => $",drawgrid=w=80:h={barHeight}:t=3:c=black@0.75",
@@ -370,7 +473,7 @@ internal static class FfmpegFilterGraphBuilder
     private static string FormatNumber(double value) =>
         value.ToString("0.######", CultureInfo.InvariantCulture);
 
-    private static string NormalizeProgressColor(string color)
+    private static string NormalizeColor(string color)
     {
         var hex = color.Trim().TrimStart('#');
         return hex.Length == 6 && hex.All(Uri.IsHexDigit) ? $"0x{hex}" : "0xC8C0B2";

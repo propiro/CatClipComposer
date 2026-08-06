@@ -1,6 +1,6 @@
 # TODO register
 
-Last audited: 2026-08-06
+Last audited: 2026-08-07
 
 Statuses are `Open`, `In progress`, `Blocked`, `Done`, and `Deferred`.
 
@@ -83,8 +83,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `BROWSER-001` — Make the content browser safe for very large libraries and support drag/drop
 
 - Priority/status: P0 / Done
-- Acceptance: Recycling virtualization is enabled, only cached realized thumbnails bind, and clips drag
-  to the timeline.
+- Acceptance: A recycling virtualized grid binds only realized cached thumbnails, and cards drag onto a
+  chosen Video timeline without opening source video files.
 
 ### `BROWSER-002` — Expand the browser without losing the timeline drop target
 
@@ -101,14 +101,21 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `LAYERS-001` — Persist and edit a project layer/track model
 
 - Priority/status: P1 / Done
-- Acceptance: Five track types and requested item fields persist; add/edit/remove controls and the
-  shared GUI/CLI renderer projection pass.
+- Acceptance: Six default track types, additional named tracks, background color, and requested item fields
+  persist; add/edit/remove controls and the shared GUI/CLI renderer projection pass.
 
 ### `FX-001` — Add timed fades, overlays, music, progress ranges, and fit modes
 
 - Priority/status: P1 / Done
-- Acceptance: Controls and a real six-second render cover text, PNG, progress, music, fades, volume,
-  and animated blur without a GPL-only filter.
+- Acceptance: Controls and real renders cover text, PNG, progress, music, fades, volume, fit modes, timed
+  video blur, and configurable source-derived background blur without a GPL-only filter.
+
+### `PLUGIN-001` — Load extensible media/effect modules from the portable application
+
+- Priority/status: P0 / Done
+- Acceptance: A versioned Core contract describes media categories, render stages, track compatibility,
+  and parameters; isolated assembly contexts discover modules under `plugins`; `.nya` stores module IDs and
+  values; missing/incompatible modules fail explicitly; three built-in modules and a real render pass.
 
 ### `OUTPUT-001` — Add common output presets and custom output values
 
@@ -154,8 +161,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-2 five-track `.nya` documents and atomic `autosave.nya` recovery round-trip
-  without embedding media; GUI and CLI checks pass.
+- Acceptance: Versioned schema-3 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+  background/module metadata without embedding media; GUI and CLI checks pass.
 
 ### `UX-PROJECT-002` — Separate durable Preferences from frequently changed project settings
 
@@ -166,8 +173,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `UX-TIMELINE-002` — Add precise scalable timeline editing
 
 - Priority/status: P0 / Done
-- Acceptance: Five independently visible lanes, vertical scrolling, track-height/time zoom, time/frame ruler
-  modes, configurable snapping, and selected-video move/remove controls are present.
+- Acceptance: Dynamic independently visible lanes, vertical scrolling, track-height/time zoom, fit controls,
+  time/frame ruler modes, interval/block-edge snapping, drag movement, Ctrl multi-selection, and selected-video
+  controls are present.
 
 ### `UX-PREVIEW-002` — Add muted preview transport controls
 
@@ -183,8 +191,21 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `UX-SPLASH-001` — Report startup and rescan progress without an empty or frozen window
 
 - Priority/status: P1 / Done
-- Acceptance: The Mr Cat splash displays progress plus capped scrolling diagnostics during startup and manual
-  rescans; Preferences defaults tall enough to avoid a scrollbar until the user shrinks it.
+- Acceptance: The foreground Mr Cat splash displays for at least three seconds with progress plus capped
+  scrolling diagnostics during startup and manual rescans; Preferences defaults tall enough to avoid a
+  scrollbar until the user shrinks it.
+
+### `UX-PANEL-003` — Focus the selected editing panel from the keyboard
+
+- Priority/status: P1 / Done
+- Acceptance: Clicking Content Browser, Layers/Used Clips, or Project Timeline selects it; Space toggles its
+  focused layout without stealing Space while editing text, choices, buttons, or sliders.
+
+### `CAT-REFRESH-002` — Separate metadata refresh from preview regeneration
+
+- Priority/status: P1 / Done
+- Acceptance: Manual Refresh asks between catalog-only and forced thumbnail/contact-sheet regeneration,
+  while source-folder setup is requested only when no folder is configured; CLI exposes the forced mode.
 
 ### `EDIT-001` — Add trim-in/out and per-clip volume
 
@@ -263,8 +284,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `AUD-PROJECT-001` — Verify project versioning, recovery identity, and overwrite safety
 
 - Priority/status: P0 / Done
-- Evidence: CLI create/load preserved schema, GUID, five tracks, and output; overwrite returned 2; GUI
-  startup and additive SQLite migration passed.
+- Evidence: CLI create/load preserved schema, GUID, six default tracks, background/plugin metadata, and
+  output; overwrite returned 2; GUI startup and additive SQLite migration passed.
 
 ### `AUD-UX-003` — Verify project settings, timeline precision, preview, fonts, and splash
 
@@ -283,6 +304,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P1 / Done
 - Evidence: A real project rendered 640x360/24 MPEG-4 plus AAC for exactly six seconds; sampled frames and
   audio confirmed the requested effects.
+
+### `AUD-PLUGIN-001` — Verify plugin loading, compatibility, persistence, and bundled rendering
+
+- Priority/status: P0 / Done
+- Evidence: CLI discovery reported all three built-in module IDs/versions; schema-3 persisted their parameters;
+  compatibility checks reject incorrect tracks; the bundled FFmpeg rendered vertical source content with
+  background blur/color controls, timed video blur, a second Video lane, text, progress, and mixed audio.
 
 ### `AUD-PORTABLE-001` — Verify one-folder publish and packaged-tool discovery
 

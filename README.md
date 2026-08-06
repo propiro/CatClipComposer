@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.5**.
+Current application and component version: **0.1.6**.
 
 ## Documentation
 
@@ -30,7 +30,8 @@ Current application and component version: **0.1.5**.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
-- Set clip Fit, Fill, Stretch, or animated Blur Background plus fade-in/out and source volume.
+- Set clip Fit, Fill, or Stretch plus fade-in/out and source volume; add the configurable blur-content
+  background module on the Background timeline when vertical media should fill a horizontal project.
 - Render solid, segmented, or tick progress effects over the complete project, a selected segment, or a custom range.
 - Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
@@ -39,8 +40,12 @@ Current application and component version: **0.1.5**.
 - Create, save, reopen, and automatically recover versioned `.nya` project timelines.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
-- Edit five scalable timeline lanes with zoom, frame/time ruler modes, configurable snapping, and direct controls on the selected video clip.
-- Browse large catalogs through a recycled virtualized list, expand the browser across the workspace while keeping the timeline available, and drag thumbnail rows directly onto it.
+- Add and remove named timelines, edit six default timeline types, Ctrl-select and drag blocks, snap to
+  ruler intervals or neighboring block edges, and fit the timeline horizontally or vertically.
+- Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
+  keeping the timeline available, and drag thumbnail cards onto a chosen Video timeline.
+- Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly
+  supplies blur-content background, timed video blur, and PNG splash-screen functionality.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
   with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
@@ -79,6 +84,11 @@ On the first run:
 5. Open **Project settings** to choose the timeline target and output preset.
 6. Drag clips to the timeline, add any still screens or timed effects, and select **Export**.
 
+To add another lane, select **+ Track** in Layers / Used Clips, choose Video, Overlay, Audio, Progress,
+Background, or Effects, and name it. Select that track header before adding an effect or layer item. Media
+cards can be dropped directly onto any Video lane. Click a workspace panel and press Space to focus or
+restore Content Browser, Layers / Used Clips, or Project Timeline.
+
 ## Configuration and local application data
 
 Configuration is stored beside the executable:
@@ -106,6 +116,7 @@ CatClipComposer/                 WPF user interface and presentation models
 CatClipComposer.Cli/             Headless commands, text/JSON output, and exit codes
 CatClipComposer.Core/            Domain models and service contracts
 CatClipComposer.Infrastructure/  SQLite, settings, FFprobe, FFmpeg thumbnails and rendering
+CatClipComposer.Plugins.BuiltIn/ Built-in dynamically discovered source/effect modules
 ```
 
 ## License notes

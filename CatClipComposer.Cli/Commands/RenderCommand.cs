@@ -75,8 +75,9 @@ internal static class RenderCommand
             ? new ProjectRenderPlan(
                 await CreateSegmentsAsync(invocation, context),
                 [],
+                [],
                 [])
-            : ProjectRenderMapper.Create(project);
+            : ProjectRenderMapper.Create(project, context.Services.Plugins);
         var segments = renderPlan.Segments;
         if (segments.Count == 0)
         {
@@ -104,8 +105,10 @@ internal static class RenderCommand
             QualityPercent: project?.Output.QualityPercent ?? 80,
             VideoBitrateKbps: project?.Output.VideoBitrateKbps ?? 8000,
             AudioBitrateKbps: project?.Output.AudioBitrateKbps ?? 192,
+            BackgroundColor: project?.BackgroundColor ?? "#101010",
             TimedOverlays: renderPlan.TimedOverlays,
-            AudioLayers: renderPlan.AudioLayers);
+            AudioLayers: renderPlan.AudioLayers,
+            PluginEffects: renderPlan.PluginEffects);
         var result = await context.Services.CompositionExporter.ExportAsync(
             request,
             context.Settings.FfmpegPath,

@@ -124,10 +124,10 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
                 throw new InvalidOperationException("A timed text overlay cannot be empty.");
             }
 
-            if (overlay.Kind == RenderOverlayKind.Image &&
+            if (overlay.Kind is RenderOverlayKind.Image or RenderOverlayKind.Video &&
                 (string.IsNullOrWhiteSpace(overlay.SourcePath) || !File.Exists(overlay.SourcePath)))
             {
-                throw new InvalidOperationException($"A timed overlay image is missing: {overlay.SourcePath}");
+                throw new InvalidOperationException($"A timed overlay source is missing: {overlay.SourcePath}");
             }
 
             if (!string.IsNullOrWhiteSpace(overlay.FontPath) && !File.Exists(overlay.FontPath))

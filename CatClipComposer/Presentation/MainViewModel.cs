@@ -5,6 +5,7 @@ using System.Windows.Data;
 using CatClipComposer.Core;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
+using CatClipComposer.Core.Plugins;
 
 namespace CatClipComposer.Presentation;
 
@@ -15,6 +16,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IMediaCatalog _catalog;
     private readonly IMediaScanner _scanner;
     private readonly ICompositionExporter _compositionExporter;
+    private readonly IPluginCatalog _plugins;
     private CancellationTokenSource? _operationCancellation;
     private ApplicationSettings _settings;
     private MediaCardViewModel? _selectedMedia;
@@ -23,8 +25,10 @@ public sealed class MainViewModel : ObservableObject
     private double _scanProgress;
     private bool _isBusy;
     private bool _suppressProjectAutosave;
+    private bool _suppressTimelineSelectionSync;
     private EditorProject _project;
     private ProjectLayerRowViewModel? _selectedProjectLayer;
+    private readonly HashSet<Guid> _selectedTimelineItemIds = [];
 
     public MainViewModel(
         ApplicationSettings settings,
@@ -32,7 +36,8 @@ public sealed class MainViewModel : ObservableObject
         IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
-        ICompositionExporter compositionExporter)
+        ICompositionExporter compositionExporter,
+        IPluginCatalog plugins)
     {
         _settings = settings;
         _settingsStore = settingsStore;
@@ -40,11 +45,12 @@ public sealed class MainViewModel : ObservableObject
         _catalog = catalog;
         _scanner = scanner;
         _compositionExporter = compositionExporter;
+        _plugins = plugins;
         Timeline = new TimelineViewModel(15);
         _project = EditorProject.Create("Untitled project", CreateOutputSettings());
         Timeline.Changed += Timeline_Changed;
         Timeline.DisplaySettingsChanged += Timeline_DisplaySettingsChanged;
-        Timeline.SelectionChanged += (_, _) => RefreshTimelineLanes();
+        Timeline.SelectionChanged += Timeline_SelectionChanged;
         Timeline.SetFrameRate(_project.Output.FramesPerSecond);
         Timeline.SetDisplaySettings(_project.TimelineRulerMode, _project.TimelineSnapMode);
         MediaView = CollectionViewSource.GetDefaultView(MediaFiles);
@@ -74,13 +80,19 @@ public sealed class MainViewModel : ObservableObject
 
     public ProjectOutputSettings OutputSettings => _project.Output;
 
+    public IReadOnlyList<ICatClipPlugin> Plugins => _plugins.Plugins;
+
+    public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
+
     public double TargetDurationMinutes => _project.TargetDurationMinutes;
+
+    public string BackgroundColor => _project.BackgroundColor;
 
     public DateTime ProjectCreatedUtc => _project.CreatedUtc;
 
     public string ProjectSettingsSummary =>
         $"{_project.Output.Width}x{_project.Output.Height} · {_project.Output.FramesPerSecond:0.###} fps · " +
-        $"{_project.Output.VideoEncoder} · {_project.TargetDurationMinutes:0.##} min target";
+        $"{_project.Output.VideoEncoder} · {_project.TargetDurationMinutes:0.##} min target · bg {_project.BackgroundColor}";
 
     public ProjectLayerRowViewModel? SelectedProjectLayer
     {
@@ -142,6 +154,16 @@ public sealed class MainViewModel : ObservableObject
         IProgress<StartupProgress>? startupProgress = null,
         CancellationToken cancellationToken = default)
     {
+        startupProgress?.Report(new StartupProgress(
+            7,
+            $"Loaded {_plugins.Plugins.Count} effect/source module(s) from the portable plugins folder."));
+        foreach (var diagnostic in _plugins.Diagnostics.Where(message =>
+                     message.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
+                     message.Contains("not found", StringComparison.OrdinalIgnoreCase)))
+        {
+            startupProgress?.Report(new StartupProgress(7, diagnostic));
+        }
+
         startupProgress?.Report(new StartupProgress(8, "Loading the existing clip catalog…"));
         await LoadCatalogAsync(cancellationToken);
         if (_settings.RescanLibraryOnStartup && _settings.SourceFolders.Count > 0)
@@ -155,7 +177,7 @@ public sealed class MainViewModel : ObservableObject
                     : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
                 startupProgress?.Report(new StartupProgress(percent, message));
             });
-            await ScanAsync(scanProgress);
+            await ScanAsync(false, scanProgress);
         }
 
         startupProgress?.Report(new StartupProgress(94, "Checking crash recovery data…"));
@@ -183,6 +205,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
             OnPropertyChanged(nameof(TargetDurationMinutes));
+            OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
             RefreshProjectLayers();
@@ -250,7 +273,9 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Preferences saved";
     }
 
-    public async Task<ScanResult> ScanAsync(IProgress<ScanProgress>? externalProgress = null)
+    public async Task<ScanResult> ScanAsync(
+        bool regeneratePreviews,
+        IProgress<ScanProgress>? externalProgress = null)
     {
         if (IsBusy)
         {
@@ -276,6 +301,7 @@ public sealed class MainViewModel : ObservableObject
             });
             var result = await _scanner.ScanAsync(
                 _settings,
+                new ScanOptions(regeneratePreviews),
                 progress,
                 _operationCancellation.Token);
             await LoadCatalogAsync(_operationCancellation.Token);
@@ -318,7 +344,7 @@ public sealed class MainViewModel : ObservableObject
         {
             SynchronizeProjectFromTimeline();
             await _projectStore.SaveRecoveryAsync(_project, _operationCancellation.Token);
-            var renderPlan = ProjectRenderMapper.Create(_project);
+            var renderPlan = ProjectRenderMapper.Create(_project, _plugins);
             var orientation = _project.Output.Height > _project.Output.Width
                 ? OutputOrientation.Portrait
                 : OutputOrientation.Landscape;
@@ -341,8 +367,10 @@ public sealed class MainViewModel : ObservableObject
                     QualityPercent: _project.Output.QualityPercent,
                     VideoBitrateKbps: _project.Output.VideoBitrateKbps,
                     AudioBitrateKbps: _project.Output.AudioBitrateKbps,
+                    BackgroundColor: _project.BackgroundColor,
                     TimedOverlays: renderPlan.TimedOverlays,
-                    AudioLayers: renderPlan.AudioLayers),
+                    AudioLayers: renderPlan.AudioLayers,
+                    PluginEffects: renderPlan.PluginEffects),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -382,6 +410,44 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Added {media.FileName} to timeline";
     }
 
+    public void AddMediaToTrack(MediaCardViewModel media, Guid trackId, TimeSpan start)
+    {
+        EnsureProjectTracks(_project);
+        var target = _project.Tracks.FirstOrDefault(track => track.Id == trackId);
+        if (target is null || target.Kind != ProjectTrackKind.Video)
+        {
+            return;
+        }
+
+        var primary = _project.Tracks
+            .Where(track => track.Kind == ProjectTrackKind.Video)
+            .OrderBy(track => track.Order)
+            .First();
+        if (target.Id == primary.Id)
+        {
+            Timeline.AddMedia(media.Media, start);
+            return;
+        }
+
+        var item = new ProjectTimelineItem
+        {
+            Kind = ProjectItemKind.Video,
+            Name = media.FileName,
+            SourcePath = media.Media.FullPath,
+            MediaFileId = media.Media.Id,
+            StartTicks = SnapTime(start, target.Id).Ticks,
+            DurationTicks = media.Media.Duration.Ticks,
+            HasAudio = media.Media.HasAudio
+        };
+        target.Items.Add(item);
+        _project.ModifiedUtc = DateTime.UtcNow;
+        _selectedTimelineItemIds.Clear();
+        _selectedTimelineItemIds.Add(item.Id);
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Added {media.FileName} to {target.Name}";
+    }
+
     public void AddStillImageToTimeline(string imagePath, TimeSpan duration)
     {
         Timeline.AddStillImage(imagePath, duration);
@@ -412,17 +478,96 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Clip effects updated";
     }
 
+    public void UpdateSelectedLayerClipEffects(
+        VideoFitMode fitMode,
+        double fadeInSeconds,
+        double fadeOutSeconds,
+        double volume)
+    {
+        var item = SelectedProjectLayer?.Item;
+        if (item is null || item.Kind is not (ProjectItemKind.Video or ProjectItemKind.StillImage))
+        {
+            return;
+        }
+
+        item.FitMode = fitMode;
+        item.FadeInSeconds = fadeInSeconds;
+        item.FadeOutSeconds = fadeOutSeconds;
+        item.Volume = volume;
+        _project.ModifiedUtc = DateTime.UtcNow;
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = "Layer clip effects updated";
+    }
+
     public void AddLayerItem(ProjectTrackKind trackKind, ProjectTimelineItem item)
     {
         EnsureProjectTracks(_project);
-        var track = _project.Tracks.Single(candidate => candidate.Kind == trackKind);
+        var track = SelectedProjectLayer?.Track.Kind == trackKind
+            ? SelectedProjectLayer.Track
+            : _project.Tracks.OrderBy(candidate => candidate.Order)
+                .First(candidate => candidate.Kind == trackKind);
         item.StartTicks = Math.Max(0, item.StartTicks);
         item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
         track.Items.Add(item);
         _project.ModifiedUtc = DateTime.UtcNow;
+        _selectedTimelineItemIds.Clear();
+        _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Added {item.Name} to {track.Name}";
+    }
+
+    public void AddLayerItem(Guid trackId, ProjectTimelineItem item)
+    {
+        var track = _project.Tracks.FirstOrDefault(candidate => candidate.Id == trackId) ??
+                    throw new InvalidOperationException("The selected timeline no longer exists.");
+        item.StartTicks = Math.Max(0, item.StartTicks);
+        item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
+        track.Items.Add(item);
+        _project.ModifiedUtc = DateTime.UtcNow;
+        _selectedTimelineItemIds.Clear();
+        _selectedTimelineItemIds.Add(item.Id);
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Added {item.Name} to {track.Name}";
+    }
+
+    public void AddTrack(ProjectTrackKind kind, string name)
+    {
+        var track = new ProjectTrack
+        {
+            Name = name,
+            Kind = kind,
+            Order = _project.Tracks.Count == 0 ? 0 : _project.Tracks.Max(item => item.Order) + 1
+        };
+        _project.Tracks.Add(track);
+        _project.ModifiedUtc = DateTime.UtcNow;
+        RefreshProjectLayers(trackId: track.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Added timeline: {track.Name}";
+    }
+
+    public bool RemoveSelectedTrack()
+    {
+        var row = SelectedProjectLayer;
+        if (row is null || !row.IsTrackHeader || row.Track.Items.Count > 0 ||
+            _project.Tracks.Count(track => track.Kind == row.Track.Kind) <= 1)
+        {
+            return false;
+        }
+
+        _project.Tracks.Remove(row.Track);
+        for (var index = 0; index < _project.Tracks.Count; index++)
+        {
+            _project.Tracks[index].Order = index;
+        }
+
+        _project.ModifiedUtc = DateTime.UtcNow;
+        RefreshProjectLayers();
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Removed timeline: {row.Track.Name}";
+        return true;
     }
 
     public void RemoveSelectedLayerItem()
@@ -438,8 +583,8 @@ public sealed class MainViewModel : ObservableObject
             if (Timeline.Select(row.Item.Id))
             {
                 Timeline.RemoveSelected();
+                return;
             }
-            return;
         }
 
         row.Track.Items.RemoveAll(item => item.Id == row.Item.Id);
@@ -474,10 +619,12 @@ public sealed class MainViewModel : ObservableObject
     public void ApplyProjectSettings(
         string projectName,
         double targetDurationMinutes,
+        string backgroundColor,
         ProjectOutputSettings settings)
     {
         _project.Name = projectName;
         _project.TargetDurationMinutes = targetDurationMinutes;
+        _project.BackgroundColor = backgroundColor;
         _project.Output = settings;
         _project.ModifiedUtc = DateTime.UtcNow;
         Timeline.SetTargetDuration(targetDurationMinutes);
@@ -485,6 +632,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ProjectName));
         OnPropertyChanged(nameof(OutputSettings));
         OnPropertyChanged(nameof(TargetDurationMinutes));
+        OnPropertyChanged(nameof(BackgroundColor));
         OnPropertyChanged(nameof(ProjectSettingsSummary));
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Project settings updated: {settings.PresetName}";
@@ -495,9 +643,40 @@ public sealed class MainViewModel : ObservableObject
         Timeline.MoveSelected(offset);
     }
 
-    public void RemoveSelectedTimelineClip()
+    public void RemoveSelectedTimelineClip() => RemoveSelectedTimelineItems();
+
+    public void RemoveSelectedTimelineItems()
     {
-        Timeline.RemoveSelected();
+        var selected = _selectedTimelineItemIds.Count > 0
+            ? _selectedTimelineItemIds.ToHashSet()
+            : Timeline.SelectedClip is null
+                ? []
+                : new HashSet<Guid> { Timeline.SelectedClip.InstanceId };
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var primary = _project.Tracks
+            .Where(track => track.Kind == ProjectTrackKind.Video)
+            .OrderBy(track => track.Order)
+            .First();
+        var primaryIds = selected.Where(id => primary.Items.Any(item => item.Id == id)).ToHashSet();
+        if (primaryIds.Count > 0)
+        {
+            Timeline.Remove(primaryIds);
+        }
+
+        foreach (var track in _project.Tracks.Where(track => track.Id != primary.Id))
+        {
+            track.Items.RemoveAll(item => selected.Contains(item.Id));
+        }
+
+        _selectedTimelineItemIds.Clear();
+        _project.ModifiedUtc = DateTime.UtcNow;
+        RefreshProjectLayers();
+        _ = SaveRecoverySafelyAsync();
+        StatusText = selected.Count == 1 ? "Timeline item removed" : $"Removed {selected.Count} timeline items";
     }
 
     public void ClearTimeline()
@@ -506,16 +685,138 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Timeline cleared";
     }
 
-    public void SelectTimelineItem(Guid itemId)
+    public void SelectTimelineItem(Guid itemId, bool additive = false)
     {
-        if (Timeline.Select(itemId))
+        if (additive && _selectedTimelineItemIds.Contains(itemId))
         {
+            _selectedTimelineItemIds.Remove(itemId);
             RefreshTimelineLanes();
             return;
         }
 
-        SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
+        if (!additive)
+        {
+            _selectedTimelineItemIds.Clear();
+        }
+
+        _selectedTimelineItemIds.Add(itemId);
+        _suppressTimelineSelectionSync = true;
+        try
+        {
+            if (!Timeline.Select(itemId))
+            {
+                Timeline.SelectedClip = null;
+                SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
+            }
+        }
+        finally
+        {
+            _suppressTimelineSelectionSync = false;
+        }
+
         RefreshTimelineLanes();
+    }
+
+    public TimeSpan SnapTime(TimeSpan candidate, Guid trackId, IReadOnlyCollection<Guid>? excludedIds = null)
+    {
+        var increment = Timeline.SnapIncrement;
+        var seconds = Math.Max(0, candidate.TotalSeconds);
+        var candidates = new List<double> { Math.Round(seconds / increment) * increment };
+        var track = _project.Tracks.FirstOrDefault(item => item.Id == trackId);
+        if (track is not null)
+        {
+            foreach (var item in track.Items.Where(item => excludedIds?.Contains(item.Id) != true))
+            {
+                candidates.Add(item.Start.TotalSeconds);
+                candidates.Add((item.Start + item.Duration).TotalSeconds);
+            }
+        }
+
+        var threshold = Math.Max(increment / 2, 8 / Math.Max(0.1, Timeline.PixelsPerSecond));
+        var nearest = candidates.OrderBy(value => Math.Abs(value - seconds)).First();
+        return TimeSpan.FromSeconds(Math.Abs(nearest - seconds) <= threshold ? nearest : seconds);
+    }
+
+    public bool MoveTimelineItems(
+        IReadOnlyCollection<Guid> itemIds,
+        Guid targetTrackId,
+        TimeSpan targetStart)
+    {
+        if (itemIds.Count == 0)
+        {
+            return false;
+        }
+
+        var target = _project.Tracks.FirstOrDefault(track => track.Id == targetTrackId);
+        if (target is null)
+        {
+            return false;
+        }
+
+        var sourceTracks = _project.Tracks
+            .Where(track => track.Items.Any(item => itemIds.Contains(item.Id)))
+            .ToList();
+        if (sourceTracks.Count != 1 || sourceTracks[0].Id != target.Id)
+        {
+            StatusText = "Move items within the same timeline; copy media to another timeline from the browser.";
+            return false;
+        }
+
+        var primary = _project.Tracks
+            .Where(track => track.Kind == ProjectTrackKind.Video)
+            .OrderBy(track => track.Order)
+            .First();
+        if (target.Id == primary.Id)
+        {
+            var moved = Timeline.MoveSelection(itemIds, targetStart);
+            if (moved)
+            {
+                _selectedTimelineItemIds.Clear();
+                _selectedTimelineItemIds.UnionWith(itemIds);
+                RefreshTimelineLanes();
+            }
+
+            return moved;
+        }
+
+        var moving = target.Items.Where(item => itemIds.Contains(item.Id)).OrderBy(item => item.StartTicks).ToList();
+        if (moving.Count == 0)
+        {
+            return false;
+        }
+
+        var originalStart = moving[0].Start;
+        var snappedStart = SnapTime(targetStart, target.Id, itemIds);
+        var offset = snappedStart - originalStart;
+        if (moving.Any(item => item.Start + offset < TimeSpan.Zero))
+        {
+            offset = -originalStart;
+        }
+
+        foreach (var item in moving)
+        {
+            item.StartTicks = (item.Start + offset).Ticks;
+        }
+
+        _project.ModifiedUtc = DateTime.UtcNow;
+        RefreshProjectLayers(moving[0].Id);
+        _selectedTimelineItemIds.Clear();
+        _selectedTimelineItemIds.UnionWith(itemIds);
+        RefreshTimelineLanes();
+        _ = SaveRecoverySafelyAsync();
+        StatusText = moving.Count == 1 ? "Timeline item moved" : $"Moved {moving.Count} timeline items";
+        return true;
+    }
+
+    public void FitTimelineHorizontally(double availableWidth)
+    {
+        var duration = Math.Max(1, Math.Max(Timeline.TargetDuration.TotalSeconds, Timeline.Duration.TotalSeconds));
+        Timeline.PixelsPerSecond = Math.Max(0.1, (availableWidth - 2) / duration);
+    }
+
+    public void FitTimelineVertically(double availableHeight)
+    {
+        Timeline.TrackHeight = Math.Max(28, (availableHeight - 34) / Math.Max(1, TimelineLanes.Count));
     }
 
     public void CycleTimelineRulerMode() => Timeline.CycleRulerMode();
@@ -573,6 +874,22 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private void Timeline_SelectionChanged(object? sender, EventArgs e)
+    {
+        if (_suppressTimelineSelectionSync)
+        {
+            return;
+        }
+
+        _selectedTimelineItemIds.Clear();
+        if (Timeline.SelectedClip is not null)
+        {
+            _selectedTimelineItemIds.Add(Timeline.SelectedClip.InstanceId);
+        }
+
+        RefreshTimelineLanes();
+    }
+
     private async void Timeline_DisplaySettingsChanged(object? sender, EventArgs e)
     {
         RefreshTimelineLanes();
@@ -607,7 +924,9 @@ public sealed class MainViewModel : ObservableObject
         var mediaById = media.ToDictionary(item => item.Id);
         var mediaByPath = media.ToDictionary(item => item.FullPath, StringComparer.OrdinalIgnoreCase);
         var videoItems = project.Tracks
-            .Single(track => track.Kind == ProjectTrackKind.Video)
+            .Where(track => track.Kind == ProjectTrackKind.Video)
+            .OrderBy(track => track.Order)
+            .First()
             .Items;
 
         _suppressProjectAutosave = true;
@@ -622,6 +941,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
             OnPropertyChanged(nameof(TargetDurationMinutes));
+            OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
             RefreshProjectLayers();
@@ -635,12 +955,15 @@ public sealed class MainViewModel : ObservableObject
     private void SynchronizeProjectFromTimeline()
     {
         EnsureProjectTracks(_project);
-        var videoTrack = _project.Tracks.Single(track => track.Kind == ProjectTrackKind.Video);
+        var videoTrack = _project.Tracks
+            .Where(track => track.Kind == ProjectTrackKind.Video)
+            .OrderBy(track => track.Order)
+            .First();
         videoTrack.Items = Timeline.CreateProjectItems().ToList();
         _project.ModifiedUtc = DateTime.UtcNow;
     }
 
-    private void RefreshProjectLayers(Guid? selectedItemId = null)
+    private void RefreshProjectLayers(Guid? selectedItemId = null, Guid? trackId = null)
     {
         EnsureProjectTracks(_project);
         selectedItemId ??= SelectedProjectLayer?.Item?.Id;
@@ -656,7 +979,9 @@ public sealed class MainViewModel : ObservableObject
 
         SelectedProjectLayer = selectedItemId.HasValue
             ? ProjectLayers.FirstOrDefault(row => row.Item?.Id == selectedItemId.Value)
-            : ProjectLayers.FirstOrDefault();
+            : trackId.HasValue
+                ? ProjectLayers.FirstOrDefault(row => row.IsTrackHeader && row.Track.Id == trackId.Value)
+                : ProjectLayers.FirstOrDefault();
         RefreshTimelineLanes();
     }
 
@@ -664,11 +989,11 @@ public sealed class MainViewModel : ObservableObject
     {
         EnsureProjectTracks(_project);
         var clips = Timeline.Clips.ToDictionary(clip => clip.InstanceId);
-        var selectedVideoId = Timeline.SelectedClip?.InstanceId;
-        var selectedLayerId = SelectedProjectLayer?.Item?.Id;
+        var kindOrdinals = new Dictionary<ProjectTrackKind, int>();
         TimelineLanes.Clear();
         foreach (var track in _project.Tracks.OrderBy(track => track.Order))
         {
+            kindOrdinals[track.Kind] = kindOrdinals.GetValueOrDefault(track.Kind) + 1;
             var items = track.Items
                 .OrderBy(item => item.StartTicks)
                 .Select(item => new TimelineLaneItemViewModel(
@@ -677,10 +1002,8 @@ public sealed class MainViewModel : ObservableObject
                     clips.GetValueOrDefault(item.Id),
                     Timeline.PixelsPerSecond,
                     Timeline.TrackHeight,
-                    track.Kind == ProjectTrackKind.Video
-                        ? selectedVideoId == item.Id
-                        : selectedLayerId == item.Id));
-            TimelineLanes.Add(new TimelineLaneViewModel(track, items));
+                    _selectedTimelineItemIds.Contains(item.Id)));
+            TimelineLanes.Add(new TimelineLaneViewModel(track, kindOrdinals[track.Kind], items));
         }
     }
 
@@ -698,6 +1021,21 @@ public sealed class MainViewModel : ObservableObject
 
     private static void EnsureProjectTracks(EditorProject project)
     {
+        if (project.Tracks.All(track => track.Kind != ProjectTrackKind.Background))
+        {
+            foreach (var track in project.Tracks)
+            {
+                track.Order++;
+            }
+
+            project.Tracks.Add(new ProjectTrack
+            {
+                Name = "Background",
+                Kind = ProjectTrackKind.Background,
+                Order = 0
+            });
+        }
+
         foreach (var kind in Enum.GetValues<ProjectTrackKind>())
         {
             if (project.Tracks.All(track => track.Kind != kind))

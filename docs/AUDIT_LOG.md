@@ -1,5 +1,57 @@
 # Audit log
 
+## AUDIT-2026-08-07-024 — Dynamic timeline and plugin-module pass
+
+Scope: requested grid browser, panel focus, dynamic tracks, background color/blur, plugin architecture,
+refresh choices, splash timing, snapping, dragging, multi-selection, and fit controls; `AUD-PLUGIN-001`.
+
+Findings:
+
+- The catalog now uses a custom recycling virtualizing wrap panel with fixed-size preview cards. It realizes
+  visible rows only and continues to bind cache image paths rather than decoding every source video.
+- Content Browser, Layers/Used Clips, and Project Timeline record pointer focus and toggle temporary focus
+  with Space. Text boxes, combo boxes, buttons, and sliders retain normal Space behavior.
+- Schema 3 adds background color, a Background track, additional named tracks, and stable plugin IDs plus
+  parameter dictionaries. The first Video timeline remains the sequential base; later Video timelines map
+  to timed full-frame visual/audio layers.
+- Timeline blocks use stable IDs for Ctrl multi-selection. Dragging within a lane preserves group offsets,
+  snaps to the configured ruler interval or nearby start/end edges, and base-video dragging reorders at clip
+  boundaries. Fit controls calculate time zoom and lane height from the visible surface.
+- The module API is owned by Core and describes version, media kinds, render stage, compatible track kinds,
+  and typed parameters. Infrastructure loads each trusted assembly through its own dependency resolver while
+  sharing the Core contract identity. WPF only handles module selection/parameter editing; render mapping and
+  compatibility enforcement are shared with CLI.
+- The built-in module assembly provides source-derived Background blur with saturation/lightness/hue/zoom/
+  Gaussian-blur controls, timed composited Video blur, and PNG still-source handling. It is copied into build
+  outputs and required under the portable package's `plugins` folder.
+- Manual Refresh now distinguishes metadata refresh from forced cache regeneration and requests source setup
+  only when none exists. Startup and manual refresh splashes stay foreground for at least three seconds.
+- Plugin modules are in-process trusted code, not sandboxed. Deployment documentation now states this
+  boundary and advises accepting modules only from trusted sources.
+
+Verification:
+
+- Release solution builds passed with zero warnings and errors after every code batch.
+- Built CLI `config --json` loaded and reported three module IDs, versions, stages, and media categories.
+- The audited bundled FFmpeg initially exposed the absence of `eq`; the Background module was corrected to
+  use the bundle's `hue` saturation/brightness controls and the smoke was rerun.
+- A real two-second 320x180 native MPEG-4/AAC export from a 90x160 source passed with source-derived blurred
+  side fill, all background color controls, timed video blur, a second Video timeline, text, segmented
+  progress, and mixed audio. FFprobe confirmed 320x180 video plus audio for exactly two seconds; sampled
+  frames showed the unblurred and timed-blur states.
+- The self-contained portable publisher completed. Its root contains only GUI/CLI executables and INI;
+  `plugins` contains the built-in DLL/dependency record, and the audited FFmpeg payload remains under
+  `thirdparty`. The published CLI reported version 0.1.6, discovered all modules, and rendered the same
+  project through the packaged plugin and FFmpeg paths.
+- A catalog scan found four synthetic videos and generated eight cached images; catalog-only refresh changed
+  none of those cache files, while forced-preview refresh rebuilt all four thumbnails and four contact sheets
+  and reported four refreshed entries without errors.
+- The full Release build passed with zero warnings/errors; the NuGet audit reported no known vulnerable
+  direct or transitive package; `git diff --check` passed.
+
+Result: requested functionality is implemented; schema advanced to 3, application/component version advanced
+to 0.1.6, and `AUD-PLUGIN-001` is closed.
+
 ## AUDIT-2026-08-06-023 — Project settings and editor interaction pass
 
 Scope: requested Preferences/project split, dark ComboBoxes, portable fonts, progress effects, preview

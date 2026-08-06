@@ -15,12 +15,33 @@ public partial class ClipEffectsWindow : Window
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         _duration = clip.Duration;
-        TitleText.Text = clip.FileName;
-        FitModeComboBox.ItemsSource = Enum.GetValues<VideoFitMode>();
-        FitModeComboBox.SelectedItem = clip.FitMode;
-        FadeInTextBox.Text = clip.FadeInSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        FadeOutTextBox.Text = clip.FadeOutSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        VolumeTextBox.Text = clip.Volume.ToString("0.###", CultureInfo.InvariantCulture);
+        Configure(clip.FileName, clip.FitMode, clip.FadeInSeconds, clip.FadeOutSeconds, clip.Volume);
+    }
+
+    public ClipEffectsWindow(ProjectTimelineItem item)
+    {
+        InitializeComponent();
+        DesktopWindowTheme.Apply(this);
+        _duration = item.Duration;
+        Configure(item.Name, item.FitMode, item.FadeInSeconds, item.FadeOutSeconds, item.Volume);
+    }
+
+    private void Configure(
+        string title,
+        VideoFitMode fitMode,
+        double fadeInSeconds,
+        double fadeOutSeconds,
+        double volume)
+    {
+        TitleText.Text = title;
+        FitModeComboBox.ItemsSource = Enum.GetValues<VideoFitMode>()
+            .Where(mode => mode != VideoFitMode.BlurBackground);
+        FitModeComboBox.SelectedItem = fitMode == VideoFitMode.BlurBackground
+            ? VideoFitMode.Fit
+            : fitMode;
+        FadeInTextBox.Text = fadeInSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        FadeOutTextBox.Text = fadeOutSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        VolumeTextBox.Text = volume.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     public VideoFitMode FitMode { get; private set; }

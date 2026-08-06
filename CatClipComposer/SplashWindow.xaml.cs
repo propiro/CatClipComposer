@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
@@ -7,6 +8,10 @@ namespace CatClipComposer;
 
 public partial class SplashWindow : Window
 {
+    public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(3);
+
+    private readonly Stopwatch _displayTimer = Stopwatch.StartNew();
+
     public SplashWindow(bool canCancel = false)
     {
         InitializeComponent();
@@ -19,6 +24,15 @@ public partial class SplashWindow : Window
     public event EventHandler? CancelRequested;
 
     public ObservableCollection<string> LogLines { get; }
+
+    public async Task WaitForMinimumDisplayAsync()
+    {
+        var remaining = MinimumDisplayDuration - _displayTimer.Elapsed;
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining);
+        }
+    }
 
     public void Report(StartupProgress update)
     {

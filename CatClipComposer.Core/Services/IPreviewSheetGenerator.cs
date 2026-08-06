@@ -8,5 +8,6 @@ public interface IPreviewSheetGenerator
         DateTime lastWriteUtc,
         int slideCount,
         string ffmpegPath,
+        bool forceRecreate = false,
         CancellationToken cancellationToken = default);
 }

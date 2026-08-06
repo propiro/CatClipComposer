@@ -1,3 +1,5 @@
+using CatClipComposer.Core.Plugins;
+
 namespace CatClipComposer.Core.Models;
 
 public enum RenderSegmentKind
@@ -15,12 +17,21 @@ public sealed record RenderSegment(
     VideoFitMode FitMode = VideoFitMode.Fit,
     double FadeInSeconds = 0,
     double FadeOutSeconds = 0,
-    double Volume = 1);
+    double Volume = 1,
+    TimeSpan TimelineStart = default,
+    RenderPluginEffect? BackgroundEffect = null);
+
+public sealed record RenderPluginEffect(
+    ICatClipVideoEffectPlugin Plugin,
+    TimeSpan Start,
+    TimeSpan Duration,
+    IReadOnlyDictionary<string, string> Parameters);
 
 public enum RenderOverlayKind
 {
     Text,
     Image,
+    Video,
     ProgressBar
 }
 
@@ -37,7 +48,8 @@ public sealed record RenderOverlay(
     ProgressBarStyle ProgressBarStyle = ProgressBarStyle.Solid,
     ProgressBarPosition ProgressBarPosition = ProgressBarPosition.Bottom,
     string ProgressColor = "#C8C0B2",
-    int ProgressHeight = 10);
+    int ProgressHeight = 10,
+    VideoFitMode FitMode = VideoFitMode.Fit);
 
 public sealed record RenderAudioLayer(
     string SourcePath,
@@ -60,8 +72,10 @@ public sealed record RenderRequest(
     int QualityPercent = 80,
     int VideoBitrateKbps = 8000,
     int AudioBitrateKbps = 192,
+    string BackgroundColor = "#101010",
     IReadOnlyList<RenderOverlay>? TimedOverlays = null,
-    IReadOnlyList<RenderAudioLayer>? AudioLayers = null);
+    IReadOnlyList<RenderAudioLayer>? AudioLayers = null,
+    IReadOnlyList<RenderPluginEffect>? PluginEffects = null);
 
 public sealed record RenderProgress(
     double Percent,

@@ -2,6 +2,33 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-07 — Grid browser, dynamic timelines, and plugin effects
+
+- Replaced the catalog row list with a recycling virtualized tile grid and retained full-width browser focus
+  plus direct drag/drop to a selected Video lane.
+- Added Space-key focus toggling for the browser, layers, and timeline panels; added dynamic named track
+  creation/removal and project background color.
+- Added Ctrl multi-selection, draggable timeline blocks, interval/neighbor-edge snapping, and horizontal and
+  vertical fit controls. Browser drops can insert into the base Video sequence or create timed layers on an
+  additional Video track.
+- Added a versioned Core plugin API with media categories, render stages, compatible timelines, parameter
+  descriptors, isolated assembly dependency loading, diagnostics, and `.nya` plugin persistence.
+- Added a separately loaded built-in module project containing configurable source-derived Background blur,
+  timed Video blur, and PNG splash-screen source modules. Removed the old hard-coded blur-background render
+  branch from normal editing.
+- Added catalog-only versus forced-preview refresh choices, a CLI `--regenerate-previews` option, and a
+  foreground startup/rescan splash with a three-second minimum.
+- Updated the publisher to require/copy `plugins`, advanced the project schema to 3, and advanced all
+  application components to 0.1.6.
+- Verification: Release build and self-contained portable publish passed; CLI module discovery found all
+  three modules; the NuGet audit found no known vulnerabilities; a bundled-FFmpeg smoke
+  rendered a two-second 320x180 MPEG-4/AAC project from a vertical source with background blur/color
+  controls, timed video blur, second Video lane, text, progress, and audio. The published CLI repeated the
+  render through its packaged plugin and FFmpeg folders.
+- Closed: `PLUGIN-001`, `UX-PANEL-003`, `CAT-REFRESH-002`, and `AUD-PLUGIN-001`; expanded acceptance for
+  `BROWSER-001`, `LAYERS-001`, `FX-001`, `PROJECT-001`, `UX-TIMELINE-002`, and `UX-SPLASH-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Project-centered editing, precision timeline, and startup feedback
 
 - Reorganized the visible Preferences around application-level folders, library scanning, previews, tools,

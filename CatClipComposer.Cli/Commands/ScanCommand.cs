@@ -9,7 +9,7 @@ internal static class ScanCommand
         CliInvocation invocation,
         CliCommandContext context)
     {
-        invocation.EnsureOnlyOptions("config", "data", "json", "help");
+        invocation.EnsureOnlyOptions("config", "data", "json", "help", "regenerate-previews");
         if (context.Settings.SourceFolders.Count == 0)
         {
             throw new CliConfigurationException(
@@ -25,6 +25,7 @@ internal static class ScanCommand
                         : $"Scanning {Math.Min(update.Processed + 1, update.Total)}/{update.Total}: {update.CurrentFile}"));
         var result = await context.Services.Scanner.ScanAsync(
             context.Settings,
+            new ScanOptions(invocation.HasOption("regenerate-previews")),
             progress,
             context.CancellationToken);
         var exitCode = result.Errors.Count == 0

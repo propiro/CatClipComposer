@@ -12,13 +12,14 @@ public sealed class FfmpegThumbnailGenerator(AppPaths paths) : IThumbnailGenerat
         TimeSpan duration,
         DateTime lastWriteUtc,
         string ffmpegPath,
+        bool forceRecreate = false,
         CancellationToken cancellationToken = default)
     {
         paths.EnsureCreated();
         var cacheKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             $"{filePath.ToUpperInvariant()}|{lastWriteUtc.Ticks}")));
         var outputPath = Path.Combine(paths.ThumbnailFolder, $"{cacheKey}.jpg");
-        if (File.Exists(outputPath))
+        if (!forceRecreate && File.Exists(outputPath))
         {
             return outputPath;
         }

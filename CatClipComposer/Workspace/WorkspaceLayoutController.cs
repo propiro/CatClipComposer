@@ -27,7 +27,7 @@ internal sealed class WorkspaceLayoutController(
             [WorkspacePanelKind.Timeline] = timeline
         };
 
-    public void Apply(ApplicationSettings settings, bool browserExpanded = false)
+    public void Apply(ApplicationSettings settings, WorkspacePanelKind? expandedPanel = null)
     {
         foreach (var panel in _panels.Values)
         {
@@ -40,9 +40,13 @@ internal sealed class WorkspaceLayoutController(
         ApplyPanel(WorkspacePanelKind.Layers, settings.LayersDock);
         ApplyPanel(WorkspacePanelKind.Timeline, settings.TimelineDock);
 
-        if (browserExpanded)
+        if (expandedPanel == WorkspacePanelKind.ContentBrowser)
         {
             ApplyBrowserFocusLayout();
+        }
+        else if (expandedPanel.HasValue)
+        {
+            ApplySinglePanelFocusLayout(expandedPanel.Value);
         }
     }
 
@@ -66,6 +70,22 @@ internal sealed class WorkspaceLayoutController(
         Grid.SetColumnSpan(timeline, 5);
         timeline.Margin = new Thickness(0, 4, 0, 0);
         Panel.SetZIndex(timeline, 1);
+    }
+
+    private void ApplySinglePanelFocusLayout(WorkspacePanelKind focusedPanel)
+    {
+        foreach (var (panel, element) in _panels)
+        {
+            element.Visibility = panel == focusedPanel ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        var focused = _panels[focusedPanel];
+        Grid.SetRow(focused, 0);
+        Grid.SetColumn(focused, 0);
+        Grid.SetRowSpan(focused, 3);
+        Grid.SetColumnSpan(focused, 5);
+        focused.Margin = new Thickness(0);
+        Panel.SetZIndex(focused, 2);
     }
 
     public static void MovePanel(

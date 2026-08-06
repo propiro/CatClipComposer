@@ -4,9 +4,11 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
+using CatClipComposer.Core.Plugins;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
 using CatClipComposer.Workspace;
@@ -20,9 +22,14 @@ public partial class MainWindow : Window
     private readonly IMediaCatalog _catalog;
     private readonly WorkspaceLayoutController _workspaceLayout;
     private Point _catalogDragStart;
-    private bool _isBrowserExpanded;
+    private Point _timelineDragStart;
+    private TimelineLaneItemViewModel? _timelineDragItem;
+    private WorkspacePanelKind? _expandedPanel;
+    private WorkspacePanelKind _focusedPanel = WorkspacePanelKind.ContentBrowser;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private bool _previewSeekDragging;
+
+    private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds);
 
     public MainWindow(
         ApplicationSettings settings,
@@ -30,7 +37,8 @@ public partial class MainWindow : Window
         IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
-        ICompositionExporter compositionExporter)
+        ICompositionExporter compositionExporter,
+        IPluginCatalog plugins)
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
@@ -41,7 +49,8 @@ public partial class MainWindow : Window
             projectStore,
             catalog,
             scanner,
-            compositionExporter);
+            compositionExporter,
+            plugins);
         _workspaceLayout = new WorkspaceLayoutController(
             ContentBrowserPanel,
             PreviewPanel,
@@ -81,7 +90,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.ApplySettingsAsync(dialog.ResultSettings);
-            _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
+            _workspaceLayout.Apply(_viewModel.Settings, _expandedPanel);
             if (!previousMetadataFolder.Equals(
                     _viewModel.Settings.MetadataFolder,
                     StringComparison.OrdinalIgnoreCase))
@@ -187,6 +196,7 @@ public partial class MainWindow : Window
             _viewModel.OutputSettings,
             _viewModel.ProjectName,
             _viewModel.TargetDurationMinutes,
+            _viewModel.BackgroundColor,
             _viewModel.ProjectCreatedUtc,
             _viewModel.ProjectFilePath)
         {
@@ -199,6 +209,7 @@ public partial class MainWindow : Window
             _viewModel.ApplyProjectSettings(
                 dialog.ResultProjectName,
                 dialog.ResultTargetDurationMinutes,
+                dialog.ResultBackgroundColor,
                 dialog.ResultSettings);
         }
     }
@@ -228,6 +239,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        var refreshDialog = new RefreshLibraryWindow { Owner = this };
+        if (refreshDialog.ShowDialog() != true)
+        {
+            return;
+        }
+
         try
         {
             var splash = new SplashWindow(canCancel: true)
@@ -250,12 +267,14 @@ public partial class MainWindow : Window
                         : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
                     splash.Report(new StartupProgress(percent, message));
                 });
-                result = await _viewModel.ScanAsync(progress);
+                result = await _viewModel.ScanAsync(refreshDialog.RegeneratePreviews, progress);
                 splash.Report(new StartupProgress(100, "Library refresh complete."));
             }
             finally
             {
+                await splash.WaitForMinimumDisplayAsync();
                 IsEnabled = true;
+                splash.Topmost = false;
                 splash.Close();
                 Activate();
             }
@@ -452,6 +471,58 @@ public partial class MainWindow : Window
         }
     }
 
+    private void AddTrack_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new TrackEditorWindow { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.ResultName is not null)
+        {
+            _viewModel.AddTrack(dialog.ResultKind, dialog.ResultName);
+        }
+    }
+
+    private void AddPluginEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var track = _viewModel.SelectedProjectLayer?.Track;
+        if (track is null || track.Kind is not (ProjectTrackKind.Background or ProjectTrackKind.Effects))
+        {
+            track = _viewModel.ProjectLayers
+                .FirstOrDefault(row => row.IsTrackHeader && row.Track.Kind == ProjectTrackKind.Effects)
+                ?.Track;
+        }
+
+        if (track is null)
+        {
+            return;
+        }
+
+        var dialog = new PluginEffectEditorWindow(
+            _viewModel.Plugins,
+            track,
+            _viewModel.Timeline.Duration,
+            _viewModel.Timeline.SnapMode,
+            _viewModel.Timeline.FramesPerSecond)
+        {
+            Owner = this
+        };
+        if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
+        {
+            _viewModel.AddLayerItem(track.Id, dialog.ResultItem);
+        }
+    }
+
+    private void RemoveTrack_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.RemoveSelectedTrack())
+        {
+            MessageBox.Show(
+                this,
+                "Select an empty timeline header. At least one timeline of every type is retained.",
+                "Timeline not removed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+
     private void ClipEffects_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.Timeline.SelectedClip is null)
@@ -489,7 +560,39 @@ public partial class MainWindow : Window
             if (_viewModel.Timeline.Select(row.Item.Id))
             {
                 ClipEffects_Click(sender, e);
+                return;
             }
+
+            var layerClipDialog = new ClipEffectsWindow(row.Item) { Owner = this };
+            if (layerClipDialog.ShowDialog() == true)
+            {
+                _viewModel.UpdateSelectedLayerClipEffects(
+                    layerClipDialog.FitMode,
+                    layerClipDialog.FadeInSeconds,
+                    layerClipDialog.FadeOutSeconds,
+                    layerClipDialog.Volume);
+            }
+
+            return;
+        }
+
+        if (row.Item.Kind == ProjectItemKind.Effect)
+        {
+            var pluginDialog = new PluginEffectEditorWindow(
+                _viewModel.Plugins,
+                row.Track,
+                _viewModel.Timeline.Duration,
+                _viewModel.Timeline.SnapMode,
+                _viewModel.Timeline.FramesPerSecond,
+                row.Item)
+            {
+                Owner = this
+            };
+            if (pluginDialog.ShowDialog() == true && pluginDialog.ResultItem is not null)
+            {
+                _viewModel.UpdateSelectedLayerItem(pluginDialog.ResultItem);
+            }
+
             return;
         }
 
@@ -622,13 +725,90 @@ public partial class MainWindow : Window
     private void TimelineSnapMode_Click(object sender, RoutedEventArgs e) =>
         _viewModel.CycleTimelineSnapMode();
 
-    private void TimelineLaneItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.FitTimelineHorizontally(Math.Max(100, TimelineDropSurface.ActualWidth - 76));
+
+    private void FitTimelineVertically_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.FitTimelineVertically(Math.Max(100, TimelineDropSurface.ActualHeight));
+
+    private void TimelineLaneItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border { Tag: TimelineLaneItemViewModel item })
         {
-            _viewModel.SelectTimelineItem(item.Id);
+            _viewModel.SelectTimelineItem(item.Id, Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
+            _timelineDragStart = e.GetPosition(this);
+            _timelineDragItem = item;
             TimelineDropSurface.Focus();
         }
+    }
+
+    private void TimelineLaneItem_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed ||
+            sender is not Border { Tag: TimelineLaneItemViewModel item } ||
+            _timelineDragItem?.Id != item.Id)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(this);
+        if (Math.Abs(position.X - _timelineDragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(position.Y - _timelineDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        var selected = _viewModel.SelectedTimelineItemIds.Contains(item.Id)
+            ? _viewModel.SelectedTimelineItemIds.ToList()
+            : [item.Id];
+        _timelineDragItem = null;
+        var data = new DataObject(typeof(TimelineDragData), new TimelineDragData(selected));
+        DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move);
+    }
+
+    private void TimelineLane_DragOver(object sender, DragEventArgs e)
+    {
+        if (sender is not Border { DataContext: TimelineLaneViewModel lane })
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        else if (e.Data.GetDataPresent(typeof(MediaCardViewModel)))
+        {
+            e.Effects = lane.TrackKind == ProjectTrackKind.Video
+                ? DragDropEffects.Copy
+                : DragDropEffects.None;
+        }
+        else
+        {
+            e.Effects = e.Data.GetDataPresent(typeof(TimelineDragData))
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+        }
+
+        e.Handled = true;
+    }
+
+    private void TimelineLane_Drop(object sender, DragEventArgs e)
+    {
+        if (sender is not Border { DataContext: TimelineLaneViewModel lane } laneBorder)
+        {
+            return;
+        }
+
+        var start = TimeSpan.FromSeconds(Math.Max(
+            0,
+            e.GetPosition(laneBorder).X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
+        if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media &&
+            lane.TrackKind == ProjectTrackKind.Video)
+        {
+            _viewModel.AddMediaToTrack(media, lane.TrackId, start);
+        }
+        else if (e.Data.GetData(typeof(TimelineDragData)) is TimelineDragData timelineData)
+        {
+            _viewModel.MoveTimelineItems(timelineData.ItemIds, lane.TrackId, start);
+        }
+
+        e.Handled = true;
     }
 
     private void ClearTimeline_Click(object sender, RoutedEventArgs e)
@@ -651,7 +831,7 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.Delete)
         {
-            _viewModel.RemoveSelectedTimelineClip();
+            _viewModel.RemoveSelectedTimelineItems();
             e.Handled = true;
         }
     }
@@ -676,15 +856,66 @@ public partial class MainWindow : Window
 
     private void BrowserExpand_Click(object sender, RoutedEventArgs e)
     {
-        _isBrowserExpanded = !_isBrowserExpanded;
-        _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
-        BrowserExpandButton.Content = _isBrowserExpanded ? "←" : "→";
-        BrowserExpandButton.ToolTip = _isBrowserExpanded
+        TogglePanelExpansion(WorkspacePanelKind.ContentBrowser);
+    }
+
+    private void WorkspacePanel_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element &&
+            Enum.TryParse<WorkspacePanelKind>(element.Tag?.ToString(), out var panel))
+        {
+            _focusedPanel = panel;
+        }
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Space || IsEditingControl(Keyboard.FocusedElement as DependencyObject))
+        {
+            return;
+        }
+
+        if (_focusedPanel is WorkspacePanelKind.ContentBrowser or WorkspacePanelKind.Layers or WorkspacePanelKind.Timeline)
+        {
+            TogglePanelExpansion(_focusedPanel);
+            e.Handled = true;
+        }
+    }
+
+    private void TogglePanelExpansion(WorkspacePanelKind panel)
+    {
+        _expandedPanel = _expandedPanel == panel ? null : panel;
+        _workspaceLayout.Apply(_viewModel.Settings, _expandedPanel);
+        var browserExpanded = _expandedPanel == WorkspacePanelKind.ContentBrowser;
+        BrowserExpandButton.Content = browserExpanded ? "←" : "→";
+        BrowserExpandButton.ToolTip = browserExpanded
             ? "Restore compact content browser"
             : "Expand content browser to full workspace width";
         AutomationProperties.SetName(
             BrowserExpandButton,
-            _isBrowserExpanded ? "Restore compact content browser" : "Expand content browser");
+            browserExpanded ? "Restore compact content browser" : "Expand content browser");
+    }
+
+    private static bool IsEditingControl(DependencyObject? element)
+    {
+        while (element is not null)
+        {
+            if (element is TextBoxBase or ComboBox or ButtonBase or Slider)
+            {
+                return true;
+            }
+
+            try
+            {
+                element = VisualTreeHelper.GetParent(element);
+            }
+            catch (InvalidOperationException)
+            {
+                element = LogicalTreeHelper.GetParent(element);
+            }
+        }
+
+        return false;
     }
 
     private void PanelDock_Click(object sender, RoutedEventArgs e)
@@ -727,7 +958,7 @@ public partial class MainWindow : Window
             var settings = _viewModel.Settings.Copy();
             WorkspaceLayoutController.MovePanel(settings, request.Panel, request.Slot);
             await _viewModel.ApplySettingsAsync(settings);
-            _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
+            _workspaceLayout.Apply(_viewModel.Settings, _expandedPanel);
         }
         catch (Exception exception)
         {

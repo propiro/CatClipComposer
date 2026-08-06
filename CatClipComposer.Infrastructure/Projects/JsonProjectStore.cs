@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CatClipComposer.Core.Models;
+using CatClipComposer.Core.Plugins;
 using CatClipComposer.Core.Services;
 
 namespace CatClipComposer.Infrastructure.Projects;
@@ -133,6 +134,10 @@ public sealed class JsonProjectStore : IProjectStore
         project.Tracks ??= [];
         project.Output ??= new ProjectOutputSettings();
         project.TargetDurationMinutes = Math.Clamp(project.TargetDurationMinutes, 0.1, 720);
+        project.BackgroundColor = IsHexColor(project.BackgroundColor)
+            ? project.BackgroundColor.ToUpperInvariant()
+            : "#101010";
+        var legacyBlurItems = new List<ProjectTimelineItem>();
         foreach (var track in project.Tracks)
         {
             track.Items ??= [];
@@ -145,6 +150,48 @@ public sealed class JsonProjectStore : IProjectStore
                     ? item.ProgressColor.ToUpperInvariant()
                     : "#C8C0B2";
                 item.ProgressHeight = Math.Clamp(item.ProgressHeight, 2, 100);
+                item.PluginParameters = item.PluginParameters is null
+                    ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase);
+                if (item.FitMode == VideoFitMode.BlurBackground)
+                {
+                    item.FitMode = VideoFitMode.Fit;
+                    legacyBlurItems.Add(item);
+                }
+            }
+        }
+
+        if (legacyBlurItems.Count > 0)
+        {
+            var backgroundTrack = project.Tracks.FirstOrDefault(track => track.Kind == ProjectTrackKind.Background);
+            if (backgroundTrack is null)
+            {
+                foreach (var track in project.Tracks)
+                {
+                    track.Order++;
+                }
+
+                backgroundTrack = new ProjectTrack
+                {
+                    Name = "Background",
+                    Kind = ProjectTrackKind.Background,
+                    Order = 0
+                };
+                project.Tracks.Add(backgroundTrack);
+            }
+
+            foreach (var item in legacyBlurItems.Where(item => backgroundTrack.Items.All(effect =>
+                         effect.PluginId != BuiltInPluginIds.BackgroundBlur ||
+                         effect.StartTicks != item.StartTicks || effect.DurationTicks != item.DurationTicks)))
+            {
+                backgroundTrack.Items.Add(new ProjectTimelineItem
+                {
+                    Kind = ProjectItemKind.Effect,
+                    Name = "Blur content background",
+                    StartTicks = item.StartTicks,
+                    DurationTicks = item.DurationTicks,
+                    PluginId = BuiltInPluginIds.BackgroundBlur
+                });
             }
         }
     }

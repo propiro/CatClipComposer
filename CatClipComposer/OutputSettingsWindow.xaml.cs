@@ -14,6 +14,7 @@ public partial class OutputSettingsWindow : Window
         ProjectOutputSettings current,
         string projectName,
         double targetDurationMinutes,
+        string backgroundColor,
         DateTime createdUtc,
         string? projectFilePath)
     {
@@ -22,6 +23,7 @@ public partial class OutputSettingsWindow : Window
         DesktopWindowTheme.Apply(this);
         ProjectNameTextBox.Text = projectName;
         TargetMinutesTextBox.Text = targetDurationMinutes.ToString("0.##", CultureInfo.InvariantCulture);
+        BackgroundColorTextBox.Text = backgroundColor;
         CreatedText.Text = createdUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
         ProjectFileText.Text = string.IsNullOrWhiteSpace(projectFilePath) ? "Not saved yet" : projectFilePath;
         ProjectFileText.ToolTip = projectFilePath;
@@ -46,6 +48,8 @@ public partial class OutputSettingsWindow : Window
     public string? ResultProjectName { get; private set; }
 
     public double ResultTargetDurationMinutes { get; private set; }
+
+    public string ResultBackgroundColor { get; private set; } = "#101010";
 
     private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -78,6 +82,7 @@ public partial class OutputSettingsWindow : Window
         if (string.IsNullOrWhiteSpace(ProjectNameTextBox.Text) ||
             !double.TryParse(TargetMinutesTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture,
                 out var targetMinutes) || !double.IsFinite(targetMinutes) || targetMinutes is < 0.1 or > 720 ||
+            !IsHexColor(BackgroundColorTextBox.Text) ||
             !TryParseInt(WidthTextBox.Text, 16, 7680, out var width) || width % 2 != 0 ||
             !TryParseInt(HeightTextBox.Text, 16, 7680, out var height) || height % 2 != 0 ||
             !double.TryParse(FrameRateTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var fps) ||
@@ -88,7 +93,7 @@ public partial class OutputSettingsWindow : Window
             EncoderComboBox.SelectedItem is not VideoEncoderPreset encoder)
         {
             MessageBox.Show(this,
-                "Enter a project name, target from 0.1–720 minutes, even dimensions from 16–7680, frame rate 1–240, quality 1–100, video bitrate 500–150000, and audio bitrate 64–512.",
+                "Enter a project name, target from 0.1–720 minutes, background color as #RRGGBB, even dimensions from 16–7680, frame rate 1–240, quality 1–100, video bitrate 500–150000, and audio bitrate 64–512.",
                 "Invalid project settings", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -106,10 +111,14 @@ public partial class OutputSettingsWindow : Window
         };
         ResultProjectName = ProjectNameTextBox.Text.Trim();
         ResultTargetDurationMinutes = targetMinutes;
+        ResultBackgroundColor = BackgroundColorTextBox.Text.Trim().ToUpperInvariant();
         DialogResult = true;
     }
 
     private static bool TryParseInt(string value, int minimum, int maximum, out int parsed) =>
         int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) &&
         parsed >= minimum && parsed <= maximum;
+
+    private static bool IsHexColor(string value) =>
+        value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
 }
