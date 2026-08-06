@@ -8,6 +8,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - [Architecture and module boundaries](docs/ARCHITECTURE.md)
 - [Software stack and license policy](docs/STACK_AND_LICENSES.md)
 - [INI configuration reference](docs/CONFIGURATION.md)
+- [Headless CLI reference](docs/HEADLESS.md)
 - [Prioritized TODO register](docs/TODO.md)
 - [Worklog](docs/WORKLOG.md)
 - [Audit log](docs/AUDIT_LOG.md)
@@ -29,6 +30,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and jump to an existing output or original source file in File Explorer.
+- Run config inspection, scanning, listing, ordered rendering, and history queries headlessly with text or JSON output and stable exit codes.
 
 ## Requirements
 
@@ -48,6 +50,7 @@ FFmpeg binaries are intentionally not committed or bundled. This keeps the appli
 ```powershell
 dotnet build .\CatClipComposer\CatClipComposer.sln
 dotnet run --project .\CatClipComposer\CatClipComposer.csproj
+dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj -- --help
 ```
 
 On the first run:
@@ -81,6 +84,7 @@ The SQLite schema contains media metadata, availability and usage fields, comple
 
 ```text
 CatClipComposer/                 WPF user interface and presentation models
+CatClipComposer.Cli/             Headless commands, text/JSON output, and exit codes
 CatClipComposer.Core/            Domain models and service contracts
 CatClipComposer.Infrastructure/  SQLite, settings, FFprobe, FFmpeg thumbnails and rendering
 ```

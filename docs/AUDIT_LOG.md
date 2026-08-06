@@ -2,6 +2,30 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-011 — Headless automation closure
+
+Scope: `CLI-001`, `BOOT-001`, and `AUD-CLI-001`.
+
+Implementation findings:
+
+- The console executable consumes `ApplicationServicesFactory` and the same INI, SQLite, scanner, renderer, and `CompositionExportService` contracts as WPF.
+- Config, scan, list, render, and history are separate command modules; WPF is never loaded by the CLI.
+- `--json` emits one stdout document and suppresses progress; non-JSON progress goes to stderr.
+- Existing render outputs require `--overwrite`; ordered `--clip`/`--screen` options preserve segment order.
+- Documented exit codes distinguish invalid arguments, configuration, partial scans, execution failure, and cancellation.
+
+Verification:
+
+- Release solution build passed with zero warnings/errors.
+- Help, config, empty list/history, JSON parsing, invalid render arguments/configuration (`2`/`3`), partial-scan warnings (`4`), and FFmpeg launch failure (`5`) passed against an isolated data folder.
+- Rendering to an existing destination without `--overwrite` was rejected with exit code `2` and left the file untouched.
+- A real native-MPEG-4 source was scanned through FFprobe/FFmpeg; list returned its durable ID.
+- CLI rendered an ordered still plus catalog clip with overlay/progress settings; FFprobe verified codec `mpeg4` and 1920x1080 dimensions.
+- History recorded one export with the correct media ID and the catalog usage count advanced to one.
+- The full four-project NuGet audit reported no known vulnerable packages from the configured sources.
+
+Result: `CLI-001`, `BOOT-001`, and `AUD-CLI-001` closed.
+
 ## AUDIT-2026-08-06-010 — Shared export workflow review
 
 Scope: GUI/CLI duplication risk before `CLI-001`.

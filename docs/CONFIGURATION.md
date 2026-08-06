@@ -12,6 +12,8 @@ The default configuration path is:
 
 The code resolves this with `AppContext.BaseDirectory`. The GUI and CLI use the same filename when their executables are deployed beside one another.
 
+The CLI also accepts `--config <file>` and `--data <folder>` overrides for isolated automation. These overrides select locations for that process only and do not change the INI. See `docs/HEADLESS.md`.
+
 The executable directory must be writable when saving Options. This is intentionally a portable-configuration model. A future installer must either install to a user-writable application directory or explicitly arrange appropriate permissions; the application does not silently redirect configuration elsewhere.
 
 Catalog data and generated thumbnails remain machine-local under `%LOCALAPPDATA%\CatClipComposer` and are not configuration.

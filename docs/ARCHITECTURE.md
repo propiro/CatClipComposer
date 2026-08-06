@@ -14,7 +14,7 @@ CatClipComposer.Infrastructure
 CatClipComposer
     WPF application, windows, presentation models, and desktop-specific interaction
 
-CatClipComposer.Cli (planned: CLI-001)
+CatClipComposer.Cli
     Headless command dispatch, text/JSON output, and process exit codes
 ```
 
@@ -63,7 +63,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `FfmpegProcessRunner` | Execute FFmpeg, cancel, collect errors, and report progress | Focused process responsibility; `MOD-002` closed. |
 | `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |
-| Application startup | Focused `ApplicationServicesFactory` composition root | GUI migrated; CLI consumption remains before `BOOT-001` closes. |
+| `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
+| CLI command modules | Config, scan, list, render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
+| Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |
 | INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
 
 ## Architectural rules

@@ -38,7 +38,7 @@ The application should work for personal use and remain suitable for possible co
 | History | Record use time and final output for source files | Done | Export jobs and ordered source clip history. |
 | History | Open prior output/source locations | Done | History browser integrates with File Explorer. |
 | Configuration | INI file beside executable | Done | Atomic `CatClipComposer.ini` store with safe defaults and escaping. |
-| Automation | Headless command-line mode | Not done | `CLI-001`. |
+| Automation | Headless command-line mode | Done | Config, scan, list, render, and history commands with JSON and stable exit codes. |
 | Licensing | Default path without required GPL components | Done | Native MPEG-4 default; Media Foundation H.264 option; libx264 explicitly GPL opt-in. |
 | Projects | Save and reopen named timelines | Not done | `PROJECT-001`. |
 | Editing | Trim and per-clip volume | Not done | Deferred narrow-editor enhancement `EDIT-001`. |

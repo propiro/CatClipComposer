@@ -29,6 +29,7 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 |---|---:|---|---|---|
 | C# / .NET | 8 | Runtime and application language | .NET source/library packages primarily MIT; Windows distributions have Microsoft terms | Accepted; preserve official notices when publishing. |
 | WPF | .NET 8 | Windows GUI | Part of .NET Windows desktop stack | Accepted for Windows-only application. |
+| .NET console host | .NET 8 | Headless CLI process and exit codes | Part of .NET runtime stack | Accepted; no added package. |
 | Microsoft.Data.Sqlite | 8.0.29 | ADO.NET SQLite provider | MIT | Accepted. |
 | SQLite | Via SQLitePCLRaw 2.1.12 | Embedded catalog database | Public domain | Accepted. |
 | SQLitePCLRaw | 2.1.12 | Native SQLite interop/bundle | Apache-2.0 | Accepted; explicitly pinned past vulnerable native SQLite versions. |

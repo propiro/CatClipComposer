@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Headless CLI
+
+- Added a separate console executable in the same solution and repository.
+- Added config inspection, scan, catalog list, ordered render, and export-history commands.
+- Added optional configuration/data isolation, human-readable output, one-document JSON output, stderr progress, stable exit codes, Ctrl+C cancellation, and explicit overwrite protection.
+- Reused shared service composition and the GUI's composition export/history workflow.
+- Passed help/config/list/history JSON smoke checks, exit codes `2`, `3`, `4`, and `5`, overwrite protection, and a real FFmpeg scan/render/history/use-count workflow with an ordered still plus catalog clip.
+- FFprobe verified native `mpeg4` at 1920x1080 for the CLI-rendered output.
+- Closed: `CLI-001`, `BOOT-001`, `AUD-CLI-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Shared composition export workflow
 
 - Added a Core application service that owns the render-and-record-history transaction.
