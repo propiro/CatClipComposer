@@ -2,6 +2,14 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Final architecture and documentation audit
+
+- Cross-checked repository modules and larger classes against the single-responsibility and GUI/CLI sharing rules.
+- Cross-checked the requested feature matrix, completed work, partial work, deferred work, stable TODO IDs, configuration/CLI references, stack inventory, and third-party notices against the implementation.
+- Confirmed all P0 implementation/audit work is done; remaining open work is explicitly documented product scope.
+- Closed: `AUD-ARCH-001`, `AUD-DOC-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — WPF desktop helper extraction
 
 - Replaced duplicate File Explorer launch code with one path-normalizing desktop shell helper.

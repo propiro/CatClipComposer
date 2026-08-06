@@ -29,5 +29,5 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | AUD-CLI-001 | P0 | Done | Verify headless commands are deterministic and automation-safe. | Help/config/list/history JSON, exit codes 2/3/4/5, overwrite safety, real scan/render/history/use-count, codec, and dimensions verified. |
 | AUD-CFG-001 | P0 | Done | Verify INI escaping, missing keys, malformed values, and writable-location behavior. | 2026-08-06 round-trip/malformed-input smoke passed; atomic same-directory write and explicit permission error implemented. |
 | AUD-DEP-001 | P1 | Done | Audit NuGet dependencies for known vulnerabilities. | 2026-08-06 audit reports zero known vulnerable packages after SQLitePCLRaw 2.1.12 pin. |
-| AUD-ARCH-001 | P1 | Open | Re-audit class responsibilities after P0 refactors. | Updated responsibility table in `ARCHITECTURE.md`. |
-| AUD-DOC-001 | P1 | Open | Check requested/done/not-done feature documentation against code. | Audit entry confirms all TODO IDs and statuses match implementation. |
+| AUD-ARCH-001 | P1 | Done | Re-audit class responsibilities after P0 refactors. | Architecture responsibility table reflects final GUI, CLI, rendering, persistence, configuration, and desktop boundaries. |
+| AUD-DOC-001 | P1 | Done | Check requested/done/not-done feature documentation against code. | Project matrix and TODO register cross-checked against implementation; open/partial/deferred scope is explicit. |

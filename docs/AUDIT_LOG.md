@@ -2,6 +2,30 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-014 — Architecture and documentation closure
+
+Scope: `AUD-ARCH-001` and `AUD-DOC-001` after all planned responsibility refactors.
+
+Architecture findings:
+
+- Core contains models, utilities, contracts, and the shared export application service; it has no WPF, CLI, SQLite, or FFmpeg process dependency.
+- Infrastructure has focused INI, SQLite, scan/probe/thumbnail, render construction/execution, and composition modules behind Core contracts.
+- WPF owns desktop presentation and delegates timeline state, durable workflows, persistence, rendering, and repeated desktop interactions.
+- CLI owns parsing, command validation/dispatch, text/JSON projection, and exit-code mapping while sharing application services with WPF.
+- Larger classes were reviewed by responsibility. Their remaining size follows cohesive workflow/format construction rather than unrelated ownership or GUI/CLI duplication.
+
+Documentation findings:
+
+- `PROJECT.md` covers every requested product area and distinguishes Done, Partial, Not done, and Deferred behavior.
+- `TODO.md` has stable IDs and acceptance evidence for configuration, CLI, licensing, bootstrapping, modularity, product work, and audits.
+- README indexes project, architecture, stack/licenses, configuration, headless, TODO, worklog, audit, and third-party documents.
+- INI location/schema, CLI commands/JSON/exit codes, dependency versions/licenses, GPL opt-in boundary, work history, and audit evidence match the code.
+- Remaining open work is limited to timed multiple overlays (`OVERLAY-001`), fallback preview (`PREVIEW-001`), and named project persistence (`PROJECT-001`); trim/volume remains explicitly deferred (`EDIT-001`).
+
+Verification: final Release build, dependency vulnerability audit, CLI JSON help, prior isolated headless/catalog/render smokes, hidden GUI startup, `git diff --check`, and Git status review passed.
+
+Result: `AUD-ARCH-001` and `AUD-DOC-001` closed.
+
 ## AUDIT-2026-08-06-013 — WPF desktop interaction closure
 
 Scope: `MOD-004`.

@@ -77,3 +77,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
 - Persistence SQL stays in Infrastructure; domain state stays in Core.
 - Shared GUI/CLI behavior must live behind Core interfaces or in focused application services, never copied between executables.
 - Superseded implementations are deleted in the same change that replaces them.
+
+## Final responsibility audit conclusion
+
+The 2026-08-06 post-MVP audit found no remaining P0/P1 responsibility violation. The larger presentation, scanning, CLI dispatch, filter-graph, INI mapping, and catalog classes each retain one cohesive workflow and delegate process execution, persistence projection, timeline state, executable composition, and desktop integration to focused collaborators. Future feature work must preserve these boundaries. The open P2/P3 items in `TODO.md` are product capabilities rather than known class-splitting or duplicated-workflow debt.
