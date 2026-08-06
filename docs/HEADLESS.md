@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-06
 
-`CatClipComposer.Cli` exposes catalog, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI schema, FFmpeg renderer, and export-history transaction as the desktop application.
+`CatClipComposer.Cli` exposes catalog, project, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI/project schemas, FFmpeg renderer, and export-history transaction as the desktop application.
 
 ## Build and invoke
 
@@ -92,6 +92,15 @@ CatClipComposer.Cli.exe render `
 ```
 
 Existing outputs are rejected with exit code `2` unless `--overwrite` is present. The `libx264-gpl` value is an explicit GPL-dependent opt-in; it is never the default.
+
+### `project`
+
+Creates or inspects a versioned `.ccproject` document. `--project-file <file>` is required. Add `--create`, optional `--project-name <name>`, and optional `--overwrite` to create a new empty five-track document; without `--create`, the command validates and prints the existing project. JSON includes identity, timestamps, output settings, ordered track metadata, and item counts.
+
+```powershell
+CatClipComposer.Cli.exe project --create --project-file "D:\Projects\Cats.ccproject" --project-name "Cats"
+CatClipComposer.Cli.exe project --project-file "D:\Projects\Cats.ccproject" --json
+```
 
 ### `history`
 

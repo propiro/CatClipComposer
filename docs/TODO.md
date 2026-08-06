@@ -20,13 +20,13 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | WORKSPACE-001 | P0 | Done | Add resizable and repositionable content, preview, layers/used-clips, and timeline panels. | Four dock slots use splitters; every panel can swap slots; unique layout persists in INI. |
 | BROWSER-001 | P0 | Done | Make the content browser safe for very large libraries and support drag/drop. | Recycling virtualization is enabled; only cached realized thumbnails bind; clips drag to the timeline. |
 | CATMETA-001 | P1 | Open | Add editable tags, static/contact-sheet preview metadata, and named-project usage details. | SQLite migration, preview generation, tag editing/filtering, and project history queries pass. |
-| LAYERS-001 | P1 | Open | Persist an editable project layer/track model. | Video, text, image, progress, audio, and effect items save/load and project to the renderer. |
+| LAYERS-001 | P1 | In progress | Persist and edit a project layer/track model. | Five track types and all requested item fields persist; editing controls and renderer projection remain. |
 | FX-001 | P1 | Open | Add timed fades, overlays, music, progress ranges, and fit/fill/blur-background modes. | Timeline controls and verified FFmpeg output cover each effect without GPL-only filters. |
 | OUTPUT-001 | P1 | Open | Add common resolution/aspect/FPS/codec/quality presets and custom output values. | Presets reflect official editor/platform guidance; custom validated settings reach FFmpeg. |
 | DEPLOY-001 | P1 | Open | Produce a one-folder deployment layout with a tidy `thirdparty` boundary. | Published GUI/CLI/config/docs plus audited optional tools run from one folder. |
 | OVERLAY-001 | P2 | Open | Support multiple image/text overlays with individual start/end times. | Timeline or overlay editor controls timing and placement for multiple elements. |
 | PREVIEW-001 | P2 | Open | Add FFmpeg contact-sheet/slideshow fallback preview. | Unsupported Windows codecs still have a generated content preview. |
-| PROJECT-001 | P2 | Open | Save/reopen named timeline projects. | Ordered clips, still screens, and render settings round-trip without embedding media. |
+| PROJECT-001 | P2 | Done | Save/reopen named timeline projects with crash recovery. | Versioned five-track `.ccproject` documents and atomic recovery round-trip without embedding media; GUI and CLI checks pass. |
 | EDIT-001 | P3 | Deferred | Add trim-in/out and per-clip volume. | Narrow controls work without expanding into general NLE scope. |
 
 ## Audit TODOs
@@ -40,3 +40,4 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | AUD-ARCH-001 | P1 | Done | Re-audit class responsibilities after P0 refactors. | Architecture responsibility table reflects final GUI, CLI, rendering, persistence, configuration, and desktop boundaries. |
 | AUD-DOC-001 | P1 | Done | Check requested/done/not-done feature documentation against code. | Project matrix and TODO register cross-checked against implementation; open/partial/deferred scope is explicit. |
 | AUD-UX-001 | P0 | Done | Verify the theme leak, density, docking, virtualization, and drag/drop implementation. | Release build and captured main-window screenshot show no white client surface; XAML/code audit confirms recycling and dock persistence. |
+| AUD-PROJECT-001 | P0 | Done | Verify project versioning, atomic save/load, recovery identity, and overwrite safety. | CLI create/load preserved schema/GUID/five tracks/output; overwrite returned 2; GUI startup and additive SQLite migration passed. |

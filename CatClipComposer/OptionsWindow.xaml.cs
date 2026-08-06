@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Desktop;
 using Microsoft.Win32;
@@ -21,6 +22,9 @@ public partial class OptionsWindow : Window
         DataContext = this;
 
         OutputFolderTextBox.Text = _workingSettings.OutputFolder;
+        ProjectFolderTextBox.Text = _workingSettings.ProjectFolder;
+        MetadataFolderTextBox.Text = _workingSettings.MetadataFolder;
+        PreviewSlideCountTextBox.Text = _workingSettings.PreviewSlideCount.ToString(CultureInfo.CurrentCulture);
         FfmpegPathTextBox.Text = _workingSettings.FfmpegPath;
         TargetMinutesTextBox.Text = _workingSettings.TargetDurationMinutes.ToString(
             "0.##",
@@ -88,6 +92,20 @@ public partial class OptionsWindow : Window
         {
             OutputFolderTextBox.Text = dialog.FolderName;
         }
+    }
+
+    private void BrowseProjectFolder_Click(object sender, RoutedEventArgs e)
+    {
+        BrowseFolderIntoTextBox(
+            ProjectFolderTextBox,
+            "Choose the folder for editable project files");
+    }
+
+    private void BrowseMetadataFolder_Click(object sender, RoutedEventArgs e)
+    {
+        BrowseFolderIntoTextBox(
+            MetadataFolderTextBox,
+            "Choose the catalog, preview, and recovery metadata folder");
     }
 
     private void BrowseFfmpeg_Click(object sender, RoutedEventArgs e)
@@ -175,10 +193,30 @@ public partial class OptionsWindow : Window
             return;
         }
 
+        if (!int.TryParse(
+                PreviewSlideCountTextBox.Text,
+                NumberStyles.Integer,
+                CultureInfo.CurrentCulture,
+                out var previewSlideCount) ||
+            previewSlideCount is < 1 or > 12)
+        {
+            MessageBox.Show(
+                this,
+                "Preview slide count must be between 1 and 12.",
+                "Invalid preview slide count",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            PreviewSlideCountTextBox.Focus();
+            return;
+        }
+
         _workingSettings.SourceFolders = SourceFolders
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         _workingSettings.OutputFolder = OutputFolderTextBox.Text.Trim();
+        _workingSettings.ProjectFolder = ProjectFolderTextBox.Text.Trim();
+        _workingSettings.MetadataFolder = MetadataFolderTextBox.Text.Trim();
+        _workingSettings.PreviewSlideCount = previewSlideCount;
         _workingSettings.FfmpegPath = string.IsNullOrWhiteSpace(FfmpegPathTextBox.Text)
             ? "ffmpeg.exe"
             : FfmpegPathTextBox.Text.Trim();
@@ -204,6 +242,19 @@ public partial class OptionsWindow : Window
 
         ResultSettings = _workingSettings.Copy();
         DialogResult = true;
+    }
+
+    private void BrowseFolderIntoTextBox(TextBox textBox, string title)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = title,
+            InitialDirectory = Directory.Exists(textBox.Text) ? textBox.Text : null
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            textBox.Text = dialog.FolderName;
+        }
     }
 
     private static IReadOnlyList<EncoderChoice> EncoderChoices { get; } =

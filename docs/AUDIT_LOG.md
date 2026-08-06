@@ -2,6 +2,27 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-016 — Project persistence and recovery closure
+
+Scope: `PROJECT-001` and `AUD-PROJECT-001`; foundation portion of `LAYERS-001`.
+
+Findings:
+
+- `.ccproject` is versioned JSON with required identity, output settings, five typed tracks, and stable item IDs; media is referenced rather than embedded.
+- The item schema covers the requested timing, fit, fade, volume, overlay, and progress data without coupling JSON to WPF view models.
+- `JsonProjectStore` owns validation and serialized atomic writes behind `IProjectStore`; timeline mapping remains in presentation.
+- Recovery writes to the configured metadata folder on timeline mutations and preserves the normal project path.
+- Normal project and final-output folders are separate preferences. A live metadata/database relocation requires restart and never silently moves the existing database.
+- Usage counts/project-use history change only inside the successful export transaction. Additive nullable project columns preserve legacy rows.
+
+Verification:
+
+- Release build passed with zero warnings/errors.
+- CLI created and reloaded a schema-1 project with the same GUID, five tracks, and 1920x1080 output; implicit overwrite returned exit code `2`.
+- Project-enabled GUI startup passed after schema migration.
+
+Result: `PROJECT-001` and `AUD-PROJECT-001` closed; `LAYERS-001` remains in progress for editing and render projection.
+
 ## AUDIT-2026-08-06-015 — Workspace visual and scale audit
 
 Scope: `UI-001`, `WORKSPACE-001`, `BROWSER-001`, and `AUD-UX-001`.

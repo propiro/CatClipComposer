@@ -23,6 +23,8 @@ internal static class HistoryCommand
                     entry.OutputPath,
                     entry.Duration,
                     entry.CreatedUtc,
+                    entry.ProjectName,
+                    entry.ProjectFilePath,
                     clips = entry.Clips.Select(clip => new
                     {
                         clip.Order,
@@ -39,7 +41,8 @@ internal static class HistoryCommand
         foreach (var entry in history)
         {
             await context.Output.WriteLineAsync(
-                $"{entry.Id,6}  {entry.CreatedUtc:u}  {DurationFormatter.Format(entry.Duration)}  {entry.OutputPath}");
+                $"{entry.Id,6}  {entry.CreatedUtc:u}  {DurationFormatter.Format(entry.Duration)}  " +
+                $"{entry.ProjectName ?? "(unnamed project)"}  {entry.OutputPath}");
             foreach (var clip in entry.Clips)
             {
                 await context.Output.WriteLineAsync(

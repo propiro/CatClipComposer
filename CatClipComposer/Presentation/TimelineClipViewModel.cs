@@ -14,7 +14,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         TimeSpan duration,
         bool hasAudio,
         MediaFile? media,
-        int order)
+        int order,
+        Guid? instanceId = null)
     {
         Kind = kind;
         SourcePath = sourcePath;
@@ -22,9 +23,10 @@ public sealed class TimelineClipViewModel : ObservableObject
         HasAudio = hasAudio;
         Media = media;
         _order = order;
+        InstanceId = instanceId ?? Guid.NewGuid();
     }
 
-    public Guid InstanceId { get; } = Guid.NewGuid();
+    public Guid InstanceId { get; }
 
     public RenderSegmentKind Kind { get; }
 
@@ -70,8 +72,36 @@ public sealed class TimelineClipViewModel : ObservableObject
             imagePath,
             duration,
             hasAudio: false,
-            media: null,
-            order);
+        media: null,
+        order);
+
+    public static TimelineClipViewModel FromProjectItem(
+        ProjectTimelineItem item,
+        MediaFile? media,
+        int order) => new(
+        item.Kind == ProjectItemKind.StillImage
+            ? RenderSegmentKind.StillImage
+            : RenderSegmentKind.Video,
+        item.SourcePath,
+        item.Duration,
+        item.HasAudio,
+        media,
+        order,
+        item.Id);
+
+    public ProjectTimelineItem ToProjectItem(TimeSpan start) => new()
+    {
+        Id = InstanceId,
+        Kind = Kind == RenderSegmentKind.StillImage
+            ? ProjectItemKind.StillImage
+            : ProjectItemKind.Video,
+        Name = FileName,
+        SourcePath = SourcePath,
+        MediaFileId = Media?.Id,
+        StartTicks = start.Ticks,
+        DurationTicks = Duration.Ticks,
+        HasAudio = HasAudio
+    };
 
     public RenderSegment ToRenderSegment() => new(
         Kind,

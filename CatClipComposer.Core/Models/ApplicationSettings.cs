@@ -43,6 +43,12 @@ public sealed class ApplicationSettings
 
     public string OutputFolder { get; set; } = string.Empty;
 
+    public string ProjectFolder { get; set; } = string.Empty;
+
+    public string MetadataFolder { get; set; } = string.Empty;
+
+    public int PreviewSlideCount { get; set; } = 4;
+
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
     public double TargetDurationMinutes { get; set; } = 15;
@@ -79,6 +85,9 @@ public sealed class ApplicationSettings
     {
         SourceFolders = [.. SourceFolders],
         OutputFolder = OutputFolder,
+        ProjectFolder = ProjectFolder,
+        MetadataFolder = MetadataFolder,
+        PreviewSlideCount = PreviewSlideCount,
         FfmpegPath = FfmpegPath,
         TargetDurationMinutes = TargetDurationMinutes,
         Orientation = Orientation,

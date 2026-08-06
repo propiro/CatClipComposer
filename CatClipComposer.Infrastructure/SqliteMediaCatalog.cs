@@ -112,6 +112,8 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
         string outputPath,
         TimeSpan duration,
         IReadOnlyList<long> mediaFileIds,
+        string? projectName = null,
+        string? projectFilePath = null,
         CancellationToken cancellationToken = default)
     {
         await using var connection = _connectionFactory.Create();
@@ -122,13 +124,17 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
         await using var jobCommand = connection.CreateCommand();
         jobCommand.Transaction = transaction;
         jobCommand.CommandText = """
-            INSERT INTO render_jobs(output_path, duration_ticks, created_utc)
-            VALUES($outputPath, $durationTicks, $createdUtc);
+            INSERT INTO render_jobs(
+                output_path, duration_ticks, created_utc, project_name, project_file_path)
+            VALUES(
+                $outputPath, $durationTicks, $createdUtc, $projectName, $projectFilePath);
             SELECT last_insert_rowid();
             """;
         jobCommand.Parameters.AddWithValue("$outputPath", outputPath);
         jobCommand.Parameters.AddWithValue("$durationTicks", duration.Ticks);
         jobCommand.Parameters.AddWithValue("$createdUtc", now);
+        jobCommand.Parameters.AddWithValue("$projectName", (object?)projectName ?? DBNull.Value);
+        jobCommand.Parameters.AddWithValue("$projectFilePath", (object?)projectFilePath ?? DBNull.Value);
         var jobId = Convert.ToInt64(
             await jobCommand.ExecuteScalarAsync(cancellationToken),
             CultureInfo.InvariantCulture);
@@ -166,7 +172,8 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT jobs.id, jobs.output_path, jobs.duration_ticks, jobs.created_utc,
-                   items.sort_order, media.id, media.file_name, media.full_path
+                   items.sort_order, media.id, media.file_name, media.full_path,
+                   jobs.project_name, jobs.project_file_path
             FROM render_jobs AS jobs
             LEFT JOIN render_job_items AS items ON items.render_job_id = jobs.id
             LEFT JOIN media_files AS media ON media.id = items.media_file_id

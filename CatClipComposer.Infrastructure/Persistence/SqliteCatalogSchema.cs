@@ -1,3 +1,5 @@
+using Microsoft.Data.Sqlite;
+
 namespace CatClipComposer.Infrastructure.Persistence;
 
 internal static class SqliteCatalogSchema
@@ -40,7 +42,9 @@ internal static class SqliteCatalogSchema
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 output_path TEXT NOT NULL,
                 duration_ticks INTEGER NOT NULL,
-                created_utc TEXT NOT NULL
+                created_utc TEXT NOT NULL,
+                project_name TEXT NULL,
+                project_file_path TEXT NULL
             );
 
             CREATE TABLE IF NOT EXISTS render_job_items (
@@ -53,5 +57,45 @@ internal static class SqliteCatalogSchema
             );
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
+        await EnsureColumnAsync(
+            connection,
+            "render_jobs",
+            "project_name",
+            "TEXT NULL",
+            cancellationToken);
+        await EnsureColumnAsync(
+            connection,
+            "render_jobs",
+            "project_file_path",
+            "TEXT NULL",
+            cancellationToken);
+    }
+
+    public static async Task EnsureColumnAsync(
+        SqliteConnection connection,
+        string table,
+        string column,
+        string declaration,
+        CancellationToken cancellationToken)
+    {
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using (var inspectCommand = connection.CreateCommand())
+        {
+            inspectCommand.CommandText = $"PRAGMA table_info({table});";
+            await using var reader = await inspectCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                columns.Add(reader.GetString(1));
+            }
+        }
+
+        if (columns.Contains(column))
+        {
+            return;
+        }
+
+        await using var alterCommand = connection.CreateCommand();
+        alterCommand.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {declaration};";
+        await alterCommand.ExecuteNonQueryAsync(cancellationToken);
     }
 }

@@ -18,6 +18,7 @@ public partial class App : Application
             var mainWindow = new MainWindow(
                 settings,
                 services.SettingsStore,
+                services.ProjectStore,
                 services.Catalog,
                 services.Scanner,
                 services.CompositionExporter);

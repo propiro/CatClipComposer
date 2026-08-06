@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     public MainWindow(
         ApplicationSettings settings,
         ISettingsStore settingsStore,
+        IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
         ICompositionExporter compositionExporter)
@@ -29,7 +30,13 @@ public partial class MainWindow : Window
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         _catalog = catalog;
-        _viewModel = new MainViewModel(settings, settingsStore, catalog, scanner, compositionExporter);
+        _viewModel = new MainViewModel(
+            settings,
+            settingsStore,
+            projectStore,
+            catalog,
+            scanner,
+            compositionExporter);
         _workspaceLayout = new WorkspaceLayoutController(
             ContentBrowserPanel,
             PreviewPanel,
@@ -56,6 +63,7 @@ public partial class MainWindow : Window
 
     private async void Options_Click(object sender, RoutedEventArgs e)
     {
+        var previousMetadataFolder = _viewModel.Settings.MetadataFolder;
         var dialog = new OptionsWindow(_viewModel.Settings) { Owner = this };
         if (dialog.ShowDialog() != true || dialog.ResultSettings is null)
         {
@@ -66,10 +74,102 @@ public partial class MainWindow : Window
         {
             await _viewModel.ApplySettingsAsync(dialog.ResultSettings);
             _workspaceLayout.Apply(_viewModel.Settings);
+            if (!previousMetadataFolder.Equals(
+                    _viewModel.Settings.MetadataFolder,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show(
+                    this,
+                    "The metadata folder will be used after the application is restarted. Existing catalog files are not moved automatically.",
+                    "Restart required",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
         }
         catch (Exception exception)
         {
             DesktopDialogs.ShowError(this, "Could not save the options.", exception);
+        }
+    }
+
+    private async void NewProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.Timeline.Clips.Count > 0 &&
+            MessageBox.Show(
+                this,
+                "Start a new project? The current timeline remains recoverable until the new project is created.",
+                "New project",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.NewProjectAsync();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not create a new project.", exception);
+        }
+    }
+
+    private async void OpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Open Cat Clip Composer project",
+            InitialDirectory = _viewModel.Settings.ProjectFolder,
+            Filter = "Cat Clip Composer project (*.ccproject)|*.ccproject|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.OpenProjectAsync(dialog.FileName);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not open the project.", exception);
+        }
+    }
+
+    private async void SaveProject_Click(object sender, RoutedEventArgs e)
+    {
+        var projectPath = _viewModel.ProjectFilePath;
+        if (string.IsNullOrWhiteSpace(projectPath))
+        {
+            Directory.CreateDirectory(_viewModel.Settings.ProjectFolder);
+            var dialog = new SaveFileDialog
+            {
+                Title = "Save Cat Clip Composer project",
+                InitialDirectory = _viewModel.Settings.ProjectFolder,
+                FileName = $"CatProject-{DateTime.Now:yyyyMMdd-HHmm}.ccproject",
+                DefaultExt = ".ccproject",
+                Filter = "Cat Clip Composer project (*.ccproject)|*.ccproject",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            projectPath = dialog.FileName;
+        }
+
+        try
+        {
+            await _viewModel.SaveProjectAsync(projectPath);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save the project.", exception);
         }
     }
 

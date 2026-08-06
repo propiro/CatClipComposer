@@ -1,6 +1,7 @@
 using CatClipComposer.Core.Services;
 using CatClipComposer.Infrastructure.Configuration;
 using CatClipComposer.Infrastructure.Rendering;
+using CatClipComposer.Infrastructure.Projects;
 
 namespace CatClipComposer.Infrastructure.Composition;
 
@@ -11,10 +12,16 @@ public static class ApplicationServicesFactory
         string? configurationPath = null,
         CancellationToken cancellationToken = default)
     {
-        var paths = new AppPaths(dataFolder, configurationPath);
+        var bootstrapPaths = new AppPaths(dataFolder, configurationPath);
+        ISettingsStore bootstrapSettingsStore = new IniSettingsStore(bootstrapPaths);
+        var bootstrapSettings = await bootstrapSettingsStore.LoadAsync(cancellationToken);
+        var paths = new AppPaths(
+            dataFolder ?? bootstrapSettings.MetadataFolder,
+            bootstrapPaths.ConfigurationPath);
         paths.EnsureCreated();
 
         ISettingsStore settingsStore = new IniSettingsStore(paths);
+        IProjectStore projectStore = new JsonProjectStore(paths);
         IMediaCatalog catalog = new SqliteMediaCatalog(paths);
         await catalog.InitializeAsync(cancellationToken);
 
@@ -27,6 +34,7 @@ public static class ApplicationServicesFactory
         return new ApplicationServices(
             paths,
             settingsStore,
+            projectStore,
             catalog,
             scanner,
             compositionExporter);

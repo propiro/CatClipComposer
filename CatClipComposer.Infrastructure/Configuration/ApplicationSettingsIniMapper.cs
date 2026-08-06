@@ -30,7 +30,14 @@ internal static class ApplicationSettingsIniMapper
             "Sources",
             "ShowFileNames",
             settings.ShowFileNames);
+        settings.MetadataFolder = ini.Get("Library", "MetadataFolder") ?? settings.MetadataFolder;
+        settings.PreviewSlideCount = ReadInt(
+            ini,
+            "Library",
+            "PreviewSlideCount",
+            settings.PreviewSlideCount);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
+        settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.TargetDurationMinutes = ReadDouble(
             ini,
             "Output",
@@ -104,8 +111,14 @@ internal static class ApplicationSettingsIniMapper
         }
 
         builder.AppendLine();
+        builder.AppendLine("[Library]");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"MetadataFolder={settings.MetadataFolder}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewSlideCount={settings.PreviewSlideCount}");
+
+        builder.AppendLine();
         builder.AppendLine("[Output]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"ProjectFolder={settings.ProjectFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"TargetDurationMinutes={settings.TargetDurationMinutes:0.##}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Orientation={settings.Orientation}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"VideoEncoder={settings.VideoEncoder}");
@@ -131,7 +144,13 @@ internal static class ApplicationSettingsIniMapper
 
     private static ApplicationSettings CreateDefaults() => new()
     {
-        OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)
+        OutputFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+        ProjectFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CatClipComposer Projects"),
+        MetadataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "CatClipComposer")
     };
 
     private static ApplicationSettings Normalize(ApplicationSettings settings)
@@ -144,6 +163,15 @@ internal static class ApplicationSettingsIniMapper
         settings.OutputFolder = string.IsNullOrWhiteSpace(settings.OutputFolder)
             ? Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)
             : settings.OutputFolder.Trim();
+        settings.ProjectFolder = string.IsNullOrWhiteSpace(settings.ProjectFolder)
+            ? Path.Combine(settings.OutputFolder, "Projects")
+            : settings.ProjectFolder.Trim();
+        settings.MetadataFolder = string.IsNullOrWhiteSpace(settings.MetadataFolder)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "CatClipComposer")
+            : settings.MetadataFolder.Trim();
+        settings.PreviewSlideCount = Math.Clamp(settings.PreviewSlideCount, 1, 12);
         settings.FfmpegPath = string.IsNullOrWhiteSpace(settings.FfmpegPath)
             ? "ffmpeg.exe"
             : settings.FfmpegPath.Trim();

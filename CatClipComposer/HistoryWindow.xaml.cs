@@ -84,6 +84,10 @@ public partial class HistoryWindow : Window
 
         public string OutputFileName => Path.GetFileName(Entry.OutputPath);
 
+        public string ProjectName => string.IsNullOrWhiteSpace(Entry.ProjectName)
+            ? "Unnamed / legacy export"
+            : Entry.ProjectName;
+
         public string CreatedText => Entry.CreatedUtc.ToLocalTime().ToString("g");
 
         public string SummaryText =>

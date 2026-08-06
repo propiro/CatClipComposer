@@ -10,6 +10,7 @@ namespace CatClipComposer.Presentation;
 public sealed class MainViewModel : ObservableObject
 {
     private readonly ISettingsStore _settingsStore;
+    private readonly IProjectStore _projectStore;
     private readonly IMediaCatalog _catalog;
     private readonly IMediaScanner _scanner;
     private readonly ICompositionExporter _compositionExporter;
@@ -20,20 +21,26 @@ public sealed class MainViewModel : ObservableObject
     private string _statusText = "Ready";
     private double _scanProgress;
     private bool _isBusy;
+    private bool _suppressProjectAutosave;
+    private EditorProject _project;
 
     public MainViewModel(
         ApplicationSettings settings,
         ISettingsStore settingsStore,
+        IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
         ICompositionExporter compositionExporter)
     {
         _settings = settings;
         _settingsStore = settingsStore;
+        _projectStore = projectStore;
         _catalog = catalog;
         _scanner = scanner;
         _compositionExporter = compositionExporter;
         Timeline = new TimelineViewModel(settings.TargetDurationMinutes);
+        _project = EditorProject.Create("Untitled project", CreateOutputSettings(settings));
+        Timeline.Changed += Timeline_Changed;
         MediaView = CollectionViewSource.GetDefaultView(MediaFiles);
         MediaView.Filter = FilterMedia;
     }
@@ -45,6 +52,10 @@ public sealed class MainViewModel : ObservableObject
     public ICollectionView MediaView { get; }
 
     public ApplicationSettings Settings => _settings;
+
+    public string ProjectName => _project.Name;
+
+    public string? ProjectFilePath => _project.ProjectFilePath;
 
     public MediaCardViewModel? SelectedMedia
     {
@@ -96,8 +107,71 @@ public sealed class MainViewModel : ObservableObject
         _ => $"{MediaFiles.Count} clips in catalog"
     };
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default) =>
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
         await LoadCatalogAsync(cancellationToken);
+        var recovery = await _projectStore.LoadRecoveryAsync(cancellationToken);
+        if (recovery is not null)
+        {
+            ApplyProject(recovery);
+            StatusText = $"Recovered autosave: {recovery.Name}";
+        }
+    }
+
+    public async Task NewProjectAsync(CancellationToken cancellationToken = default)
+    {
+        _suppressProjectAutosave = true;
+        try
+        {
+            Timeline.Clear();
+            _project = EditorProject.Create("Untitled project", CreateOutputSettings(_settings));
+            OnPropertyChanged(nameof(ProjectName));
+            OnPropertyChanged(nameof(ProjectFilePath));
+        }
+        finally
+        {
+            _suppressProjectAutosave = false;
+        }
+
+        await _projectStore.ClearRecoveryAsync(cancellationToken);
+        await SaveRecoveryNowAsync(cancellationToken);
+        StatusText = "New project";
+    }
+
+    public async Task OpenProjectAsync(
+        string projectPath,
+        CancellationToken cancellationToken = default)
+    {
+        var project = await _projectStore.LoadAsync(projectPath, cancellationToken);
+        ApplyProject(project);
+        await SaveRecoveryNowAsync(cancellationToken);
+        StatusText = $"Opened project: {project.Name}";
+    }
+
+    public async Task SaveProjectAsync(
+        string projectPath,
+        CancellationToken cancellationToken = default)
+    {
+        SynchronizeProjectFromTimeline();
+        var fullPath = Path.GetFullPath(projectPath);
+        _project.ProjectFilePath = fullPath;
+        if (_project.Name.Equals("Untitled project", StringComparison.OrdinalIgnoreCase))
+        {
+            _project.Name = Path.GetFileNameWithoutExtension(fullPath);
+        }
+
+        await _projectStore.SaveAsync(_project, fullPath, cancellationToken);
+        await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+        OnPropertyChanged(nameof(ProjectName));
+        OnPropertyChanged(nameof(ProjectFilePath));
+        StatusText = $"Saved project: {_project.Name}";
+    }
+
+    public async Task SaveRecoveryNowAsync(CancellationToken cancellationToken = default)
+    {
+        SynchronizeProjectFromTimeline();
+        await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+    }
 
     public async Task ApplySettingsAsync(
         ApplicationSettings settings,
@@ -199,7 +273,9 @@ public sealed class MainViewModel : ObservableObject
                     _settings.OverlayFontPath,
                     _settings.OverlayTextSize,
                     _settings.OverlayPosition,
-                    _settings.VideoEncoder),
+                    _settings.VideoEncoder,
+                    ProjectName: _project.Name,
+                    ProjectFilePath: _project.ProjectFilePath),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -290,6 +366,86 @@ public sealed class MainViewModel : ObservableObject
 
         return media.FileName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                media.FullPath.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async void Timeline_Changed(object? sender, EventArgs e)
+    {
+        if (_suppressProjectAutosave)
+        {
+            return;
+        }
+
+        try
+        {
+            await SaveRecoveryNowAsync();
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"Recovery autosave failed: {exception.Message}";
+        }
+    }
+
+    private void ApplyProject(EditorProject project)
+    {
+        EnsureProjectTracks(project);
+        var media = MediaFiles.Select(card => card.Media).ToList();
+        var mediaById = media.ToDictionary(item => item.Id);
+        var mediaByPath = media.ToDictionary(item => item.FullPath, StringComparer.OrdinalIgnoreCase);
+        var videoItems = project.Tracks
+            .Single(track => track.Kind == ProjectTrackKind.Video)
+            .Items;
+
+        _suppressProjectAutosave = true;
+        try
+        {
+            _project = project;
+            Timeline.ReplaceProjectItems(videoItems, mediaById, mediaByPath);
+            OnPropertyChanged(nameof(ProjectName));
+            OnPropertyChanged(nameof(ProjectFilePath));
+        }
+        finally
+        {
+            _suppressProjectAutosave = false;
+        }
+    }
+
+    private void SynchronizeProjectFromTimeline()
+    {
+        EnsureProjectTracks(_project);
+        var videoTrack = _project.Tracks.Single(track => track.Kind == ProjectTrackKind.Video);
+        videoTrack.Items = Timeline.CreateProjectItems().ToList();
+        _project.ModifiedUtc = DateTime.UtcNow;
+    }
+
+    private static void EnsureProjectTracks(EditorProject project)
+    {
+        foreach (var kind in Enum.GetValues<ProjectTrackKind>())
+        {
+            if (project.Tracks.All(track => track.Kind != kind))
+            {
+                project.Tracks.Add(new ProjectTrack
+                {
+                    Name = kind.ToString(),
+                    Kind = kind,
+                    Order = project.Tracks.Count
+                });
+            }
+        }
+
+        project.Tracks = project.Tracks.OrderBy(track => track.Order).ToList();
+    }
+
+    private static ProjectOutputSettings CreateOutputSettings(ApplicationSettings settings)
+    {
+        var (width, height) = settings.Orientation == OutputOrientation.Portrait
+            ? (1080, 1920)
+            : (1920, 1080);
+        return new ProjectOutputSettings
+        {
+            Width = width,
+            Height = height,
+            VideoEncoder = settings.VideoEncoder
+        };
     }
 
 }

@@ -43,13 +43,13 @@
                         HorizontalAlignment="Center"
                         Background="{StaticResource BorderBrush}" />
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button IsEnabled="False" Content="New" />
-                    <Button Margin="4,0,0,0" IsEnabled="False" Content="Open" />
-                    <Button Margin="4,0,0,0" IsEnabled="False" Content="Save" />
+                    <Button Click="NewProject_Click" Content="New" />
+                    <Button Margin="4,0,0,0" Click="OpenProject_Click" Content="Open" />
+                    <Button Margin="4,0,0,0" Click="SaveProject_Click" Content="Save" />
                     <TextBlock Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{StaticResource MutedTextBrush}"
-                               Text="Untitled project" />
+                               Text="{Binding ProjectName}" />
                 </StackPanel>
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Margin="0,0,4,0" Click="History_Click" Content="History" />

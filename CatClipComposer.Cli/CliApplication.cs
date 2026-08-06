@@ -64,6 +64,7 @@ internal sealed class CliApplication(
                 "scan" => await ScanCommand.ExecuteAsync(invocation, context),
                 "list" => await ListCommand.ExecuteAsync(invocation, context),
                 "history" => await HistoryCommand.ExecuteAsync(invocation, context),
+                "project" => await ProjectCommand.ExecuteAsync(invocation, context),
                 "render" => await RenderCommand.ExecuteAsync(invocation, context),
                 _ => throw new CliUsageException(
                     $"Unknown command '{invocation.Command}'. Run with '--help' for usage.")
@@ -173,7 +174,7 @@ internal sealed class CliApplication(
             {
                 name = "Cat Clip Composer headless CLI",
                 usage = "CatClipComposer.Cli <command> [options]",
-                commands = new[] { "config", "scan", "list", "history", "render" },
+                commands = new[] { "config", "scan", "list", "history", "project", "render" },
                 commonOptions = new[] { "--config <file>", "--data <folder>", "--json", "--help" },
                 exitCodes = new
                 {
@@ -199,6 +200,7 @@ internal sealed class CliApplication(
           scan                   Scan configured source folders into the catalog.
           list [--all]           List available catalog clips; --all includes missing clips.
           history                List completed exports and their ordered source clips.
+          project                Create or inspect a versioned project document.
           render                 Render ordered catalog clips and still screens.
 
         Common options:
@@ -214,6 +216,12 @@ internal sealed class CliApplication(
           --orientation <value>  landscape or portrait; defaults to INI.
           --encoder <value>      native-mpeg4, windows-h264, or libx264-gpl; defaults to INI.
           --overwrite            Permit replacement of an existing output file.
+
+        Project options:
+          --project-file <file>  Required .ccproject path.
+          --create               Create a new empty five-track project.
+          --project-name <name>  Optional name used with --create.
+          --overwrite            Permit replacement when creating a project.
 
         Segment order follows the order of --clip and --screen options on the command line.
         Progress and diagnostics use stderr; command results use stdout.

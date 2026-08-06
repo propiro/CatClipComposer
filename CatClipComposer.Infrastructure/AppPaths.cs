@@ -9,6 +9,8 @@ public sealed class AppPaths
             "CatClipComposer");
         DatabasePath = Path.Combine(DataFolder, "catalog.db");
         ThumbnailFolder = Path.Combine(DataFolder, "thumbnails");
+        PreviewFolder = Path.Combine(DataFolder, "previews");
+        RecoveryFolder = Path.Combine(DataFolder, "recovery");
         ConfigurationPath = configurationPath ?? Path.Combine(
             AppContext.BaseDirectory,
             "CatClipComposer.ini");
@@ -20,11 +22,17 @@ public sealed class AppPaths
 
     public string ThumbnailFolder { get; }
 
+    public string PreviewFolder { get; }
+
+    public string RecoveryFolder { get; }
+
     public string ConfigurationPath { get; }
 
     public void EnsureCreated()
     {
         Directory.CreateDirectory(DataFolder);
         Directory.CreateDirectory(ThumbnailFolder);
+        Directory.CreateDirectory(PreviewFolder);
+        Directory.CreateDirectory(RecoveryFolder);
     }
 }

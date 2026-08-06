@@ -26,6 +26,8 @@ public sealed class CompositionExportService(
             result.OutputPath,
             result.Duration,
             mediaFileIds,
+            request.ProjectName,
+            request.ProjectFilePath,
             cancellationToken);
 
         return result;

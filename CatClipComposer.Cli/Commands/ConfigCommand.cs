@@ -20,9 +20,12 @@ internal static class ConfigCommand
             settings = new
             {
                 sourceFolders = settings.SourceFolders,
+                settings.MetadataFolder,
+                settings.PreviewSlideCount,
                 settings.IncludeSubfolders,
                 settings.ShowFileNames,
                 settings.OutputFolder,
+                settings.ProjectFolder,
                 settings.TargetDurationMinutes,
                 orientation = settings.Orientation.ToString(),
                 videoEncoder = settings.VideoEncoder.ToString(),
@@ -60,6 +63,9 @@ internal static class ConfigCommand
         }
 
         await context.Output.WriteLineAsync($"Output folder: {settings.OutputFolder}");
+        await context.Output.WriteLineAsync($"Project folder: {settings.ProjectFolder}");
+        await context.Output.WriteLineAsync($"Metadata folder: {settings.MetadataFolder}");
+        await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
         await context.Output.WriteLineAsync($"Target minutes: {settings.TargetDurationMinutes.ToString(CultureInfo.InvariantCulture)}");
         await context.Output.WriteLineAsync($"Orientation: {settings.Orientation}");
         await context.Output.WriteLineAsync($"Encoder: {settings.VideoEncoder}");

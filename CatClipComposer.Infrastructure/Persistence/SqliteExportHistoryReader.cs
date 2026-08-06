@@ -25,7 +25,9 @@ internal static class SqliteExportHistoryReader
                 jobId,
                 reader.GetString(1),
                 TimeSpan.FromTicks(reader.GetInt64(2)),
-                SqliteUtc.Parse(reader.GetString(3)));
+                SqliteUtc.Parse(reader.GetString(3)),
+                reader.IsDBNull(8) ? null : reader.GetString(8),
+                reader.IsDBNull(9) ? null : reader.GetString(9));
             if (!reader.IsDBNull(4))
             {
                 current.Clips.Add(new ExportHistoryClip(
@@ -48,7 +50,9 @@ internal static class SqliteExportHistoryReader
         long Id,
         string OutputPath,
         TimeSpan Duration,
-        DateTime CreatedUtc)
+        DateTime CreatedUtc,
+        string? ProjectName,
+        string? ProjectFilePath)
     {
         public List<ExportHistoryClip> Clips { get; } = [];
 
@@ -57,6 +61,8 @@ internal static class SqliteExportHistoryReader
             OutputPath,
             Duration,
             CreatedUtc,
-            Clips.ToList());
+            Clips.ToList(),
+            ProjectName,
+            ProjectFilePath);
     }
 }

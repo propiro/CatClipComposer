@@ -9,13 +9,23 @@ public sealed class TimelineViewModel : ObservableObject
     private readonly ObservableCollection<TimelineClipViewModel> _clips = [];
     private TimelineClipViewModel? _selectedClip;
     private TimeSpan _targetDuration;
+    private bool _suppressChanged;
 
     public TimelineViewModel(double targetDurationMinutes)
     {
         Clips = new ReadOnlyObservableCollection<TimelineClipViewModel>(_clips);
         _targetDuration = TimeSpan.FromMinutes(targetDurationMinutes);
-        _clips.CollectionChanged += (_, _) => RefreshSummary();
+        _clips.CollectionChanged += (_, _) =>
+        {
+            RefreshSummary();
+            if (!_suppressChanged)
+            {
+                Changed?.Invoke(this, EventArgs.Empty);
+            }
+        };
     }
+
+    public event EventHandler? Changed;
 
     public ReadOnlyObservableCollection<TimelineClipViewModel> Clips { get; }
 
@@ -127,6 +137,60 @@ public sealed class TimelineViewModel : ObservableObject
 
     public IReadOnlyList<RenderSegment> CreateRenderSegments() =>
         _clips.Select(item => item.ToRenderSegment()).ToList();
+
+    public IReadOnlyList<ProjectTimelineItem> CreateProjectItems()
+    {
+        var start = TimeSpan.Zero;
+        var items = new List<ProjectTimelineItem>(_clips.Count);
+        foreach (var clip in _clips)
+        {
+            items.Add(clip.ToProjectItem(start));
+            start += clip.Duration;
+        }
+
+        return items;
+    }
+
+    public void ReplaceProjectItems(
+        IEnumerable<ProjectTimelineItem> items,
+        IReadOnlyDictionary<long, MediaFile> mediaById,
+        IReadOnlyDictionary<string, MediaFile> mediaByPath)
+    {
+        _suppressChanged = true;
+        try
+        {
+            _clips.Clear();
+            foreach (var item in items
+                         .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+                         .OrderBy(item => item.StartTicks))
+            {
+                MediaFile? media = null;
+                if (item.MediaFileId.HasValue)
+                {
+                    mediaById.TryGetValue(item.MediaFileId.Value, out media);
+                }
+
+                if (media is null && !string.IsNullOrWhiteSpace(item.SourcePath))
+                {
+                    mediaByPath.TryGetValue(item.SourcePath, out media);
+                }
+
+                _clips.Add(TimelineClipViewModel.FromProjectItem(
+                    item,
+                    media,
+                    _clips.Count + 1));
+            }
+
+            SelectedClip = _clips.FirstOrDefault();
+            Reindex();
+        }
+        finally
+        {
+            _suppressChanged = false;
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     private void Reindex()
     {

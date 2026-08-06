@@ -2,6 +2,18 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Versioned project files and recovery
+
+- Added a versioned `.ccproject` schema with stable project/track/item IDs and Video, Overlay, Audio, Progress, and Effects tracks.
+- Added persisted output settings and item fields for timing, fit, fades, volume, text/font/position, and progress ranges in preparation for the layer editor.
+- Added atomic normal project save/load plus automatic atomic recovery on every timeline mutation.
+- Added GUI New/Open/Save and automatic startup recovery, and a headless project create/inspect command.
+- Separated configured metadata, project, and final-output folders; metadata changes take effect on restart without moving data implicitly.
+- Added project name/path to successful export history via an additive SQLite migration; editing and autosave do not increment usage.
+- Project store smoke preserved schema version, GUID, five tracks, 1920x1080 output, and overwrite exit code `2`; GUI startup passed.
+- Closed: `PROJECT-001`, `AUD-PROJECT-001`; `LAYERS-001` is in progress.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Compact dockable editor workspace
 
 - Replaced the green/blue-adjacent, spacious card treatment with a warm monochrome workstation palette, compact square controls, tight gutters, and dark Windows title-bar requests.

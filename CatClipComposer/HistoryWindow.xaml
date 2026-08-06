@@ -41,6 +41,10 @@
                             <StackPanel Width="315" Margin="8">
                                 <TextBlock FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Text="{Binding ProjectName}" />
+                                <TextBlock Margin="0,2,0,0"
+                                           TextTrimming="CharacterEllipsis"
                                            ToolTip="{Binding Entry.OutputPath}"
                                            Text="{Binding OutputFileName}" />
                                 <TextBlock Margin="0,4,0,0"

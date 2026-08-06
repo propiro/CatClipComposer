@@ -24,7 +24,9 @@ public sealed record RenderRequest(
     int OverlayTextSize = 42,
     OverlayPosition OverlayPosition = OverlayPosition.TopRight,
     VideoEncoderPreset VideoEncoder = VideoEncoderPreset.NativeMpeg4,
-    int FramesPerSecond = 30);
+    int FramesPerSecond = 30,
+    string? ProjectName = null,
+    string? ProjectFilePath = null);
 
 public sealed record RenderProgress(
     double Percent,

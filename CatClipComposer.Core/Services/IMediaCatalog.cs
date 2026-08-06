@@ -18,6 +18,8 @@ public interface IMediaCatalog
         string outputPath,
         TimeSpan duration,
         IReadOnlyList<long> mediaFileIds,
+        string? projectName = null,
+        string? projectFilePath = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ExportHistoryEntry>> GetExportHistoryAsync(

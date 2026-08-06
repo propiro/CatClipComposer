@@ -11,4 +11,6 @@ public sealed record ExportHistoryEntry(
     string OutputPath,
     TimeSpan Duration,
     DateTime CreatedUtc,
-    IReadOnlyList<ExportHistoryClip> Clips);
+    IReadOnlyList<ExportHistoryClip> Clips,
+    string? ProjectName = null,
+    string? ProjectFilePath = null);

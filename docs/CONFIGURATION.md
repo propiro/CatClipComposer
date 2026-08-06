@@ -29,8 +29,13 @@ ShowFileNames=true
 Folder0=C:\Videos\Cats
 Folder1=D:\Incoming clips
 
+[Library]
+MetadataFolder=C:\Users\Example\AppData\Local\CatClipComposer
+PreviewSlideCount=4
+
 [Output]
 Folder=C:\Videos\Compositions
+ProjectFolder=C:\Videos\CatClipComposer Projects
 TargetDurationMinutes=15
 Orientation=Landscape
 VideoEncoder=NativeMpeg4
@@ -60,6 +65,10 @@ Valid enum values:
 - `ProgressStyle`: `None`, `WholeCompilation`, `EachClip`
 - `Position`: `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Center`
 - Workspace dock values: `Left`, `Center`, `Right`, `Bottom`
+
+`MetadataFolder` contains `catalog.db`, cached `thumbnails`, cached contact-sheet `previews`, and crash `recovery`. The folder is selected during service composition, so a changed value takes effect after restart; existing data is not moved implicitly. `PreviewSlideCount` is clamped to 1-12.
+
+`Output.Folder` is for accepted final compilations. `Output.ProjectFolder` is the default location for editable `.ccproject` files. Keeping these separate makes it possible to replace media/text and export a revised compilation later without treating an MP4 as the project source.
 
 `NativeMpeg4` is the non-GPL compatibility default. `WindowsMediaFoundationH264` uses FFmpeg's Media Foundation wrapper and is the preferred non-GPL YouTube preset when supported by the selected Windows FFmpeg build. `Libx264Gpl` is an optional GPL-dependent preset and is never selected implicitly.
 

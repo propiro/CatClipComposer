@@ -9,7 +9,7 @@ CatClipComposer.Core
     Domain models, formatting utilities, and service contracts
 
 CatClipComposer.Infrastructure
-    INI parsing/mapping/store, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
+    INI and project stores, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
 
 CatClipComposer
     WPF application, compact dock workspace, presentation models, and desktop-specific interaction
@@ -50,12 +50,22 @@ The executable modules may reference Core and Infrastructure for composition. Co
 6. A successful render atomically replaces the selected output.
 7. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
 
+### Project save and recovery
+
+1. The presentation timeline raises a change event only for mutations, not selection.
+2. `MainViewModel` synchronizes ordered video/still items into the project's Video track.
+3. `IProjectStore` writes the complete versioned document atomically to recovery.
+4. Normal Save writes the selected `.ccproject` and refreshes recovery.
+5. Startup loads recovery after the catalog so media IDs/paths can be resolved into timeline view models.
+6. A successful render carries project identity into history; editing and autosave alone never update catalog usage.
+
 ## Responsibility audit
 
 | Component | Current responsibility | Audit result |
 |---|---|---|
 | `MainViewModel` | WPF catalog/settings/scan/export presentation | Timeline state and the shared render/history transaction are delegated. |
 | `CompositionExportService` | Render a request and record successful output history | Shared application workflow for GUI and CLI; no presentation or FFmpeg construction responsibility. |
+| `JsonProjectStore` | Validate and atomically serialize/load normal and recovery project documents | No timeline, UI, catalog, or render responsibility. |
 | `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
 | `FfmpegVideoRenderer` | Validate/orchestrate temporary render output | Focused coordinator. |
 | `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
