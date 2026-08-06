@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Timeline presentation module extraction
+
+- Extracted ordered segments, selection, insert/move/remove/clear operations, target duration, axis labels, summary values, and render-segment projection from `MainViewModel`.
+- Bound WPF timeline controls directly to the focused `TimelineViewModel`.
+- Exposed timeline clips as a read-only observable collection so external code cannot bypass ordering rules.
+- Passed a direct timeline smoke test covering add, insert, move, reindex, duration/progress, target changes, render order, remove, and clear.
+- Closed: `MOD-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Shared application composition root
 
 - Added a focused `ApplicationServicesFactory` that constructs paths, INI settings, SQLite, scanning, probing, thumbnails, and rendering services.

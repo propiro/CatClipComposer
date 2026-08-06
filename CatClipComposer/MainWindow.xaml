@@ -250,10 +250,10 @@
                         <TextBlock FontSize="18" FontWeight="SemiBold" Text="Compilation timeline" />
                         <TextBlock Margin="14,4,0,0"
                                    Foreground="{StaticResource AccentBrush}"
-                                   Text="{Binding TimelineTotalText}" />
+                                   Text="{Binding Timeline.TotalText}" />
                         <TextBlock Margin="12,4,0,0"
                                    Foreground="{StaticResource MutedTextBrush}"
-                                   Text="{Binding TimelineRemainingText}" />
+                                   Text="{Binding Timeline.RemainingText}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <Button Margin="0,0,7,0"
@@ -278,7 +278,7 @@
                     <ProgressBar Grid.Row="0"
                                  Height="16"
                                  Maximum="100"
-                                 Value="{Binding TimelineProgress, Mode=OneWay}" />
+                                 Value="{Binding Timeline.Progress, Mode=OneWay}" />
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
@@ -287,18 +287,18 @@
                             <ColumnDefinition />
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding AxisStartText}" />
-                        <TextBlock Grid.Column="1" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding AxisQuarterText}" />
-                        <TextBlock Grid.Column="2" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding AxisHalfText}" />
-                        <TextBlock Grid.Column="3" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding AxisThreeQuarterText}" />
-                        <TextBlock Grid.Column="4" HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding AxisEndText}" />
+                        <TextBlock Grid.Column="0" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisStartText}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisQuarterText}" />
+                        <TextBlock Grid.Column="2" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisHalfText}" />
+                        <TextBlock Grid.Column="3" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisThreeQuarterText}" />
+                        <TextBlock Grid.Column="4" HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisEndText}" />
                     </Grid>
                 </Grid>
 
                 <ListBox x:Name="TimelineListBox"
                          Grid.Row="2"
-                         ItemsSource="{Binding Timeline}"
-                         SelectedItem="{Binding SelectedTimelineClip}"
+                         ItemsSource="{Binding Timeline.Clips}"
+                         SelectedItem="{Binding Timeline.SelectedClip}"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
                          KeyDown="TimelineListBox_KeyDown">

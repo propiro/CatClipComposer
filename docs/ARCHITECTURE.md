@@ -53,7 +53,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 | Component | Current responsibility | Audit result |
 |---|---|---|
-| `MainViewModel` | Catalog loading, scanning, settings, timeline editing, rendering | Too broad; split orchestration from timeline state (`MOD-001`). |
+| `MainViewModel` | Catalog/settings/scan/export orchestration | Timeline state removed; remaining responsibility is application workflow coordination. |
+| `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
 | `FfmpegVideoRenderer` | Validation, process arguments, filter graph, execution, progress, cleanup | Too broad; split command/filter construction from execution (`MOD-002`). |
 | `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |

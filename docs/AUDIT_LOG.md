@@ -2,6 +2,20 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-007 — Timeline responsibility closure
+
+Scope: `MOD-001`.
+
+Findings:
+
+- `MainViewModel` no longer owns timeline collection mutation, selection, ordering, target calculations, axis labels, or render projection.
+- `TimelineViewModel` has one cohesive state-management responsibility and exposes a read-only collection.
+- WPF bindings now address the timeline module directly.
+
+Verification: Release build passed; a direct temporary harness passed add/insert/move/reindex/summary/target/projection/remove/clear checks; GUI startup smoke will run with the final verification set.
+
+Result: `MOD-001` closed.
+
 ## AUDIT-2026-08-06-006 — Composition-root progress review
 
 Scope: `BOOT-001` and GUI/CLI construction duplication risk.

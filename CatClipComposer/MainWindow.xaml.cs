@@ -185,7 +185,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel.Timeline.Count == 0)
+        if (_viewModel.Timeline.Clips.Count == 0)
         {
             MessageBox.Show(
                 this,
@@ -245,7 +245,7 @@ public partial class MainWindow : Window
 
     private void ClearTimeline_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.Timeline.Count == 0 ||
+        if (_viewModel.Timeline.Clips.Count == 0 ||
             MessageBox.Show(
                 this,
                 "Remove every clip from the compilation timeline?",
