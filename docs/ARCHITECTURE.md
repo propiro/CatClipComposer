@@ -44,16 +44,18 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 1. The GUI or CLI creates ordered `RenderSegment` values.
 2. Render options are copied from application settings, with allowed command-line overrides.
-3. `IVideoRenderer` validates inputs and produces a normalized filter graph.
-4. FFmpeg renders to a unique partial path.
-5. A successful render atomically replaces the selected output.
-6. `IMediaCatalog` records the render job and ordered media IDs.
+3. `ICompositionExporter` owns the shared GUI/CLI export transaction.
+4. `IVideoRenderer` validates inputs and produces a normalized filter graph.
+5. FFmpeg renders to a unique partial path.
+6. A successful render atomically replaces the selected output.
+7. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
 
 ## Responsibility audit
 
 | Component | Current responsibility | Audit result |
 |---|---|---|
-| `MainViewModel` | Catalog/settings/scan/export orchestration | Timeline state removed; remaining responsibility is application workflow coordination. |
+| `MainViewModel` | WPF catalog/settings/scan/export presentation | Timeline state and the shared render/history transaction are delegated. |
+| `CompositionExportService` | Render a request and record successful output history | Shared application workflow for GUI and CLI; no presentation or FFmpeg construction responsibility. |
 | `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
 | `FfmpegVideoRenderer` | Validate/orchestrate temporary render output | Focused coordinator. |
 | `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |

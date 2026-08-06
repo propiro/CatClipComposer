@@ -20,11 +20,11 @@ public partial class MainWindow : Window
         ISettingsStore settingsStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
-        IVideoRenderer videoRenderer)
+        ICompositionExporter compositionExporter)
     {
         InitializeComponent();
         _catalog = catalog;
-        _viewModel = new MainViewModel(settings, settingsStore, catalog, scanner, videoRenderer);
+        _viewModel = new MainViewModel(settings, settingsStore, catalog, scanner, compositionExporter);
         DataContext = _viewModel;
         Loaded += MainWindow_Loaded;
         Closed += (_, _) => _viewModel.CancelOperation();

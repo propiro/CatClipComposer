@@ -22,12 +22,13 @@ public static class ApplicationServicesFactory
         IThumbnailGenerator thumbnailGenerator = new FfmpegThumbnailGenerator(paths);
         IMediaScanner scanner = new MediaScanner(catalog, mediaProbe, thumbnailGenerator);
         IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
+        ICompositionExporter compositionExporter = new CompositionExportService(videoRenderer, catalog);
 
         return new ApplicationServices(
             paths,
             settingsStore,
             catalog,
             scanner,
-            videoRenderer);
+            compositionExporter);
     }
 }

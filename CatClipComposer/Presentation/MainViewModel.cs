@@ -12,7 +12,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ISettingsStore _settingsStore;
     private readonly IMediaCatalog _catalog;
     private readonly IMediaScanner _scanner;
-    private readonly IVideoRenderer _videoRenderer;
+    private readonly ICompositionExporter _compositionExporter;
     private CancellationTokenSource? _operationCancellation;
     private ApplicationSettings _settings;
     private MediaCardViewModel? _selectedMedia;
@@ -26,13 +26,13 @@ public sealed class MainViewModel : ObservableObject
         ISettingsStore settingsStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
-        IVideoRenderer videoRenderer)
+        ICompositionExporter compositionExporter)
     {
         _settings = settings;
         _settingsStore = settingsStore;
         _catalog = catalog;
         _scanner = scanner;
-        _videoRenderer = videoRenderer;
+        _compositionExporter = compositionExporter;
         Timeline = new TimelineViewModel(settings.TargetDurationMinutes);
         MediaView = CollectionViewSource.GetDefaultView(MediaFiles);
         MediaView.Filter = FilterMedia;
@@ -188,7 +188,7 @@ public sealed class MainViewModel : ObservableObject
                 ScanProgress = update.Percent;
                 StatusText = update.Message;
             });
-            var result = await _videoRenderer.RenderAsync(
+            var result = await _compositionExporter.ExportAsync(
                 new RenderRequest(
                     segments,
                     outputPath,
@@ -202,14 +202,6 @@ public sealed class MainViewModel : ObservableObject
                     _settings.VideoEncoder),
                 _settings.FfmpegPath,
                 progress,
-                _operationCancellation.Token);
-            await _catalog.RecordExportAsync(
-                result.OutputPath,
-                result.Duration,
-                segments
-                    .Where(segment => segment.MediaFileId.HasValue)
-                    .Select(segment => segment.MediaFileId!.Value)
-                    .ToList(),
                 _operationCancellation.Token);
             await LoadCatalogAsync(_operationCancellation.Token);
             ScanProgress = 100;

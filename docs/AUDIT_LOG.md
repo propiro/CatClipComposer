@@ -2,6 +2,18 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-010 — Shared export workflow review
+
+Scope: GUI/CLI duplication risk before `CLI-001`.
+
+Findings:
+
+- `CompositionExportService` now owns the renderer call and successful export-history write.
+- WPF presentation owns busy state and catalog refresh only; it no longer duplicates the durable export transaction.
+- The composition root exposes the application workflow rather than its lower-level renderer dependency.
+
+Result: shared workflow accepted; `BOOT-001` remains in progress until CLI consumption is verified.
+
 ## AUDIT-2026-08-06-009 — Default encoder license closure
 
 Scope: `LIC-001` and `AUD-LIC-001`.

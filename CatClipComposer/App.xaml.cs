@@ -19,7 +19,7 @@ public partial class App : Application
                 services.SettingsStore,
                 services.Catalog,
                 services.Scanner,
-                services.VideoRenderer);
+                services.CompositionExporter);
             MainWindow = mainWindow;
             mainWindow.Show();
         }

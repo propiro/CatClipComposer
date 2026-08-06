@@ -2,6 +2,13 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Shared composition export workflow
+
+- Added a Core application service that owns the render-and-record-history transaction.
+- Migrated WPF export onto the shared service so the CLI can reuse identical successful-export bookkeeping.
+- Kept FFmpeg rendering, catalog persistence, executable composition, and presentation behind separate responsibilities.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Non-GPL default encoder policy
 
 - Added persisted encoder presets with an explicit license boundary.

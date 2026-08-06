@@ -7,4 +7,4 @@ public sealed record ApplicationServices(
     ISettingsStore SettingsStore,
     IMediaCatalog Catalog,
     IMediaScanner Scanner,
-    IVideoRenderer VideoRenderer);
+    ICompositionExporter CompositionExporter);
