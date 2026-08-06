@@ -2,6 +2,26 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Mandatory audited FFmpeg bundle and readable documentation
+
+- Audited the previously used Gyan full build and rejected it for mandatory distribution because its own
+  configuration enables GPL components.
+- Added pinned BtbN FFmpeg `n8.1.2-34-g9b6c8969e0-20260806` Windows x64 LGPL shared executables and DLLs
+  under `thirdparty\ffmpeg`, tracked through Git LFS.
+- Added the distributor license, pinned archive/upstream source record, build configuration/capability record,
+  and SHA-256 manifest beside the runtime.
+- Made GUI/CLI builds copy the bundle, removed application-only/alternate-tool publish modes, made default
+  discovery resolve the bundle directly, and added publisher integrity, license-flag, version, and capability
+  checks.
+- Replaced prose-heavy Markdown tables across project, TODO, architecture, stack, output, and headless docs
+  with readable headings and lists.
+- Advanced all application components to 0.1.4.
+- Verified clean Release builds, zero known vulnerable NuGet packages, build-output payload copies, an
+  approximately 373 MB self-contained package, exact manifest hashes, published CLI version output, catalog scan,
+  both preview types, a real two-second 1920x1080/30 MPEG-4 plus AAC render, and export usage history.
+- Commit: recorded by the commit containing this entry.
+- Closed: `DEPLOY-003`, `AUD-RELEASE-FFMPEG-001`, and `AUD-DOC-002`.
+
 ## 2026-08-06 — Full-width content browser focus
 
 - Replaced the browser body hide/show control with a left-edge direction arrow that expands the content browser across the complete workspace width.

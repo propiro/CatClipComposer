@@ -23,9 +23,9 @@ All modules remain in this repository. Git submodules are prohibited.
 ## Dependency direction
 
 ```text
-WPF ─────┐
-         ├──> Core <── Infrastructure
-CLI ─────┘          (implements Core contracts)
+WPF -----+
+         +--> Core <-- Infrastructure
+CLI -----+          (implements Core contracts)
 ```
 
 The executable modules may reference Core and Infrastructure for composition. Core must not reference WPF, SQLite, FFmpeg process details, or CLI concerns.
@@ -63,29 +63,43 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 ## Responsibility audit
 
-| Component | Current responsibility | Audit result |
-|---|---|---|
-| `MainViewModel` | WPF catalog/settings/scan/export presentation | Timeline state and the shared render/history transaction are delegated. |
-| `CompositionExportService` | Render a request and record successful output history | Shared application workflow for GUI and CLI; no presentation or FFmpeg construction responsibility. |
-| `JsonProjectStore` | Validate and atomically serialize/load normal and recovery project documents | No timeline, UI, catalog, or render responsibility. |
-| `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
-| `ProjectRenderMapper` | Convert enabled persisted tracks/items into renderer-domain values | Shared pure Core projection used by GUI and CLI; no WPF, process, or persistence dependency. |
-| `FfmpegVideoRenderer` | Validate/orchestrate temporary render output | Focused coordinator. |
-| `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
-| `FfmpegRenderCommandBuilder` | Build argument-safe FFmpeg process configuration | Focused command responsibility. |
-| `FfmpegProcessRunner` | Execute FFmpeg, cancel, collect errors, and report progress | Focused process responsibility; `MOD-002` closed. |
-| `SqliteMediaCatalog` | Media/tag CRUD and successful-export/history SQL operations behind `IMediaCatalog` | Schema initialization, connection creation, UTC conversion, media mapping, and history aggregation are delegated; `MOD-003` closed. |
-| Preview generators | Produce one static thumbnail and one configurable evenly sampled contact sheet | A shared process runner removes duplicate process/cancellation behavior; files are content-keyed cache assets rather than database blobs. |
-| SQLite persistence helpers | One focused schema, connection, conversion, or row-projection responsibility each | Internal implementation details; no Core contract or schema change. |
-| WPF window code-behind | Window-specific events, validation prompts, and dialog flow | File Explorer launch and exception presentation are delegated to focused desktop helpers; `MOD-004` closed. |
-| WPF desktop helpers | Shell launch and consistent exception presentation | No catalog, rendering, settings, or window-workflow responsibility. |
-| `WorkspaceLayoutController` | Map four panels to four dock slots, swap occupied positions, and apply temporary browser-focus layout | WPF-only layout mechanics; browser focus never overwrites durable slot values in shared application settings. |
-| Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; full-width focus retains the timeline drop target and drag data contains only the selected catalog view model. |
-| `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
-| CLI command modules | Config, scan, list, metadata, project render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
-| Portable publisher | Compose two single-file entry points plus INI/docs/thirdparty layout | Build-time script validates output safety and tool licensing flags; exact external-tool licensing remains an explicit release audit. |
-| Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |
-| INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
+Each component is listed separately to keep its responsibility and boundary readable in narrow editors.
+
+- **`MainViewModel`:** WPF catalog/settings/scan/export presentation. Timeline state and the shared
+  render/history transaction are delegated.
+- **`CompositionExportService`:** Render and record successful output history. It is shared by GUI and CLI
+  and owns neither presentation nor FFmpeg construction.
+- **`JsonProjectStore`:** Validate and atomically save/load normal and recovery project documents. It owns
+  no timeline, UI, catalog, or render behavior.
+- **`TimelineViewModel`:** Ordered segments, selection, editing, duration, and axis summaries. `MOD-001`
+  is closed.
+- **`ProjectRenderMapper`:** Convert enabled persisted tracks/items into renderer values. It is pure Core
+  code shared by GUI and CLI.
+- **`FfmpegVideoRenderer`:** Validate and coordinate temporary render output.
+- **`FfmpegFilterGraphBuilder`:** Build normalization, concat, overlay, and progress filters.
+- **`FfmpegRenderCommandBuilder`:** Build argument-safe FFmpeg process configuration.
+- **`FfmpegProcessRunner`:** Execute FFmpeg, cancel, collect errors, and report progress. `MOD-002` is closed.
+- **`SqliteMediaCatalog`:** Media/tag CRUD and successful-export/history SQL behind `IMediaCatalog`.
+  Schema, connection, time conversion, mapping, and history projection are delegated; `MOD-003` is closed.
+- **Preview generators:** Produce a static thumbnail and evenly sampled contact sheet. A shared process
+  runner removes duplicated process/cancellation behavior; images remain replaceable cache files.
+- **SQLite persistence helpers:** Own one schema, connection, conversion, or row-projection task each.
+- **WPF window code-behind:** Own window events, validation prompts, and dialog flow. Explorer launch and
+  exception presentation are delegated; `MOD-004` is closed.
+- **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
+- **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary browser focus. Browser focus
+  never overwrites durable settings.
+- **Content browser:** Search cached metadata and recycle virtualized rows. It does not eagerly decode video;
+  full-width focus retains the timeline drop target.
+- **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
+- **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
+  sharing Core/Infrastructure workflows.
+- **Portable publisher:** Compose the two single-file entry points, INI, docs, and mandatory pinned FFmpeg
+  payload. It validates hashes, license flags, versions, and required render capabilities before publishing.
+- **Application startup:** Provide the shared `ApplicationServicesFactory` composition root. `BOOT-001` is
+  closed.
+- **INI configuration:** Split generic reading, application mapping, and atomic storage. `CFG-001` and
+  `AUD-CFG-001` are closed.
 
 ## Architectural rules
 
@@ -97,4 +111,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 ## Final responsibility audit conclusion
 
-The 2026-08-06 post-MVP audit found no remaining P0/P1 responsibility violation. The larger presentation, scanning, CLI dispatch, filter-graph, INI mapping, and catalog classes each retain one cohesive workflow and delegate process execution, persistence projection, timeline state, executable composition, and desktop integration to focused collaborators. Future feature work must preserve these boundaries. Remaining work is the exact release-FFmpeg audit and deferred trimming, not known class-splitting or duplicated-workflow debt.
+The 2026-08-06 post-MVP audit found no remaining P0/P1 responsibility violation. The larger presentation,
+scanning, CLI dispatch, filter-graph, INI mapping, and catalog classes each retain one cohesive workflow and
+delegate process execution, persistence projection, timeline state, executable composition, and desktop
+integration to focused collaborators. The exact bundled-FFmpeg audit is closed; deferred trimming remains
+the only known scoped feature gap.

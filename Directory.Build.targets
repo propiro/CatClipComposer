@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+    <None Include="$(MSBuildThisFileDirectory)thirdparty\ffmpeg\**\*"
+          Link="thirdparty\ffmpeg\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

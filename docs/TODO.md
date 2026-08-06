@@ -2,56 +2,273 @@
 
 Last audited: 2026-08-06
 
-Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
+Statuses are `Open`, `In progress`, `Blocked`, `Done`, and `Deferred`.
+
+Each item is presented as a short section instead of a wide table so the source remains readable in
+Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 ## Product and engineering TODOs
 
-| ID | Priority | Status | Work | Acceptance criteria |
-|---|---:|---:|---|---|
-| CFG-001 | P0 | Done | Replace JSON settings with `CatClipComposer.ini` beside the executable. | INI round-trip/malformed-input smoke passed; JSON store removed; schema documented. |
-| CLI-001 | P0 | Done | Add a headless CLI project in this repository. | Config, scan/list, tag/usage, project, layered render, and history commands passed text/JSON, exit-code, and end-to-end render smoke tests; Release build passes. |
-| LIC-001 | P0 | Done | Remove required `libx264`/GPL encoding from the default render path. | Native `mpeg4` is default; `h264_mf` non-GPL option passed; `libx264` is explicit GPL opt-in. |
-| BOOT-001 | P0 | Done | Share service composition between GUI and CLI. | Both executables consume `ApplicationServicesFactory`; render/history transaction is shared through `ICompositionExporter`. |
-| MOD-001 | P1 | Done | Split `MainViewModel` orchestration and timeline state. | Focused `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render-segment projection; direct smoke passed. |
-| MOD-002 | P1 | Done | Split FFmpeg filter/argument construction from process execution. | Coordinator, filter builder, command builder, process runner, and cleanup helper are separate; mixed-input render smoke passed. |
-| MOD-003 | P2 | Done | Split SQLite schema creation and row mapping from catalog operations. | Focused internal schema, connection, UTC, media mapper, and history reader classes preserve the Core catalog interface and schema. |
-| MOD-004 | P2 | Done | Extract repeated WPF desktop interaction helpers. | Focused helpers own Explorer launch and consistent exception presentation across application/windows. |
-| UI-001 | P0 | Done | Replace the leaking/high-padding theme with a compact monochrome editor design. | All derived windows explicitly paint dark client surfaces; title bars request dark mode; controls use warm neutral colors and 0-1 px corner radii; screenshot reviewed. |
-| UI-002 | P0 | Done | Correct low-contrast and undersized text, especially primary/disabled buttons. | Shared button templates apply explicit visual-tree foregrounds; primary/disabled surfaces remain monochrome and readable; smallest main-workspace labels are at least 10 px; 1440x900 screenshot reviewed. |
-| WORKSPACE-001 | P0 | Done | Add resizable and repositionable content, preview, layers/used-clips, and timeline panels. | Four dock slots use splitters; every panel can swap slots; unique layout persists in INI. |
-| WORKSPACE-002 | P1 | Done | Make the complete default workspace visible in the Visual Studio XAML designer. | All four panels have default XAML grid coordinates/margins matching application defaults; runtime preferences continue to override them. |
-| BROWSER-001 | P0 | Done | Make the content browser safe for very large libraries and support drag/drop. | Recycling virtualization is enabled; only cached realized thumbnails bind; clips drag to the timeline. |
-| BROWSER-002 | P0 | Done | Expand the content browser to the full workspace width without losing the timeline drop target. | Left-edge direction arrow switches between full-width browser focus and the saved compact dock layout; runtime expand/restore smoke passed. |
-| CATMETA-001 | P1 | Done | Add editable tags, static/contact-sheet preview metadata, and named-project usage details. | Additive SQLite migration, five-frame preview generation, tag editing/filtering, and project history queries passed. |
-| LAYERS-001 | P1 | Done | Persist and edit a project layer/track model. | Five track types and requested item fields persist; add/edit/remove controls and a shared GUI/CLI renderer projection pass. |
-| FX-001 | P1 | Done | Add timed fades, overlays, music, progress ranges, and fit/fill/blur-background modes. | Controls and a real six-second FFmpeg render cover timed text/PNG/progress/music, fades, volume, and animated blur without a GPL-only filter. |
-| OUTPUT-001 | P1 | Done | Add common resolution/aspect/FPS/codec/quality presets and custom output values. | Officially sourced presets plus validated custom 640×360/24 settings reached FFmpeg and FFprobe. |
-| DEPLOY-001 | P1 | Done | Produce a one-folder deployment layout with a tidy `thirdparty` boundary. | Framework-dependent/self-contained folders ran; copied FFmpeg tools were discovered and rendered from `thirdparty`. Exact release binary audit remains mandatory. |
-| VERSION-001 | P1 | Done | Version the application and its components and expose the version to users. | All four projects build with shared 0.1.0 assembly/file metadata; the main title/status bars and CLI text/JSON output show 0.1.0. |
-| DEPLOY-002 | P1 | Done | Keep application DLL/runtime clutter out of the portable package root. | Framework-dependent/self-contained single-file publishes leave only two executable entry points and the INI beside organized `docs`/`thirdparty` folders. |
-| OVERLAY-001 | P2 | Done | Support multiple image/text overlays with individual start/end times. | Layer editor controls timing and placement for multiple elements; timed render passed. |
-| PREVIEW-001 | P2 | Done | Add FFmpeg contact-sheet/slideshow fallback preview. | Configurable cached contact sheets are displayed below Windows playback and remain available for unsupported codecs. |
-| PROJECT-001 | P2 | Done | Save/reopen named timeline projects with crash recovery. | Versioned five-track `.ccproject` documents and atomic recovery round-trip without embedding media; GUI and CLI checks pass. |
-| EDIT-001 | P3 | Deferred | Add trim-in/out and per-clip volume. | Narrow controls work without expanding into general NLE scope. |
+### `CFG-001` — Replace JSON settings with `CatClipComposer.ini` beside the executable
+
+- Priority/status: P0 / Done
+- Acceptance: INI round-trip and malformed-input smokes passed; the JSON store was removed and the
+  schema is documented.
+
+### `CLI-001` — Add a headless CLI project in this repository
+
+- Priority/status: P0 / Done
+- Acceptance: Config, scan/list, tag/usage, project, layered render, and history commands passed
+  text/JSON, exit-code, and end-to-end render smokes; Release builds pass.
+
+### `LIC-001` — Remove required `libx264`/GPL encoding from the default render path
+
+- Priority/status: P0 / Done
+- Acceptance: Native `mpeg4` is the default, `h264_mf` is a non-GPL option, and `libx264` remains an
+  explicit GPL opt-in for user-supplied tools only.
+
+### `BOOT-001` — Share service composition between GUI and CLI
+
+- Priority/status: P0 / Done
+- Acceptance: Both executables consume `ApplicationServicesFactory`; render/history transactions are
+  shared through `ICompositionExporter`.
+
+### `MOD-001` — Split `MainViewModel` orchestration and timeline state
+
+- Priority/status: P1 / Done
+- Acceptance: `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render
+  segment projection; the direct smoke passed.
+
+### `MOD-002` — Split FFmpeg filter/argument construction from process execution
+
+- Priority/status: P1 / Done
+- Acceptance: Coordinator, filter builder, command builder, process runner, and cleanup helper are
+  separate; the mixed-input render smoke passed.
+
+### `MOD-003` — Split SQLite schema creation and row mapping from catalog operations
+
+- Priority/status: P2 / Done
+- Acceptance: Focused schema, connection, UTC, media mapper, and history reader classes preserve the
+  Core catalog interface and schema.
+
+### `MOD-004` — Extract repeated WPF desktop interaction helpers
+
+- Priority/status: P2 / Done
+- Acceptance: Focused helpers own Explorer launch and consistent exception presentation across
+  application windows.
+
+### `UI-001` — Replace the leaking/high-padding theme with a compact monochrome editor design
+
+- Priority/status: P0 / Done
+- Acceptance: Derived windows paint dark client surfaces; title bars request dark mode; controls use
+  warm neutral colors and zero-to-one-pixel corner radii; the screenshot was reviewed.
+
+### `UI-002` — Correct low-contrast and undersized text
+
+- Priority/status: P0 / Done
+- Acceptance: Button templates apply explicit foregrounds, disabled states remain readable, and the
+  smallest main-workspace labels are at least 10 px; a 1440x900 screenshot was reviewed.
+
+### `WORKSPACE-001` — Add resizable and repositionable main panels
+
+- Priority/status: P0 / Done
+- Acceptance: Four dock slots use splitters; every panel can swap slots; unique layout persists in INI.
+
+### `WORKSPACE-002` — Make the complete workspace visible in the Visual Studio designer
+
+- Priority/status: P1 / Done
+- Acceptance: All panels have default XAML grid coordinates and margins matching application defaults;
+  runtime preferences continue to override them.
+
+### `BROWSER-001` — Make the content browser safe for very large libraries and support drag/drop
+
+- Priority/status: P0 / Done
+- Acceptance: Recycling virtualization is enabled, only cached realized thumbnails bind, and clips drag
+  to the timeline.
+
+### `BROWSER-002` — Expand the browser without losing the timeline drop target
+
+- Priority/status: P0 / Done
+- Acceptance: A left-edge direction arrow switches between full-width browser focus and the saved dock
+  layout; runtime expand/restore smokes passed.
+
+### `CATMETA-001` — Add editable tags, previews, and named-project usage details
+
+- Priority/status: P1 / Done
+- Acceptance: Additive SQLite migration, five-frame preview generation, tag editing/filtering, and
+  project history queries passed.
+
+### `LAYERS-001` — Persist and edit a project layer/track model
+
+- Priority/status: P1 / Done
+- Acceptance: Five track types and requested item fields persist; add/edit/remove controls and the
+  shared GUI/CLI renderer projection pass.
+
+### `FX-001` — Add timed fades, overlays, music, progress ranges, and fit modes
+
+- Priority/status: P1 / Done
+- Acceptance: Controls and a real six-second render cover text, PNG, progress, music, fades, volume,
+  and animated blur without a GPL-only filter.
+
+### `OUTPUT-001` — Add common output presets and custom output values
+
+- Priority/status: P1 / Done
+- Acceptance: Officially sourced presets and validated custom 640x360/24 settings reached FFmpeg and
+  FFprobe.
+
+### `DEPLOY-001` — Produce a one-folder deployment with a tidy `thirdparty` boundary
+
+- Priority/status: P1 / Done
+- Acceptance: Framework-dependent and self-contained folders ran; bundled FFmpeg tools were discovered
+  and rendered from `thirdparty`.
+
+### `VERSION-001` — Expose one application/component version to users
+
+- Priority/status: P1 / Done
+- Acceptance: All projects share central assembly/file metadata; the main title/status bars and CLI
+  version output resolve it from Core.
+
+### `DEPLOY-002` — Keep application DLL/runtime clutter out of the portable root
+
+- Priority/status: P1 / Done
+- Acceptance: Single-file publishes leave only two entry-point executables and the INI beside organized
+  `docs` and `thirdparty` folders.
+
+### `DEPLOY-003` — Always ship an audited FFmpeg runtime with the application
+
+- Priority/status: P0 / Done
+- Acceptance: A pinned LGPL v3 shared FFmpeg/FFprobe payload, DLLs, license, source record, build flags,
+  and hashes live under `thirdparty\ffmpeg`; GUI/CLI builds and every portable publish copy it.
+
+### `OVERLAY-001` — Support multiple image/text overlays with individual timing
+
+- Priority/status: P2 / Done
+- Acceptance: The layer editor controls timing and placement for multiple elements; timed render passed.
+
+### `PREVIEW-001` — Add an FFmpeg contact-sheet/slideshow fallback preview
+
+- Priority/status: P2 / Done
+- Acceptance: Configurable cached contact sheets appear below Windows playback and remain available for
+  unsupported codecs.
+
+### `PROJECT-001` — Save and reopen named timelines with crash recovery
+
+- Priority/status: P2 / Done
+- Acceptance: Versioned five-track `.ccproject` documents and atomic recovery round-trip without
+  embedding media; GUI and CLI checks pass.
+
+### `EDIT-001` — Add trim-in/out and per-clip volume
+
+- Priority/status: P3 / Deferred
+- Acceptance: Narrow controls work without expanding into general nonlinear-editor scope. Per-clip
+  volume is done; trimming remains deferred.
 
 ## Audit TODOs
 
-| ID | Priority | Status | Audit | Completion evidence |
-|---|---:|---:|---|---|
-| AUD-LIC-001 | P0 | Done | Verify default FFmpeg command uses no GPL/nonfree component. | Native encoder and Media Foundation smoke outputs verified by FFprobe; command inventory recorded; exact distributed FFmpeg binary remains a release audit responsibility. |
-| AUD-CLI-001 | P0 | Done | Verify headless commands are deterministic and automation-safe. | Help/config/list/history JSON, exit codes 2/3/4/5, overwrite safety, real scan/render/history/use-count, codec, and dimensions verified. |
-| AUD-CFG-001 | P0 | Done | Verify INI escaping, missing keys, malformed values, and writable-location behavior. | 2026-08-06 round-trip/malformed-input smoke passed; atomic same-directory write and explicit permission error implemented. |
-| AUD-DEP-001 | P1 | Done | Audit NuGet dependencies for known vulnerabilities. | 2026-08-06 audit reports zero known vulnerable packages after SQLitePCLRaw 2.1.12 pin. |
-| AUD-ARCH-001 | P1 | Done | Re-audit class responsibilities after P0 refactors. | Architecture responsibility table reflects final GUI, CLI, rendering, persistence, configuration, and desktop boundaries. |
-| AUD-DOC-001 | P1 | Done | Check requested/done/not-done feature documentation against code. | Project matrix and TODO register cross-checked against implementation; open/partial/deferred scope is explicit. |
-| AUD-UX-001 | P0 | Done | Verify the theme leak, density, docking, virtualization, and drag/drop implementation. | Release build and captured main-window screenshot show no white client surface; XAML/code audit confirms recycling and dock persistence. |
-| AUD-UX-002 | P0 | Done | Verify button foreground propagation, disabled states, text contrast, and compact layout retention. | Release build and 1440x900 runtime capture show readable primary/ordinary/header buttons and brighter 10-11 px secondary text without clipping. |
-| AUD-DESIGNER-001 | P1 | Done | Verify design-time layout no longer depends on code-behind execution. | XAML declares one non-overlapping panel per default dock slot; Release build and runtime default/custom layout smoke pass. |
-| AUD-BROWSER-002 | P0 | Done | Verify full-width browser focus, timeline availability, saved-layout restoration, and toggle accessibility. | 1440x900 runtime captures and UI Automation invocation verified both layouts and state-specific accessible names. |
-| AUD-PROJECT-001 | P0 | Done | Verify project versioning, atomic save/load, recovery identity, and overwrite safety. | CLI create/load preserved schema/GUID/five tracks/output; overwrite returned 2; GUI startup and additive SQLite migration passed. |
-| AUD-CATMETA-001 | P1 | Done | Verify metadata migration, preview cache, tag updates, and successful-export usage semantics. | Synthetic six-second MP4 produced 800x90 five-frame sheet; tags normalized/persisted; usage stayed zero before export and returned named project/path after export. |
-| AUD-FX-001 | P1 | Done | Verify layer projection, filter termination, timing, output settings, and codecs. | Real project render produced 640×360/24 MPEG-4 + AAC for exactly 6.000 s; frame sheet showed animated blur, fades, timed text/PNG, and progress; music mix was present. |
-| AUD-PORTABLE-001 | P1 | Done | Verify one-folder publish and packaged-tool discovery. | Framework-dependent and 154 MB self-contained publishes ran CLI; FFmpeg/FFprobe copied under `thirdparty` and a layered render succeeded through automatic discovery. |
-| AUD-VERSION-001 | P1 | Done | Verify shared version metadata and user-visible version reporting. | Release assemblies report 0.1.0.0; title/status bindings and CLI text/JSON report 0.1.0 without initializing data. |
-| AUD-PORTABLE-002 | P1 | Done | Verify compact root layout and FFmpeg package guards. | Single-file package/root checks, published CLI execution, GPL rejection, explicit personal opt-in, and notice/build-info copy passed. |
-| AUD-RELEASE-FFMPEG-001 | P0 | Open | Audit the exact FFmpeg binary and notices selected for public/commercial distribution. | Confirm no `--enable-nonfree`; decide LGPL/GPL package boundary; include exact license/source notices and retain `BUILD_INFO.txt`. |
+### `AUD-LIC-001` — Verify the default FFmpeg command uses no GPL/nonfree component
+
+- Priority/status: P0 / Done
+- Evidence: Native and Media Foundation encoder smokes passed. The mandatory bundled build has neither
+  `--enable-gpl` nor `--enable-nonfree`.
+
+### `AUD-CLI-001` — Verify headless commands are deterministic and automation-safe
+
+- Priority/status: P0 / Done
+- Evidence: Help/config/list/history JSON, exit codes 2/3/4/5, overwrite safety, real scan/render/history,
+  use count, codec, and dimensions were verified.
+
+### `AUD-CFG-001` — Verify INI parsing and writable-location behavior
+
+- Priority/status: P0 / Done
+- Evidence: Round-trip/malformed-input smokes passed; atomic same-directory writes and explicit permission
+  errors are implemented.
+
+### `AUD-DEP-001` — Audit NuGet dependencies for known vulnerabilities
+
+- Priority/status: P1 / Done
+- Evidence: The 2026-08-06 re-audit after adding the external FFmpeg payload reports zero known vulnerable
+  NuGet packages; SQLitePCLRaw remains pinned to 2.1.12.
+
+### `AUD-ARCH-001` — Re-audit class responsibilities after P0 refactors
+
+- Priority/status: P1 / Done
+- Evidence: Architecture responsibility entries reflect final GUI, CLI, rendering, persistence,
+  configuration, packaging, and desktop boundaries.
+
+### `AUD-DOC-001` — Check requested/done/not-done documentation against code
+
+- Priority/status: P1 / Done
+- Evidence: Project scope and the TODO register were cross-checked against implementation; open, partial,
+  and deferred work is explicit.
+
+### `AUD-DOC-002` — Make documentation readable without wide Markdown tables
+
+- Priority/status: P0 / Done
+- Evidence: Prose-heavy tables were replaced by headings and short lists; raw Markdown remains readable
+  in narrow editors and terminals.
+
+### `AUD-UX-001` — Verify theme, density, docking, virtualization, and drag/drop
+
+- Priority/status: P0 / Done
+- Evidence: Release build and a captured window show no white client surface; XAML/code audit confirms
+  recycling and dock persistence.
+
+### `AUD-UX-002` — Verify text contrast and compact layout retention
+
+- Priority/status: P0 / Done
+- Evidence: A 1440x900 capture shows readable primary, ordinary, header, and disabled buttons plus brighter
+  small text without clipping.
+
+### `AUD-DESIGNER-001` — Verify design-time layout does not depend on code-behind
+
+- Priority/status: P1 / Done
+- Evidence: XAML declares one non-overlapping panel per default slot; Release build and runtime default and
+  custom layout smokes pass.
+
+### `AUD-BROWSER-002` — Verify full-width browser focus and restoration
+
+- Priority/status: P0 / Done
+- Evidence: Runtime captures and UI Automation invocation verified both layouts, timeline availability,
+  and state-specific accessible names.
+
+### `AUD-PROJECT-001` — Verify project versioning, recovery identity, and overwrite safety
+
+- Priority/status: P0 / Done
+- Evidence: CLI create/load preserved schema, GUID, five tracks, and output; overwrite returned 2; GUI
+  startup and additive SQLite migration passed.
+
+### `AUD-CATMETA-001` — Verify metadata migration, previews, tags, and usage semantics
+
+- Priority/status: P1 / Done
+- Evidence: A synthetic six-second MP4 produced an 800x90 five-frame sheet; tags survived rescan and usage
+  appeared only after a successful named-project export.
+
+### `AUD-FX-001` — Verify render layers, timing, output settings, and codecs
+
+- Priority/status: P1 / Done
+- Evidence: A real project rendered 640x360/24 MPEG-4 plus AAC for exactly six seconds; sampled frames and
+  audio confirmed the requested effects.
+
+### `AUD-PORTABLE-001` — Verify one-folder publish and packaged-tool discovery
+
+- Priority/status: P1 / Done
+- Evidence: Framework-dependent and self-contained publishes ran; a layered render succeeded through
+  automatic `thirdparty` discovery.
+
+### `AUD-VERSION-001` — Verify shared and user-visible version reporting
+
+- Priority/status: P1 / Done
+- Evidence: Release assemblies, title/status bindings, and CLI text/JSON output report the central version
+  without initializing data.
+
+### `AUD-PORTABLE-002` — Verify compact root layout and package guards
+
+- Priority/status: P1 / Done
+- Evidence: Single-file root checks, published CLI execution, FFmpeg integrity/license checks, and notice
+  copying pass.
+
+### `AUD-RELEASE-FFMPEG-001` — Audit the exact bundled FFmpeg binary and notices
+
+- Priority/status: P0 / Done
+- Evidence: Pinned BtbN FFmpeg n8.1.2-34-g9b6c8969e0 LGPL shared runtime has no GPL/nonfree flags; archive
+  and runtime hashes, exact LGPL v3 license, source URLs, replaceable DLLs, and build flags ship together.

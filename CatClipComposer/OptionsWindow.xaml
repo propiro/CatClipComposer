@@ -95,7 +95,8 @@
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="FFmpeg executable" />
                 <TextBlock Margin="0,4,0,8"
                            Foreground="{StaticResource MutedTextBrush}"
-                           Text="Select ffmpeg.exe. ffprobe.exe must be beside it, or both tools must be on PATH." />
+                           TextWrapping="Wrap"
+                           Text="The bundled FFmpeg is used by default. Select another ffmpeg.exe only to override it; ffprobe.exe must be beside an override." />
                 <Grid Margin="0,0,0,18">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

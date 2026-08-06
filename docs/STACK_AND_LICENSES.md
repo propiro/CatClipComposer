@@ -25,19 +25,31 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 
 ## Project stack
 
-| Component | Version | Purpose | License/status | Distribution decision |
-|---|---:|---|---|---|
-| C# / .NET | 8 | Runtime and application language | .NET source/library packages primarily MIT; Windows distributions have Microsoft terms | Accepted; preserve official notices when publishing. |
-| WPF | .NET 8 | Windows GUI | Part of .NET Windows desktop stack | Accepted for Windows-only application. |
-| .NET console host | .NET 8 | Headless CLI process and exit codes | Part of .NET runtime stack | Accepted; no added package. |
-| Microsoft.Data.Sqlite | 8.0.29 | ADO.NET SQLite provider | MIT | Accepted. |
-| SQLite | Via SQLitePCLRaw 2.1.12 | Embedded catalog database | Public domain | Accepted. |
-| SQLitePCLRaw | 2.1.12 | Native SQLite interop/bundle | Apache-2.0 | Accepted; explicitly pinned past vulnerable native SQLite versions. |
-| System.Text.Json | .NET 8 | Structured CLI output and internal serialization where needed | MIT as a .NET library package | Accepted. |
-| FFmpeg / FFprobe | User supplied or publisher-supplied audited pair | Probe, thumbnails, filters, encoding | LGPL-2.1-or-later by default; optional GPL parts change build status | Separate executable under `thirdparty`; default features must work with an LGPL-compatible build. |
-| FFmpeg native `mpeg4` | Selected FFmpeg build | Default MPEG-4 Part 2 encoder | Native FFmpeg encoder, available without external GPL library | Accepted non-GPL compatibility default. YouTube accepts MPEG4 uploads but recommends H.264. |
-| FFmpeg `h264_mf` | Selected Windows FFmpeg build | Preferred H.264 encoder | Media Foundation wrapper documented by FFmpeg; no `--enable-gpl` dependency | Accepted optional non-GPL Windows preset; availability is build-dependent. |
-| libx264 | Selected FFmpeg build | Optional H.264 encoder | GPL when enabled in FFmpeg | Allowed only as an explicit `Libx264Gpl` user opt-in; never required/default. |
+Each dependency is described separately so version, purpose, license, and distribution effect remain readable.
+
+- **C# / .NET 8:** Application language and runtime. .NET source/library packages are primarily MIT;
+  Windows distributions include Microsoft terms. Accepted with official notices preserved.
+- **WPF on .NET 8:** Windows GUI stack. Accepted for the Windows-only desktop application.
+- **.NET console host:** Headless CLI process and exit codes. Part of the runtime; no extra package.
+- **Microsoft.Data.Sqlite 8.0.29:** ADO.NET SQLite provider under MIT. Accepted.
+- **SQLite via SQLitePCLRaw 2.1.12:** Embedded public-domain catalog database. Accepted.
+- **SQLitePCLRaw 2.1.12:** Apache-2.0 native interop/bundle, pinned past vulnerable SQLite versions.
+- **System.Text.Json from .NET 8:** Structured CLI output and project serialization. Accepted MIT library.
+- **FFmpeg/FFprobe n8.1.2-34-g9b6c8969e0-20260806:** Probe, preview, filters, and encoding. The pinned
+  BtbN Windows x64 shared build uses LGPL v3, contains no `--enable-gpl` or `--enable-nonfree`, and ships
+  under `thirdparty\ffmpeg` with replaceable DLLs, exact license/source/build records, and hashes.
+- **Bundled FFmpeg integrations:** The exact enabled set is recorded in `BUILD_INFO.txt`; it covers common
+  codecs/formats, font shaping, network protocols, and hardware APIs. `SOURCE.txt` identifies the pinned BtbN
+  build-script tag whose `scripts.d` files resolve each integration to an upstream repository and commit.
+  The set is restricted to LGPL-compatible MIT, BSD, Apache, ISC, zlib, MPL, FTL, LGPL, and similar terms;
+  the binary configuration disables GPL-only and nonfree components. These integrations remain inside the
+  separately distributed FFmpeg runtime rather than becoming linked application dependencies.
+- **FFmpeg native `mpeg4`:** Default MPEG-4 Part 2 encoder. It needs no external GPL library and is the
+  accepted compatibility default.
+- **FFmpeg `h264_mf`:** Optional Media Foundation H.264 encoder. It is present in the pinned build and needs
+  no `--enable-gpl` component.
+- **libx264:** Optional GPL H.264 encoder identifier retained for explicit custom-tool use. It is absent from
+  the mandatory bundle and is never required or selected by default.
 
 ## Dependency rules
 
@@ -49,15 +61,21 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 
 ## FFmpeg distribution boundary
 
-The repository does not include FFmpeg binaries. Users configure `ffmpeg.exe`; `ffprobe.exe` is located beside it, under the portable `thirdparty\ffmpeg` boundary, or on `PATH`. The publisher records `ffmpeg -version` as `BUILD_INFO.txt`. Release review must distinguish:
+The repository includes the audited shared runtime under `thirdparty\ffmpeg`. Central build targets copy it
+to GUI and CLI output directories, and the portable publisher always includes it. With the default
+`FfmpegPath=ffmpeg.exe`, the application resolves this packaged path directly. A user can still configure a
+different executable as an explicit local override.
 
-- LGPL-compatible builds without `--enable-gpl` or `--enable-nonfree`;
-- GPL builds, which may be used personally as an explicit opt-in but are not required;
-- nonfree builds, which are not an accepted redistributable dependency.
+The pinned bundle is dynamically linked so its FFmpeg DLLs remain separate and replaceable. Its exact LGPL
+v3 text, source/archive locations, build flags, and file hashes travel beside it. The publisher rejects a
+missing or modified manifest file, mismatched executable version, absent required capability, or any build
+that reports `--enable-gpl` or `--enable-nonfree`.
 
 ## Application versioning
 
-`Directory.Build.props` supplies version 0.1.3 to the WPF, CLI, Core, and Infrastructure projects, including assembly, file, and informational metadata. User-visible version strings are resolved from the Core assembly metadata so the main-window title/status bars and headless output cannot drift from the built components.
+`Directory.Build.props` supplies version 0.1.4 to the WPF, CLI, Core, and Infrastructure projects, including
+assembly, file, and informational metadata. User-visible strings resolve from Core assembly metadata so the
+main-window title/status bars and headless output cannot drift from the built components.
 
 FFmpeg documents its native `mpeg4` encoder as usable without the GPL `libxvid` wrapper and documents `h264_mf` as a Media Foundation encoder. YouTube lists MPEG4 as a supported upload format and recommends MP4/H.264/AAC for optimal uploads. These sources establish the default/optional preset boundary; a distributor must still audit the exact configured FFmpeg binary.
 

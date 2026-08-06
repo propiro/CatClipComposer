@@ -4,9 +4,13 @@ Last reviewed: 2026-08-06
 
 ## Product goal
 
-Cat Clip Composer is a deliberately narrow Windows application for cataloging folders of short clips, arranging selected clips on a duration-based timeline, adding simple presentation elements, and producing a YouTube-ready compilation without the complexity of a general video editor.
+Cat Clip Composer is a deliberately narrow Windows application for cataloging folders of short clips,
+arranging selected clips on a duration-based timeline, adding simple presentation elements, and producing
+a YouTube-ready compilation without the complexity of a general video editor.
 
-The application should work for personal use and remain suitable for possible commercial distribution. Its normal runtime must not depend on paid components, GPL/AGPL components, or non-redistributable FFmpeg builds.
+The application should work for personal use and remain suitable for possible commercial distribution.
+Its normal runtime must not depend on paid components, GPL/AGPL components, or a non-redistributable
+FFmpeg build.
 
 ## Scope principles
 
@@ -19,42 +23,82 @@ The application should work for personal use and remain suitable for possible co
 
 ## Requested features
 
-| Area | Feature | Status | Notes |
-|---|---|---:|---|
-| Configuration | Multiple configurable source folders | Done | Recursive scanning is optional. |
-| Configuration | Output directory and target timeline duration | Done | Persisted in the executable-directory INI file. |
-| Catalog | Scan MP4, WebM, AVI, and common related containers | Done | MP4, WebM, AVI, MOV, MKV, and M4V supported. |
-| Catalog | Probe duration, dimensions, and audio presence | Done | External FFprobe adapter. |
-| Catalog | Durable database that can be refreshed | Done | SQLite catalog with availability tracking. |
-| Browser | Selectable thumbnails with duration/index/optional names | Done | Cached FFmpeg thumbnails and search. |
-| Browser | Large-library-safe content browser and drag/drop | Done | Recycled virtualized rows load cached previews only when realized and drag clips into the timeline. |
-| Browser | Full-width browsing with a persistent timeline drop target | Done | A left-edge direction arrow temporarily expands the browser across the workspace; toggling it restores the saved dock layout. |
-| Workspace | Main timeline, preview, and layers/used-clips panels | Done | Four-slot resizable workspace with browser, preview, used clips/layers, and timeline. |
-| Workspace | Reposition/dock all main panels | Done | Each panel can swap into left, center, right, or bottom; layout persists in INI. |
-| Workspace | Complete Visual Studio designer layout | Done | Default dock coordinates live in XAML so all four panels render at design time; persisted runtime docking still overrides them. |
-| Visual design | Compact monochrome editor theme | Done | Explicit dark surfaces/title bars, warm neutral palette, square controls, reduced spacing, readable text hierarchy, and distinct disabled controls. |
-| Browser | Video preview or content slideshow | Done | Windows media playback plus a configurable cached FFmpeg contact sheet. |
-| Timeline | Configurable duration axis and total | Done | Progress against target duration is shown. |
-| Timeline | Add, duplicate, select, remove, and reorder clips | Done | Buttons and Delete-key removal supported. |
-| Screens | Splash, mid-video, and outro screens | Done | Still images can be inserted anywhere and reordered. |
-| Overlays | PNG/text overlays and custom fonts | Done | Multiple timed editable image/text layers plus the legacy compilation-wide preference. |
-| Progress | Per-clip or whole-video progress bars | Done | Rendered into final output. |
-| Output | Landscape and portrait YouTube formats | Done | YouTube 1080p/4K/Shorts plus custom frame sizes. |
-| Output | Join selected items into a final video | Done | Safe temporary output and cancellation. |
-| History | Record use time and final output for source files | Done | Export jobs and ordered source clip history. |
-| History | Open prior output/source locations | Done | History browser integrates with File Explorer. |
-| Configuration | INI file beside executable | Done | Atomic `CatClipComposer.ini` store with safe defaults and escaping. |
-| Automation | Headless command-line mode | Done | Config, catalog metadata, project/layer render, and history commands with JSON and stable exit codes. |
-| Licensing | Default path without required GPL components | Done | Native MPEG-4 default; Media Foundation H.264 option; libx264 explicitly GPL opt-in. |
-| Projects | Save and reopen named timelines | Done | Versioned `.ccproject` JSON with stable track/item IDs and atomic writes. |
-| Projects | Crash-recovery autosave | Done | Every timeline mutation writes atomic recovery under the configured metadata folder and startup restores it. |
-| Catalog | Tags, contact-sheet previews, and project-use metadata | Done | Searchable normalized tags, cached sheets, and successful-export project identity/history. |
-| Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Done | Add/edit/remove controls project through the shared render mapper into verified FFmpeg output. |
-| Output | Resolution/aspect/codec/quality/frame-rate presets | Done | Seven common presets plus validated custom values stored per project. |
-| Deployment | One-folder deployment with external tools under `thirdparty` | Done | Framework-dependent/self-contained single-file publisher requires an audited tool pair unless application-only packaging is explicit. |
-| Versioning | Shared application/component version visible to users | Done | Central 0.1.3 assembly/file metadata, main-window title/status display, and headless version output. |
-| Editing | Trim and per-clip volume | Partial | Per-clip volume is done; trimming remains deferred under `EDIT-001`. |
+Feature status is grouped by area instead of placed in a wide table so it remains readable in source form.
+
+### Configuration
+
+- **Multiple source folders — Done.** Recursive scanning is optional.
+- **Output directory and target timeline duration — Done.** Values persist in the executable-directory INI.
+- **INI beside the executable — Done.** The store uses atomic replacement, safe defaults, and escaping.
+
+### Catalog and browser
+
+- **Common video containers — Done.** MP4, WebM, AVI, MOV, MKV, and M4V are supported.
+- **Duration, dimensions, and audio probing — Done.** The bundled FFprobe adapter performs the probe.
+- **Durable refreshable database — Done.** SQLite tracks catalog entries and availability.
+- **Selectable thumbnails and search — Done.** Cached thumbnails support name, path, and tag search.
+- **Large-library safety and drag/drop — Done.** Recycled rows load cached previews only when realized and
+  drag clips into the timeline.
+- **Full-width browser focus — Done.** A left-edge arrow expands the browser while preserving the timeline
+  drop target; toggling back restores the saved dock layout.
+- **Video/contact-sheet preview — Done.** Windows media playback is backed by a configurable cached FFmpeg
+  contact sheet.
+- **Tags and project-use metadata — Done.** Tags are normalized and searchable; successful exports add
+  named-project usage history.
+
+### Workspace and visual design
+
+- **Main editor panels — Done.** Browser, preview, layers/used clips, and timeline occupy four resizable
+  slots.
+- **Repositionable docking — Done.** Every panel can swap into left, center, right, or bottom and persists
+  its slot in the INI.
+- **Complete Visual Studio designer layout — Done.** Default coordinates live in XAML; runtime settings can
+  replace them.
+- **Compact monochrome theme — Done.** Dark surfaces, warm neutral colors, square controls, reduced spacing,
+  readable text, and distinct disabled states are applied consistently.
+
+### Timeline and presentation
+
+- **Configurable duration axis and total — Done.** Progress against the target duration is visible.
+- **Add, duplicate, select, remove, and reorder clips — Done.** Controls and Delete-key removal are available.
+- **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
+- **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable.
+- **Progress bars — Done.** Whole-video and per-segment modes render into the output.
+- **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, and fit/fill/stretch/
+  animated-blur modes project through the shared renderer.
+
+### Output and history
+
+- **Landscape and portrait output — Done.** YouTube 1080p, 4K, Shorts, and custom frame sizes are available.
+- **Resolution, aspect, codec, quality, and FPS presets — Done.** Seven common presets plus custom settings
+  persist per project.
+- **Safe final compilation — Done.** Rendering uses a temporary output and supports cancellation.
+- **Successful-export usage history — Done.** Completed jobs record ordered source clips and final output.
+- **History browsing — Done.** Prior outputs and source locations open in File Explorer.
+
+### Projects and automation
+
+- **Named editable projects — Done.** Versioned `.ccproject` JSON uses stable track and item IDs.
+- **Crash recovery — Done.** Every timeline mutation writes an atomic recovery file under metadata storage.
+- **Headless operation — Done.** Config, catalog metadata, project rendering, and history commands support
+  JSON and stable exit codes.
+
+### Licensing, deployment, and versioning
+
+- **Non-GPL default rendering — Done.** Native MPEG-4 and Media Foundation H.264 need no GPL component;
+  libx264 is only an explicit user-supplied-tool opt-in.
+- **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
+  runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
+- **Shared user-visible version — Done.** Version 0.1.4 metadata drives every component, the window title and
+  status bar, and headless output.
+
+### Deferred editing scope
+
+- **Trim and per-clip volume — Partial.** Per-clip volume is complete. Trimming remains deferred as
+  `EDIT-001` so the application stays deliberately narrower than a general editor.
 
 ## Definition of an MVP release
 
-The MVP release requires all P0 items in `docs/TODO.md` to be complete, a clean Release build, a clean dependency vulnerability audit, an end-to-end headless smoke test, an end-to-end GUI render smoke test, and no open critical licensing audit item.
+The MVP release requires all P0 items in `docs/TODO.md` to be complete, a clean Release build, a clean
+dependency vulnerability audit, end-to-end headless and GUI render smokes, and no open critical licensing
+audit item.

@@ -1,5 +1,38 @@
 # Audit log
 
+## AUDIT-2026-08-06-022 — Mandatory FFmpeg bundle and documentation readability
+
+Scope: requested always-present FFmpeg tools, exact-binary release gate, and unreadable Markdown tables;
+`DEPLOY-003`, `AUD-RELEASE-FFMPEG-001`, and `AUD-DOC-002`.
+
+Findings and verification:
+
+- The machine's previously used Gyan `2026-01-14-git-6c878f8b82-full_build` reports `--enable-gpl`,
+  libx264, libx265, and other GPL components. It remains suitable for local tests but was rejected as the
+  mandatory normal-distribution payload.
+- The selected replacement is BtbN Windows x64 LGPL shared FFmpeg
+  `n8.1.2-34-g9b6c8969e0-20260806`, release `autobuild-2026-08-06-13-39`. The downloaded archive SHA-256
+  matched the distributor manifest: `97e1af03208a4582c26d5f3e670ab51af50b8d5788da78231aae218a7c917d56`.
+- Runtime inspection confirmed `drawtext`, native `mpeg4`, native AAC, and `h264_mf`; neither
+  `--enable-gpl` nor `--enable-nonfree` is present.
+- Executables, required shared DLLs, LGPL v3 text, source/archive record, exact build flags, and file hashes
+  now live together under `thirdparty\ffmpeg`. Binary files are Git LFS objects.
+- GUI and CLI build output automatically receives the payload. The portable publisher no longer supports
+  omitting or replacing it and validates manifest hashes, version pairing, license flags, and capabilities.
+- Dense prose tables were removed from the documentation. Stable TODO IDs, priorities, statuses, acceptance
+  criteria, stack details, feature status, architecture boundaries, CLI options, and output presets now use
+  headings and short lists readable in raw Markdown.
+- Required Release builds passed with zero warnings/errors, and the dependency re-audit reported no known
+  vulnerable NuGet packages.
+- The approximately 373 MB self-contained package retained only the two application executables and INI
+  at its root, reported application version 0.1.4, and matched every FFmpeg manifest hash.
+- A published-CLI smoke used the packaged FFmpeg path to scan a synthetic clip, generate both static and
+  contact-sheet previews, and render a two-second 1920x1080/30 native MPEG-4 plus AAC output. FFprobe confirmed
+  the streams/duration, and completed-project usage history contained the render.
+
+Result: exact binary redistribution selection is complete; `DEPLOY-003`, `AUD-RELEASE-FFMPEG-001`, and
+`AUD-DOC-002` are closed; application/component version advanced to 0.1.4.
+
 ## AUDIT-2026-08-06-021 — Full-width content browser focus
 
 Scope: requested left-side browser expansion control; `BROWSER-002` and `AUD-BROWSER-002`.

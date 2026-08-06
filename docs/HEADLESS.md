@@ -21,13 +21,11 @@ Options may appear before or after the command. Option names and commands are ca
 
 ## Shared paths and common options
 
-| Option | Meaning |
-|---|---|
-| `--config <file>` | Override the INI path. The default is `CatClipComposer.ini` beside the CLI executable. |
-| `--data <folder>` | Override the data folder containing `catalog.db`, `thumbnails`, `previews`, and recovery. The default comes from the INI metadata folder. |
-| `--json` | Write one JSON result document to stdout and suppress progress output. Errors are also JSON on stdout. |
-| `--version` | Show the shared application/component version without creating a database or data directory. Combine with `--json` for structured output. |
-| `--help` | Show help without creating a database or data directory. Combine with `--json` for structured help and exit-code metadata. |
+- **`--config <file>`:** Override the INI path. The default is `CatClipComposer.ini` beside the CLI.
+- **`--data <folder>`:** Override the folder containing `catalog.db`, previews, thumbnails, and recovery.
+- **`--json`:** Write one JSON result to stdout and suppress progress. Errors are also JSON on stdout.
+- **`--version`:** Show the shared version without creating a database or data directory.
+- **`--help`:** Show help without creating a database or data directory.
 
 Deploy the GUI and CLI executables to the same directory when they should use one default INI. During development their build output directories differ, so pass `--config` explicitly to share a file. Both use the same default local application-data catalog unless `--data` is supplied.
 
@@ -80,16 +78,16 @@ CatClipComposer.Cli.exe usage --clip 42 --json
 
 Renders an ordered composition and records the completed export and source usage in the shared catalog.
 
-| Option | Meaning |
-|---|---|
-| `--output <file>` | Required. A relative path is resolved under the INI output folder. |
-| `--clip <catalog-id>` | Add an available catalog clip. Repeat as needed, including the same ID more than once. |
-| `--screen "<seconds>\|<image-path>"` | Add a still screen of positive duration. In PowerShell, quote the value because `\|` is a shell operator. |
-| `--orientation <value>` | Optional `landscape` or `portrait`; otherwise use the INI. |
-| `--encoder <value>` | Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the INI. |
-| `--project-file <file>` | Render a saved project's enabled tracks/output settings and associate its identity with history. |
-| `--project-name <name>` | Associate a name when no project file supplies one. |
-| `--overwrite` | Explicitly permit replacement when the output already exists. |
+- **`--output <file>`:** Required. A relative path resolves under the INI output folder.
+- **`--clip <catalog-id>`:** Add an available catalog clip. Repeat it to reuse a clip.
+- **`--screen "<seconds>|<image-path>"`:** Add a positive-duration still. Quote it in PowerShell because
+  `|` is a shell operator.
+- **`--orientation <value>`:** Optional `landscape` or `portrait`; otherwise use the INI.
+- **`--encoder <value>`:** Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the INI.
+- **`--project-file <file>`:** Render a saved project's enabled tracks and output settings and associate its
+  identity with history.
+- **`--project-name <name>`:** Associate a name when no project file supplies one.
+- **`--overwrite`:** Explicitly permit replacement when the output already exists.
 
 Choose either a saved `--project-file` or at least one ad-hoc `--clip`/`--screen`. A saved project supplies video/still ordering, effects, timed overlays, progress, audio layers, output dimensions/FPS/quality/bitrates, and history identity. It cannot be mixed with ad-hoc segments. The INI still supplies FFmpeg and legacy compilation-wide overlay/progress defaults.
 
@@ -126,14 +124,12 @@ CatClipComposer.Cli.exe history --json
 
 ## Exit codes
 
-| Code | Meaning | Automation guidance |
-|---:|---|---|
-| `0` | Success | Consume stdout result. |
-| `2` | Invalid arguments or unsafe implicit overwrite | Correct command syntax/options. |
-| `3` | Invalid/unusable configuration or data location | Correct INI/data paths or required source settings. |
-| `4` | Scan completed with one or more warnings | Catalog updates were committed; inspect warning details. |
-| `5` | Execution failed | Inspect FFmpeg, filesystem, SQLite, or other runtime error. |
-| `130` | Cancelled with Ctrl+C or a cancellation token | Treat as an interrupted operation. |
+- **0 — Success:** Consume the stdout result.
+- **2 — Invalid arguments or unsafe implicit overwrite:** Correct command syntax or options.
+- **3 — Invalid configuration/data location:** Correct INI, data, or required source paths.
+- **4 — Scan completed with warnings:** Catalog updates were committed; inspect warning details.
+- **5 — Execution failed:** Inspect FFmpeg, filesystem, SQLite, or another runtime error.
+- **130 — Cancelled:** Treat Ctrl+C or cancellation-token termination as an interrupted operation.
 
 JSON error results have `status: "error"`, `exitCode`, `error`, and an optional `hint`. Successful render JSON includes the output path, duration, resolved orientation/encoder, and segment count. Durations and UTC timestamps use the standard `System.Text.Json` invariant string representation.
 

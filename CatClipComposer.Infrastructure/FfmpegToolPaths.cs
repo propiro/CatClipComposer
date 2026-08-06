@@ -15,7 +15,7 @@ internal static class FfmpegToolPaths
             "thirdparty",
             "ffmpeg",
             "ffmpeg.exe");
-        return File.Exists(packagedPath) ? packagedPath : "ffmpeg.exe";
+        return packagedPath;
     }
 
     public static string ResolveFfprobe(string configuredFfmpegPath)

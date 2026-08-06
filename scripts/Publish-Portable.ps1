@@ -3,9 +3,6 @@ param(
     [string]$OutputPath = "publish\CatClipComposer",
     [string]$Runtime = "win-x64",
     [bool]$SelfContained = $true,
-    [string]$FfmpegDirectory,
-    [switch]$SkipFfmpeg,
-    [switch]$AllowGplFfmpeg,
     [switch]$Force
 )
 
@@ -48,9 +45,82 @@ if ($existingEntries.Count -gt 0 -and -not $Force) {
     throw "Publish output is not empty. Re-run with -Force to replace it: $resolvedOutput"
 }
 
-if ($SkipFfmpeg -and -not [string]::IsNullOrWhiteSpace($FfmpegDirectory)) {
-    throw "Use either -FfmpegDirectory or -SkipFfmpeg, not both."
+function Assert-FfmpegPayload([string]$Directory, [bool]$InspectCapabilities) {
+    $manifestPath = Join-Path $Directory "MANIFEST.sha256"
+    foreach ($requiredName in @(
+        "ffmpeg.exe", "ffprobe.exe", "LICENSE.txt", "SOURCE.txt",
+        "BUILD_INFO.txt", "MANIFEST.sha256")) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Directory $requiredName))) {
+            throw "Bundled FFmpeg is incomplete; missing '$requiredName' under '$Directory'."
+        }
+    }
+
+    $manifestLines = @(Get-Content -LiteralPath $manifestPath -Encoding utf8 |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($manifestLines.Count -eq 0) {
+        throw "Bundled FFmpeg manifest is empty: $manifestPath"
+    }
+
+    foreach ($line in $manifestLines) {
+        if ($line -notmatch "^(?<hash>[0-9a-fA-F]{64})  (?<name>[^\\/]+)$") {
+            throw "Invalid bundled FFmpeg manifest entry: $line"
+        }
+
+        $filePath = Join-Path $Directory $Matches.name
+        if (-not (Test-Path -LiteralPath $filePath)) {
+            throw "Bundled FFmpeg manifest file is missing: $filePath"
+        }
+
+        $actualHash = (Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash
+        if (-not $actualHash.Equals($Matches.hash, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Bundled FFmpeg hash mismatch: $filePath"
+        }
+    }
+
+    if (-not $InspectCapabilities) {
+        return
+    }
+
+    $ffmpegExe = Join-Path $Directory "ffmpeg.exe"
+    $ffprobeExe = Join-Path $Directory "ffprobe.exe"
+    $ffmpegBuildLines = @(& $ffmpegExe -version 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect bundled FFmpeg: $ffmpegExe"
+    }
+    $ffmpegBuildText = $ffmpegBuildLines -join [Environment]::NewLine
+    if ($ffmpegBuildText -match "--enable-gpl" -or
+        $ffmpegBuildText -match "--enable-nonfree") {
+        throw "The mandatory FFmpeg bundle must not enable GPL or nonfree components."
+    }
+
+    $recordedVersion = Get-Content `
+        -LiteralPath (Join-Path $Directory "BUILD_INFO.txt") `
+        -Encoding utf8 -TotalCount 1
+    if (-not $ffmpegBuildLines[0].StartsWith(
+        $recordedVersion,
+        [System.StringComparison]::Ordinal)) {
+        throw "Bundled FFmpeg does not match BUILD_INFO.txt."
+    }
+
+    $ffprobeBuildLines = @(& $ffprobeExe -version 2>&1)
+    $versionToken = $recordedVersion -replace "^ffmpeg version ", ""
+    if ($LASTEXITCODE -ne 0 -or
+        $ffprobeBuildLines[0] -notmatch [regex]::Escape($versionToken)) {
+        throw "Bundled FFprobe does not match the pinned FFmpeg version."
+    }
+
+    $filters = @(& $ffmpegExe -hide_banner -filters 2>&1)
+    $encoders = @(& $ffmpegExe -hide_banner -encoders 2>&1)
+    foreach ($requiredPattern in @("\bdrawtext\b", "\bmpeg4\b", "\baac\b", "\bh264_mf\b")) {
+        if (-not [bool]($filters -match $requiredPattern) -and
+            -not [bool]($encoders -match $requiredPattern)) {
+            throw "Bundled FFmpeg lacks a required capability matching '$requiredPattern'."
+        }
+    }
 }
+
+$ffmpegSource = Join-Path $repositoryRoot "thirdparty\ffmpeg"
+Assert-FfmpegPayload $ffmpegSource $true
 
 $stagingRoot = Join-Path (
     [System.IO.Path]::GetTempPath()) (
@@ -111,66 +181,7 @@ try {
         -Destination (Join-Path $packageRoot "docs\THIRD_PARTY_NOTICES.md") -Force
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "thirdparty") `
         -Destination $packageRoot -Recurse -Force
-
-    if (-not $SkipFfmpeg) {
-        $resolvedFfmpeg = if (-not [string]::IsNullOrWhiteSpace($FfmpegDirectory)) {
-            [System.IO.Path]::GetFullPath($FfmpegDirectory)
-        } else {
-            [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "thirdparty\ffmpeg"))
-        }
-        $ffmpegToolDirectory = if (
-            Test-Path -LiteralPath (Join-Path $resolvedFfmpeg "ffmpeg.exe")) {
-            $resolvedFfmpeg
-        } else {
-            Join-Path $resolvedFfmpeg "bin"
-        }
-        $ffmpegExe = Join-Path $ffmpegToolDirectory "ffmpeg.exe"
-        $ffprobeExe = Join-Path $ffmpegToolDirectory "ffprobe.exe"
-        if (-not (Test-Path -LiteralPath $ffmpegExe) -or
-            -not (Test-Path -LiteralPath $ffprobeExe)) {
-            throw (
-                "A complete portable package requires ffmpeg.exe and ffprobe.exe. " +
-                "Supply -FfmpegDirectory or use -SkipFfmpeg for an application-only package.")
-        }
-
-        $ffmpegBuildLines = @(& $ffmpegExe -version 2>&1)
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not inspect the selected FFmpeg executable: $ffmpegExe"
-        }
-        $ffmpegBuildText = $ffmpegBuildLines -join [Environment]::NewLine
-        if ($ffmpegBuildText -match "--enable-nonfree") {
-            throw "The selected FFmpeg build uses --enable-nonfree and cannot be packaged."
-        }
-        if ($ffmpegBuildText -match "--enable-gpl" -and -not $AllowGplFfmpeg) {
-            throw (
-                "The selected FFmpeg build uses GPL components. Choose an LGPL build or " +
-                "pass -AllowGplFfmpeg for an explicit personal/opt-in package.")
-        }
-
-        $ffmpegTarget = Join-Path $packageRoot "thirdparty\ffmpeg"
-        New-Item -ItemType Directory -Force -Path $ffmpegTarget | Out-Null
-        Copy-Item -LiteralPath $ffmpegExe,$ffprobeExe -Destination $ffmpegTarget -Force
-        $noticeCopied = $false
-        $noticeDirectories = @($resolvedFfmpeg, $ffmpegToolDirectory) | Select-Object -Unique
-        foreach ($noticeDirectory in $noticeDirectories) {
-            foreach ($noticeName in @(
-                "LICENSE", "LICENSE.txt", "COPYING.LGPLv2.1", "COPYING.GPLv3",
-                "SOURCE.txt", "README.txt")) {
-                $noticePath = Join-Path $noticeDirectory $noticeName
-                if (Test-Path -LiteralPath $noticePath) {
-                    Copy-Item -LiteralPath $noticePath -Destination $ffmpegTarget -Force
-                    $noticeCopied = $true
-                }
-            }
-        }
-        $ffmpegBuildText | Set-Content `
-            -LiteralPath (Join-Path $ffmpegTarget "BUILD_INFO.txt") -Encoding utf8
-        if (-not $noticeCopied) {
-            Write-Warning (
-                "FFmpeg was copied without a nearby license/source notice. " +
-                "Add the exact distributor notices before release.")
-        }
-    }
+    Assert-FfmpegPayload (Join-Path $packageRoot "thirdparty\ffmpeg") $false
 
     if (Test-Path -LiteralPath $resolvedOutput) {
         Remove-Item -LiteralPath $resolvedOutput -Recurse -Force

@@ -41,7 +41,7 @@ Orientation=Landscape
 VideoEncoder=NativeMpeg4
 
 [Tools]
-FfmpegPath=C:\Tools\ffmpeg\bin\ffmpeg.exe
+FfmpegPath=ffmpeg.exe
 
 [Overlays]
 ProgressStyle=WholeCompilation
@@ -71,6 +71,10 @@ Valid enum values:
 `Output.Folder` is for accepted final compilations. `Output.ProjectFolder` is the default location for editable `.ccproject` files. Keeping these separate makes it possible to replace media/text and export a revised compilation later without treating an MP4 as the project source.
 
 `NativeMpeg4` is the non-GPL compatibility default. `WindowsMediaFoundationH264` uses FFmpeg's Media Foundation wrapper and is the preferred non-GPL YouTube preset when supported by the selected Windows FFmpeg build. `Libx264Gpl` is an optional GPL-dependent preset and is never selected implicitly.
+
+The default `FfmpegPath=ffmpeg.exe` resolves to the mandatory bundled
+`<executable directory>\thirdparty\ffmpeg\ffmpeg.exe`; it does not depend on `PATH`. Set an explicit path only
+to override the bundle locally. The matching `ffprobe.exe` must be beside an override.
 
 Source folders use zero-based `FolderN` keys and are loaded in numeric order. Duplicate paths are removed case-insensitively.
 

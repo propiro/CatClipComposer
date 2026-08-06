@@ -1,6 +1,7 @@
 # Third-party components
 
-This file is an engineering inventory, not legal advice. Verify the exact notices included by the chosen deployment and FFmpeg build before publishing binaries.
+This file is an engineering inventory, not legal advice. Preserve the exact notices and source records that
+ship beside third-party binaries.
 
 ## .NET and WPF
 
@@ -32,13 +33,28 @@ The `Microsoft.Data.Sqlite` package brings in SQLitePCLRaw packages under the Ap
 
 ## FFmpeg and FFprobe
 
-FFmpeg is not bundled by this repository. The user configures external `ffmpeg.exe` and `ffprobe.exe` executables, or a distributor may use the portable publisher to place an independently audited pair under `thirdparty\ffmpeg` together with its exact notices and build information.
+Cat Clip Composer bundles BtbN's Windows x64 shared FFmpeg/FFprobe runtime
+`n8.1.2-34-g9b6c8969e0-20260806` under `thirdparty\ffmpeg`. The exact distribution uses LGPL v3 and reports
+neither `--enable-gpl` nor `--enable-nonfree`.
 
-FFmpeg is LGPL 2.1-or-later by default. Enabling optional GPL components makes the corresponding build GPL. Builds configured with `--enable-nonfree` are not redistributable. Consult the configuration printed by `ffmpeg -version` and follow the obligations of the exact binary distribution.
+The distributed `LICENSE.txt`, `SOURCE.txt`, `BUILD_INFO.txt`, and `MANIFEST.sha256` files identify the
+license, pinned binary archive and SHA-256, upstream source, exact configuration, and runtime hashes. The
+shared DLLs remain separate and replaceable by interface-compatible builds.
 
-The default MP4 renderer uses FFmpeg's native `mpeg4` encoder and does not require a GPL component. A Windows Media Foundation `h264_mf` preset is also available. `libx264` is exposed only as an explicitly labeled GPL opt-in; selecting it requires a GPL-enabled FFmpeg build and the user/distributor is responsible for the corresponding obligations.
+The build configuration also lists its enabled LGPL-compatible codec, format, font, protocol, and hardware
+integrations. `SOURCE.txt` records that set and links the exact BtbN build-script tag; its `scripts.d` files
+pin each integration's upstream repository and commit. Those projects retain their respective MIT, BSD,
+Apache, ISC, zlib, MPL, FTL, LGPL, and similar notices and source terms. GPL-only and nonfree integrations
+are disabled in the bundled variant.
+
+The default renderer uses native `mpeg4`; the bundle also provides native AAC, `drawtext`, and Windows
+Media Foundation `h264_mf`. The bundled build deliberately disables `libx264`, `libx265`, and other GPL-only
+components. The application's `libx264` option therefore requires an explicit user-supplied GPL build and is
+never the normal packaged path.
 
 - Official legal and compliance information: <https://ffmpeg.org/legal.html>
 - FFmpeg license details: <https://ffmpeg.org/doxygen/trunk/md_LICENSE.html>
+- Binary build source and release: <https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2026-08-06-13-39>
+- Pinned FFmpeg source revision: <https://github.com/FFmpeg/FFmpeg/tree/9b6c8969e0>
 
 No paid runtime library is required by Cat Clip Composer. Open-source and public-domain components still retain their respective attribution, source-availability, redistribution, and other license requirements.

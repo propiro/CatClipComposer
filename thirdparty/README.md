@@ -1,20 +1,17 @@
 # Third-party deployment boundary
 
-The portable publisher copies external runtime tools under this folder so their files, licenses, and origin remain distinct from Cat Clip Composer.
+This folder contains runtime components kept separate from Cat Clip Composer's own executables.
 
-Expected layout for a complete portable package:
+`ffmpeg\` contains the mandatory pinned FFmpeg/FFprobe Windows x64 shared runtime. Its executables and DLLs
+are tracked with Git LFS and copied automatically into GUI output, CLI output, and every portable package.
 
-```text
-thirdparty/
-└── ffmpeg/
-    ├── ffmpeg.exe
-    ├── ffprobe.exe
-    ├── BUILD_INFO.txt
-    └── exact distributor license/source notices
-```
+The accompanying files are part of the deployable payload:
 
-Cat Clip Composer automatically discovers `thirdparty\ffmpeg\ffmpeg.exe` when the INI uses the default `ffmpeg.exe` value. `ffprobe.exe` must be from the same build and sit beside it.
+- `LICENSE.txt` — exact LGPL v3 text supplied by the selected distribution.
+- `SOURCE.txt` — distributor release, archive hash, and upstream source locations.
+- `BUILD_INFO.txt` — version, configuration flags, library versions, and required capability audit.
+- `MANIFEST.sha256` — hashes for every copied executable, DLL, and license file.
 
-Do not distribute an arbitrary FFmpeg download without auditing its `ffmpeg -buildconf` output and accompanying license. FFmpeg is LGPL 2.1-or-later by default, but a build containing GPL components becomes GPL. The application defaults to the native MPEG-4 encoder, offers Windows Media Foundation H.264 when the build supports it, and labels libx264 as explicit GPL opt-in.
-
-The repository intentionally contains no third-party executable. Pass an audited FFmpeg directory to `scripts\Publish-Portable.ps1` when preparing a complete distribution; `-SkipFfmpeg` creates an explicitly application-only package instead.
+The default INI value `FfmpegPath=ffmpeg.exe` resolves to `thirdparty\ffmpeg\ffmpeg.exe`. FFprobe and all
+shared DLLs must stay beside it. Do not replace only one file; upgrades require a complete one-build payload,
+updated records, license/dependency audit, and render verification.

@@ -6,6 +6,7 @@
 x64/
 x86/
 artifacts/
+publish/
 
 # Visual Studio and other IDE state
 .vs/

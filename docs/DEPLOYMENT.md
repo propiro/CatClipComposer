@@ -2,36 +2,31 @@
 
 Last reviewed: 2026-08-06
 
-`scripts\Publish-Portable.ps1` publishes the WPF editor, headless CLI, managed/native SQLite dependencies, optional self-contained .NET runtime, default INI, documentation, notices, and a separate `thirdparty` tool boundary into one folder. Managed dependencies and, for self-contained builds, the .NET runtime are bundled into the two application executables instead of being scattered through the package root.
+Cat Clip Composer always deploys its pinned FFmpeg runtime. Both normal builds and portable publishes place
+the tools under `thirdparty\ffmpeg`, separate from the application executables and configuration.
 
 ## Publish
 
-Complete self-contained win-x64 package with an audited LGPL-compatible FFmpeg build:
+Create the normal self-contained Windows x64 package:
 
 ```powershell
-.\scripts\Publish-Portable.ps1 `
-  -FfmpegDirectory "D:\AuditedTools\ffmpeg"
+.\scripts\Publish-Portable.ps1
 ```
 
-Framework-dependent package (requires the .NET 8 Desktop Runtime on the target):
+Create a framework-dependent package that requires the .NET 8 Desktop Runtime:
 
 ```powershell
-.\scripts\Publish-Portable.ps1 `
-  -SelfContained $false `
-  -FfmpegDirectory "D:\AuditedTools\ffmpeg"
+.\scripts\Publish-Portable.ps1 -SelfContained $false
 ```
 
-An application-only package may deliberately omit FFmpeg:
+The output folder must be empty. Use `-Force` to replace an earlier generated package explicitly. For
+safety, repository-local output is accepted only beneath `publish`; filesystem roots, the repository root,
+and repository parents are rejected.
 
-```powershell
-.\scripts\Publish-Portable.ps1 -SkipFfmpeg
-```
+There is no application-only or skip-FFmpeg publish mode. The publisher always takes the repository's pinned
+payload and validates it before any package is accepted.
 
-Without `-SkipFfmpeg`, the supplied directory—or the repository's `thirdparty\ffmpeg` folder—must contain `ffmpeg.exe` and `ffprobe.exe` from one build, either directly or in a `bin` child. The publisher rejects `--enable-nonfree` builds and rejects GPL-enabled builds unless `-AllowGplFfmpeg` is explicitly supplied for a personal/opt-in package. Known license/source notice filenames are copied from the distribution/tool folder, and `BUILD_INFO.txt` records `ffmpeg -version`/build configuration. A missing notice produces a warning that must be resolved before release.
-
-The output folder must be empty. Use `-Force` to explicitly replace a prior generated package. For safety, repository-local outputs are accepted only beneath `publish`; filesystem roots, repository roots, and repository parents are rejected.
-
-## Layout
+## Package layout
 
 ```text
 CatClipComposer/
@@ -42,24 +37,56 @@ CatClipComposer/
 |   |-- README.md
 |   `-- THIRD_PARTY_NOTICES.md
 `-- thirdparty/
+    |-- README.md
     `-- ffmpeg/
         |-- ffmpeg.exe
         |-- ffprobe.exe
+        |-- avcodec-62.dll and the other required shared DLLs
+        |-- LICENSE.txt
+        |-- SOURCE.txt
         |-- BUILD_INFO.txt
-        `-- exact license/source notices
+        `-- MANIFEST.sha256
 ```
 
-The root contains only the two executable entry points, the portable INI, and organized documentation/tool folders. Application assemblies, native SQLite, and the optional runtime live inside the single-file executables. When the INI retains `FfmpegPath=ffmpeg.exe`, both programs first look for `thirdparty\ffmpeg\ffmpeg.exe` beside themselves, then fall back to `PATH` for an explicitly application-only package.
+The root contains only the GUI/CLI entry points, portable INI, documentation, and the third-party boundary.
+Application assemblies, native SQLite, and the optional .NET runtime remain inside the single-file programs.
+FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
+interface-compatible build as required by the applicable license.
 
-## Release gate
+When the INI keeps its default `FfmpegPath=ffmpeg.exe`, GUI and CLI resolve
+`thirdparty\ffmpeg\ffmpeg.exe` beside the application. An explicit configured path remains a local user
+override; the mandatory packaged payload is still included.
 
-One-folder capability does not make an arbitrary FFmpeg build redistributable. Before publishing:
+## Pinned FFmpeg payload
 
-1. Inspect `BUILD_INFO.txt` for `--enable-gpl` and `--enable-nonfree`.
-2. Reject `--enable-nonfree` for distribution.
-3. Prefer an LGPL-compatible build for the normal package; keep GPL builds/user selection outside the normal distribution unless the whole distribution plan has been reviewed for GPL compliance.
-4. Include the exact FFmpeg distributor's license, source offer/link, and notices.
-5. Preserve `docs\THIRD_PARTY_NOTICES.md` and applicable .NET runtime notices.
-6. Run the published CLI help/config and one render using the packaged tool path.
+The repository carries BtbN's Windows x64 LGPL shared build:
 
-The 2026-08-06 smoke published both framework-dependent and self-contained packages, ran the published CLI, copied FFmpeg/FFprobe into `thirdparty`, and rendered a project through automatic packaged-tool discovery. A later packaging smoke verified that the application/runtime payload is limited to the two root executables. The test FFmpeg was not selected as a release binary; exact-binary licensing remains a release gate.
+- Version: `n8.1.2-34-g9b6c8969e0-20260806`
+- Release: `autobuild-2026-08-06-13-39`
+- Archive SHA-256: `97e1af03208a4582c26d5f3e670ab51af50b8d5788da78231aae218a7c917d56`
+- License supplied by the distribution: LGPL v3
+- GPL/nonfree flags: absent
+
+`SOURCE.txt` contains the pinned release/archive and upstream source URLs. `BUILD_INFO.txt` records the exact
+configuration and audited capabilities. `MANIFEST.sha256` records every executable, runtime DLL, and license
+file copied from the archive.
+
+The binary payload is stored with Git LFS. A checkout used for building or publishing must hydrate LFS files;
+the build will otherwise lack a runnable tool payload and the publisher's hash check will fail.
+
+## Publisher checks
+
+Before publishing, the script verifies:
+
+1. Required executables, records, and license files exist.
+2. Every runtime/license SHA-256 matches `MANIFEST.sha256`.
+3. FFmpeg and FFprobe report the pinned version.
+4. FFmpeg reports neither `--enable-gpl` nor `--enable-nonfree`.
+5. `drawtext`, native `mpeg4`, native `aac`, and `h264_mf` are available.
+6. The copied package payload still matches its manifest.
+
+## Updating FFmpeg
+
+An upgrade is a reviewed dependency change, not an arbitrary file replacement. Replace all executables and
+DLLs from one build, update the license/source/build/hash records, rerun the dependency and license audit,
+perform scan/preview/render smokes, update component documentation, and commit the payload through Git LFS.

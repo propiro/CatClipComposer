@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.3**.
+Current application and component version: **0.1.4**.
 
 ## Documentation
 
@@ -21,7 +21,7 @@ Current application and component version: **0.1.3**.
 
 ## Current features
 
-- Configure one or more source folders, an output folder, FFmpeg, a target duration, and landscape or portrait output.
+- Configure one or more source folders, an output folder, a target duration, and landscape or portrait output.
 - Scan MP4, WebM, AVI, MOV, MKV, and M4V files, including optional subfolder scanning.
 - Store clip metadata and export history in a durable SQLite database.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
@@ -41,22 +41,23 @@ Current application and component version: **0.1.3**.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
 - Browse large catalogs through a recycled virtualized list, expand the browser across the workspace while keeping the timeline available, and drag thumbnail rows directly onto it.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option.
-- Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables with audited tools in `thirdparty`.
+- Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
+  with the pinned audited FFmpeg runtime under `thirdparty`.
 
 ## Requirements
 
 - Windows 10 or later
 - .NET 8 SDK for development, or the .NET 8 Desktop Runtime for a framework-dependent deployment
-- `ffmpeg.exe` and `ffprobe.exe` from the same FFmpeg build
-- An FFmpeg build with the `drawtext` filter for text overlays
 
-The non-GPL default uses FFmpeg's native `mpeg4` encoder. On Windows, `h264_mf` provides the YouTube-preferred H.264 format without requiring a GPL FFmpeg component when that encoder is available. `libx264` remains an explicitly labeled GPL opt-in and is not required for normal operation.
+The repository includes a pinned Windows x64 FFmpeg/FFprobe shared runtime with the required DLLs and
+`drawtext` filter. Normal builds and portable packages copy it automatically under `thirdparty\ffmpeg`.
 
-FFmpeg can be placed on `PATH`, or `ffmpeg.exe` can be selected in the application’s Options window. When an explicit executable is selected, `ffprobe.exe` is expected beside it.
+The bundled LGPL v3 build provides native MPEG-4, AAC, and Media Foundation H.264 without GPL/nonfree build
+flags. `libx264` remains an explicitly labeled opt-in for a user-supplied GPL build and is never required.
 
-FFmpeg binaries are intentionally not committed or bundled. This keeps the application independent from a particular FFmpeg distribution and its exact license/configuration.
-
-For a complete portable folder, the publish script can copy an audited FFmpeg/FFprobe pair under `thirdparty\ffmpeg`; see [deployment](docs/DEPLOYMENT.md). The exact binary and notices must be reviewed before redistribution.
+An explicit `ffmpeg.exe` can still be selected in Options as a local override; its matching `ffprobe.exe`
+must sit beside it. See [deployment](docs/DEPLOYMENT.md) for the pinned version, hashes, notices, and upgrade
+procedure.
 
 ## Build and run
 
@@ -71,7 +72,7 @@ On the first run:
 
 1. Open **Options**.
 2. Add the folders containing source clips.
-3. Choose the output folder and `ffmpeg.exe` if FFmpeg is not on `PATH`.
+3. Choose the output folder. Leave the FFmpeg field at its default to use the bundled runtime.
 4. Choose the timeline target, orientation, overlays, and progress-bar style.
 5. Select **Update catalog**.
 6. Double-click clips or use **Add to timeline**, arrange the timeline, add any still screens, and select **Export MP4**.
@@ -109,7 +110,10 @@ CatClipComposer.Infrastructure/  SQLite, settings, FFprobe, FFmpeg thumbnails an
 
 All current runtime components are free to use, but “free” does not mean “without a license or obligations.” See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before distributing the application.
 
-In particular, FFmpeg is LGPL 2.1-or-later by default, but optional GPL components change the resulting FFmpeg build to GPL. Cat Clip Composer defaults to FFmpeg's native MPEG-4 Part 2 encoder, also offers the Windows Media Foundation H.264 wrapper, and exposes `libx264` only as a clearly labeled GPL opt-in. Cat Clip Composer launches FFmpeg as a separate executable and does not currently redistribute it.
+The bundled FFmpeg shared build is licensed under LGPL v3 and ships with its exact license, source location,
+configuration, and hashes. Cat Clip Composer launches it as a separate executable and keeps its replaceable
+DLLs under `thirdparty`. Optional GPL components are absent; `libx264` is only a clearly labeled custom-tool
+opt-in.
 
 ## Next refinements
 

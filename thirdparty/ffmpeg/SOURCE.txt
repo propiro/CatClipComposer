@@ -1,0 +1,28 @@
+Component: FFmpeg and FFprobe shared Windows x64 runtime
+Version: n8.1.2-34-g9b6c8969e0-20260806
+Distributor: BtbN/FFmpeg-Builds
+Release tag: autobuild-2026-08-06-13-39
+Archive: ffmpeg-n8.1.2-34-g9b6c8969e0-win64-lgpl-shared-8.1.zip
+Archive URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-06-13-39/ffmpeg-n8.1.2-34-g9b6c8969e0-win64-lgpl-shared-8.1.zip
+Archive SHA-256: 97e1af03208a4582c26d5f3e670ab51af50b8d5788da78231aae218a7c917d56
+Build scripts/source: https://github.com/BtbN/FFmpeg-Builds/tree/autobuild-2026-08-06-13-39
+FFmpeg source: https://github.com/FFmpeg/FFmpeg/tree/9b6c8969e0
+FFmpeg source download: https://github.com/FFmpeg/FFmpeg/archive/9b6c8969e0.tar.gz
+
+This folder contains the runtime executables, their required shared FFmpeg DLLs,
+the distributor-supplied LGPL v3 license, exact build information, and hashes.
+Development headers, import libraries, HTML manuals, presets, and ffplay.exe were
+not copied because Cat Clip Composer does not use them. The shared DLLs remain
+separate and replaceable by interface-compatible builds.
+
+The build enables LGPL-compatible integrations for common formats, codecs, fonts,
+network protocols, and hardware APIs. They include iconv, zlib, libxml2, VMAF,
+Fontconfig, HarfBuzz, FreeType, FriBidi, Vulkan, shaderc, Vorbis, GMP, XZ/LZMA,
+LCEVC, OpenCL, AMF, AOM, aribb24/aribcaption, Chromaprint, dav1d, NV codec
+headers, Game Music Emu, Kvazaar, libass, libbluray, JPEG XL, LAME, Opus,
+libplacebo, RIST, libssh, Theora, VPX, WebP, ZeroMQ, LV2, oneVPL, OpenAL,
+OpenAPV, OpenCORE AMR, OpenH264, OpenJPEG, OpenMPT, rav1e, Schannel, SDL2,
+Snappy, SoXR, SRT, SVT-AV1, TwoLAME, uavs3d, VAAPI, VVenC, zimg, and zvbi.
+The pinned BtbN build-script tag above is the authoritative per-component source
+and commit manifest. Those projects retain their own LGPL-compatible MIT, BSD,
+Apache, ISC, zlib, MPL, FTL, LGPL, and similar license terms.
