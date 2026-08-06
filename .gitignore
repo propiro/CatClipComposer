@@ -32,9 +32,9 @@ packages/
 .env.*
 !.env.example
 appsettings.*.local.json
+CatClipComposer.ini
 
 # Operating-system files
 .DS_Store
 Thumbs.db
 Desktop.ini
-

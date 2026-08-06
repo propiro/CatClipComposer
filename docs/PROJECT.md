@@ -22,7 +22,7 @@ The application should work for personal use and remain suitable for possible co
 | Area | Feature | Status | Notes |
 |---|---|---:|---|
 | Configuration | Multiple configurable source folders | Done | Recursive scanning is optional. |
-| Configuration | Output directory and target timeline duration | Done | Currently persisted as JSON; INI migration is in progress (`CFG-001`). |
+| Configuration | Output directory and target timeline duration | Done | Persisted in the executable-directory INI file. |
 | Catalog | Scan MP4, WebM, AVI, and common related containers | Done | MP4, WebM, AVI, MOV, MKV, and M4V supported. |
 | Catalog | Probe duration, dimensions, and audio presence | Done | External FFprobe adapter. |
 | Catalog | Durable database that can be refreshed | Done | SQLite catalog with availability tracking. |
@@ -37,7 +37,7 @@ The application should work for personal use and remain suitable for possible co
 | Output | Join selected items into a final video | Done | Safe temporary output and cancellation. |
 | History | Record use time and final output for source files | Done | Export jobs and ordered source clip history. |
 | History | Open prior output/source locations | Done | History browser integrates with File Explorer. |
-| Configuration | INI file beside executable | Not done | `CFG-001`. |
+| Configuration | INI file beside executable | Done | Atomic `CatClipComposer.ini` store with safe defaults and escaping. |
 | Automation | Headless command-line mode | Not done | `CLI-001`. |
 | Licensing | Default path without required GPL components | Not done | Current `libx264` default is tracked as `LIC-001`. |
 | Projects | Save and reopen named timelines | Not done | `PROJECT-001`. |

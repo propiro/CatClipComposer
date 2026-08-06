@@ -1,6 +1,7 @@
 using System.Windows;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Infrastructure;
+using CatClipComposer.Infrastructure.Configuration;
 
 namespace CatClipComposer;
 
@@ -14,7 +15,7 @@ public partial class App : Application
         {
             var paths = new AppPaths();
             paths.EnsureCreated();
-            ISettingsStore settingsStore = new JsonSettingsStore(paths);
+            ISettingsStore settingsStore = new IniSettingsStore(paths);
             IMediaCatalog catalog = new SqliteMediaCatalog(paths);
             await catalog.InitializeAsync();
             var settings = await settingsStore.LoadAsync();

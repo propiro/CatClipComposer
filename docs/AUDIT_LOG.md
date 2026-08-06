@@ -2,6 +2,25 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-005 — INI configuration closure
+
+Scope: `CFG-001` and `AUD-CFG-001`.
+
+Implementation findings:
+
+- Configuration resolves to `CatClipComposer.ini` under `AppContext.BaseDirectory`.
+- Parsing, application mapping/normalization, and atomic file replacement are separate responsibilities.
+- The JSON settings class and all references to `settings.json` were removed.
+- Saving to a protected executable directory produces an explicit configuration error instead of silently redirecting.
+
+Verification:
+
+- Release solution build: passed with zero warnings and errors.
+- Temporary round-trip harness: passed for folders containing `=`, folder ordering, booleans, doubles, enums, all overlay fields, newline/backslash text escaping, missing files, malformed values, defaults, and clamping.
+- Temporary test artifacts were removed after the run.
+
+Result: `CFG-001` and `AUD-CFG-001` closed.
+
 ## AUDIT-2026-08-06-004 — Documentation and TODO baseline
 
 Scope: requested product features, documentation requirements, and durable task tracking.

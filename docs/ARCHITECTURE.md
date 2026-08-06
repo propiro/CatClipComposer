@@ -9,7 +9,7 @@ CatClipComposer.Core
     Domain models, formatting utilities, and service contracts
 
 CatClipComposer.Infrastructure
-    INI/configuration, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
+    INI parsing/mapping/store, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
 
 CatClipComposer
     WPF application, windows, presentation models, and desktop-specific interaction
@@ -58,6 +58,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |
 | Application startup | Manual service composition | Must be shared with the CLI (`BOOT-001`). |
+| INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
 
 ## Architectural rules
 

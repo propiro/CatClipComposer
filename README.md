@@ -7,6 +7,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - [Project goals and feature status](docs/PROJECT.md)
 - [Architecture and module boundaries](docs/ARCHITECTURE.md)
 - [Software stack and license policy](docs/STACK_AND_LICENSES.md)
+- [INI configuration reference](docs/CONFIGURATION.md)
 - [Prioritized TODO register](docs/TODO.md)
 - [Worklog](docs/WORKLOG.md)
 - [Audit log](docs/AUDIT_LOG.md)
@@ -57,14 +58,19 @@ On the first run:
 5. Select **Update catalog**.
 6. Double-click clips or use **Add to timeline**, arrange the timeline, add any still screens, and select **Export MP4**.
 
-## Local application data
+## Configuration and local application data
 
-The program keeps machine-local data outside the repository:
+Configuration is stored beside the executable:
+
+```text
+<executable directory>\CatClipComposer.ini
+```
+
+The executable directory must be writable when Options are saved. The catalog and generated cache remain outside the repository:
 
 ```text
 %LOCALAPPDATA%\CatClipComposer\
 ├── catalog.db
-├── settings.json
 └── thumbnails\
 ```
 

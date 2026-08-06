@@ -2,6 +2,16 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Executable-directory INI configuration
+
+- Replaced the JSON settings implementation with focused INI reader, mapper, and atomic store classes.
+- Set the default path to `CatClipComposer.ini` under `AppContext.BaseDirectory`.
+- Documented the complete schema, enum values, escaping, defaults, clamping, and writable-directory behavior.
+- Added a direct smoke test for round trips, multiline/backslash escaping, ordered folders, missing files, malformed values, and bounded values.
+- Deleted the superseded JSON store; no legacy configuration path remains.
+- Closed: `CFG-001`, `AUD-CFG-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Repository policy and documentation system
 
 - Parsed the owner’s workflow, modularity, configuration, headless, licensing, documentation, audit, and commit requirements into repository-scoped `AGENTS.md`.

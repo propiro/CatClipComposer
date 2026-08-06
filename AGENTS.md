@@ -46,6 +46,7 @@ These instructions apply to the entire repository. Re-read this file before chan
 - `docs/PROJECT.md`: goals, scope, requested features, completed features, and incomplete features.
 - `docs/ARCHITECTURE.md`: module boundaries, dependencies, runtime data flow, and design decisions.
 - `docs/STACK_AND_LICENSES.md`: software stack, dependency inventory, and desired license policy.
+- `docs/CONFIGURATION.md`: INI location, schema, escaping, defaults, and writable-directory behavior.
 - `docs/HEADLESS.md`: CLI commands, arguments, output formats, and exit codes.
 - `docs/TODO.md`: prioritized work with stable IDs, status, acceptance criteria, and audit TODOs.
 - `docs/WORKLOG.md`: chronological append-only summary of material work and associated commits.
