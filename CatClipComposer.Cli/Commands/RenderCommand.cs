@@ -1,6 +1,7 @@
 using System.Globalization;
 using CatClipComposer.Cli.CommandLine;
 using CatClipComposer.Core.Models;
+using CatClipComposer.Core.Services;
 
 namespace CatClipComposer.Cli.Commands;
 
@@ -26,26 +27,9 @@ internal static class RenderCommand
                 $"Output already exists: {outputPath}. Add '--overwrite' to replace it.");
         }
 
-        var orientation = ParseOrientation(
-            invocation.GetSingleValue("orientation"),
-            context.Settings.Orientation);
-        var encoder = ParseEncoder(
-            invocation.GetSingleValue("encoder"),
-            context.Settings.VideoEncoder);
-        var segments = await CreateSegmentsAsync(invocation, context);
-        if (segments.Count == 0)
-        {
-            throw new CliUsageException(
-                "Add at least one ordered '--clip <catalog-id>' or '--screen \"<seconds>|<image-path>\"' option.");
-        }
-
-        IProgress<RenderProgress>? progress = context.Json
-            ? null
-            : new InlineProgress<RenderProgress>(update =>
-                context.Error.WriteLine(
-                    $"Render {update.Percent,6:0.0}%  {update.ProcessedDuration:hh\\:mm\\:ss}  {update.Message}"));
         var projectName = invocation.GetSingleValue("project-name");
         string? projectFilePath = null;
+        EditorProject? project = null;
         var projectFileOption = invocation.GetSingleValue("project-file");
         if (!string.IsNullOrWhiteSpace(projectFileOption))
         {
@@ -55,12 +39,58 @@ internal static class RenderCommand
                 throw new CliUsageException($"Project file does not exist: {projectFilePath}");
             }
 
-            var project = await context.Services.ProjectStore.LoadAsync(
+            if (invocation.Options.Any(option => option.Name is "clip" or "screen"))
+            {
+                throw new CliUsageException(
+                    "Do not combine --project-file with --clip or --screen; the saved project supplies its tracks.");
+            }
+
+            project = await context.Services.ProjectStore.LoadAsync(
                 projectFilePath,
                 context.CancellationToken);
             projectName ??= project.Name;
         }
 
+        var fallbackOrientation = project is null
+            ? context.Settings.Orientation
+            : project.Output.Height > project.Output.Width
+                ? OutputOrientation.Portrait
+                : OutputOrientation.Landscape;
+        var orientation = ParseOrientation(
+            invocation.GetSingleValue("orientation"),
+            fallbackOrientation);
+        var encoder = ParseEncoder(
+            invocation.GetSingleValue("encoder"),
+            project?.Output.VideoEncoder ?? context.Settings.VideoEncoder);
+        var outputWidth = project?.Output.Width ?? 0;
+        var outputHeight = project?.Output.Height ?? 0;
+        if (project is not null && invocation.GetSingleValue("orientation") is not null &&
+            ((orientation == OutputOrientation.Portrait && outputWidth > outputHeight) ||
+             (orientation == OutputOrientation.Landscape && outputHeight > outputWidth)))
+        {
+            (outputWidth, outputHeight) = (outputHeight, outputWidth);
+        }
+
+        var renderPlan = project is null
+            ? new ProjectRenderPlan(
+                await CreateSegmentsAsync(invocation, context),
+                [],
+                [])
+            : ProjectRenderMapper.Create(project);
+        var segments = renderPlan.Segments;
+        if (segments.Count == 0)
+        {
+            throw new CliUsageException(
+                project is null
+                    ? "Add at least one ordered '--clip <catalog-id>' or '--screen \"<seconds>|<image-path>\"' option."
+                    : "The saved project has no enabled video or still-screen items.");
+        }
+
+        IProgress<RenderProgress>? progress = context.Json
+            ? null
+            : new InlineProgress<RenderProgress>(update =>
+                context.Error.WriteLine(
+                    $"Render {update.Percent,6:0.0}%  {update.ProcessedDuration:hh\\:mm\\:ss}  {update.Message}"));
         var request = new RenderRequest(
             segments,
             outputPath,
@@ -72,8 +102,16 @@ internal static class RenderCommand
             context.Settings.OverlayTextSize,
             context.Settings.OverlayPosition,
             encoder,
+            project?.Output.FramesPerSecond ?? 30,
             ProjectName: projectName,
-            ProjectFilePath: projectFilePath);
+            ProjectFilePath: projectFilePath,
+            OutputWidth: outputWidth,
+            OutputHeight: outputHeight,
+            QualityPercent: project?.Output.QualityPercent ?? 80,
+            VideoBitrateKbps: project?.Output.VideoBitrateKbps ?? 8000,
+            AudioBitrateKbps: project?.Output.AudioBitrateKbps ?? 192,
+            TimedOverlays: renderPlan.TimedOverlays,
+            AudioLayers: renderPlan.AudioLayers);
         var result = await context.Services.CompositionExporter.ExportAsync(
             request,
             context.Settings.FfmpegPath,
@@ -90,6 +128,13 @@ internal static class RenderCommand
                 result.Duration,
                 orientation = orientation.ToString(),
                 encoder = encoder.ToString(),
+                width = outputWidth > 0
+                    ? outputWidth
+                    : orientation == OutputOrientation.Portrait ? 1080 : 1920,
+                height = outputHeight > 0
+                    ? outputHeight
+                    : orientation == OutputOrientation.Portrait ? 1920 : 1080,
+                framesPerSecond = request.FramesPerSecond,
                 segmentCount = segments.Count
             });
             return CliExitCodes.Success;

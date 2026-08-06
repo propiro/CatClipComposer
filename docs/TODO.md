@@ -9,7 +9,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | ID | Priority | Status | Work | Acceptance criteria |
 |---|---:|---:|---|---|
 | CFG-001 | P0 | Done | Replace JSON settings with `CatClipComposer.ini` beside the executable. | INI round-trip/malformed-input smoke passed; JSON store removed; schema documented. |
-| CLI-001 | P0 | Done | Add a headless CLI project in this repository. | Config, scan, list, render, and history commands passed text/JSON, exit-code, and end-to-end render smoke tests; Release build passes. |
+| CLI-001 | P0 | Done | Add a headless CLI project in this repository. | Config, scan/list, tag/usage, project, layered render, and history commands passed text/JSON, exit-code, and end-to-end render smoke tests; Release build passes. |
 | LIC-001 | P0 | Done | Remove required `libx264`/GPL encoding from the default render path. | Native `mpeg4` is default; `h264_mf` non-GPL option passed; `libx264` is explicit GPL opt-in. |
 | BOOT-001 | P0 | Done | Share service composition between GUI and CLI. | Both executables consume `ApplicationServicesFactory`; render/history transaction is shared through `ICompositionExporter`. |
 | MOD-001 | P1 | Done | Split `MainViewModel` orchestration and timeline state. | Focused `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render-segment projection; direct smoke passed. |
@@ -20,11 +20,11 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | WORKSPACE-001 | P0 | Done | Add resizable and repositionable content, preview, layers/used-clips, and timeline panels. | Four dock slots use splitters; every panel can swap slots; unique layout persists in INI. |
 | BROWSER-001 | P0 | Done | Make the content browser safe for very large libraries and support drag/drop. | Recycling virtualization is enabled; only cached realized thumbnails bind; clips drag to the timeline. |
 | CATMETA-001 | P1 | Done | Add editable tags, static/contact-sheet preview metadata, and named-project usage details. | Additive SQLite migration, five-frame preview generation, tag editing/filtering, and project history queries passed. |
-| LAYERS-001 | P1 | In progress | Persist and edit a project layer/track model. | Five track types and all requested item fields persist; editing controls and renderer projection remain. |
-| FX-001 | P1 | Open | Add timed fades, overlays, music, progress ranges, and fit/fill/blur-background modes. | Timeline controls and verified FFmpeg output cover each effect without GPL-only filters. |
-| OUTPUT-001 | P1 | Open | Add common resolution/aspect/FPS/codec/quality presets and custom output values. | Presets reflect official editor/platform guidance; custom validated settings reach FFmpeg. |
-| DEPLOY-001 | P1 | Open | Produce a one-folder deployment layout with a tidy `thirdparty` boundary. | Published GUI/CLI/config/docs plus audited optional tools run from one folder. |
-| OVERLAY-001 | P2 | Open | Support multiple image/text overlays with individual start/end times. | Timeline or overlay editor controls timing and placement for multiple elements. |
+| LAYERS-001 | P1 | Done | Persist and edit a project layer/track model. | Five track types and requested item fields persist; add/edit/remove controls and a shared GUI/CLI renderer projection pass. |
+| FX-001 | P1 | Done | Add timed fades, overlays, music, progress ranges, and fit/fill/blur-background modes. | Controls and a real six-second FFmpeg render cover timed text/PNG/progress/music, fades, volume, and animated blur without a GPL-only filter. |
+| OUTPUT-001 | P1 | Done | Add common resolution/aspect/FPS/codec/quality presets and custom output values. | Officially sourced presets plus validated custom 640×360/24 settings reached FFmpeg and FFprobe. |
+| DEPLOY-001 | P1 | Done | Produce a one-folder deployment layout with a tidy `thirdparty` boundary. | Framework-dependent/self-contained folders ran; copied FFmpeg tools were discovered and rendered from `thirdparty`. Exact release binary audit remains mandatory. |
+| OVERLAY-001 | P2 | Done | Support multiple image/text overlays with individual start/end times. | Layer editor controls timing and placement for multiple elements; timed render passed. |
 | PREVIEW-001 | P2 | Done | Add FFmpeg contact-sheet/slideshow fallback preview. | Configurable cached contact sheets are displayed below Windows playback and remain available for unsupported codecs. |
 | PROJECT-001 | P2 | Done | Save/reopen named timeline projects with crash recovery. | Versioned five-track `.ccproject` documents and atomic recovery round-trip without embedding media; GUI and CLI checks pass. |
 | EDIT-001 | P3 | Deferred | Add trim-in/out and per-clip volume. | Narrow controls work without expanding into general NLE scope. |
@@ -42,3 +42,6 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | AUD-UX-001 | P0 | Done | Verify the theme leak, density, docking, virtualization, and drag/drop implementation. | Release build and captured main-window screenshot show no white client surface; XAML/code audit confirms recycling and dock persistence. |
 | AUD-PROJECT-001 | P0 | Done | Verify project versioning, atomic save/load, recovery identity, and overwrite safety. | CLI create/load preserved schema/GUID/five tracks/output; overwrite returned 2; GUI startup and additive SQLite migration passed. |
 | AUD-CATMETA-001 | P1 | Done | Verify metadata migration, preview cache, tag updates, and successful-export usage semantics. | Synthetic six-second MP4 produced 800x90 five-frame sheet; tags normalized/persisted; usage stayed zero before export and returned named project/path after export. |
+| AUD-FX-001 | P1 | Done | Verify layer projection, filter termination, timing, output settings, and codecs. | Real project render produced 640×360/24 MPEG-4 + AAC for exactly 6.000 s; frame sheet showed animated blur, fades, timed text/PNG, and progress; music mix was present. |
+| AUD-PORTABLE-001 | P1 | Done | Verify one-folder publish and packaged-tool discovery. | Framework-dependent and 154 MB self-contained publishes ran CLI; FFmpeg/FFprobe copied under `thirdparty` and a layered render succeeded through automatic discovery. |
+| AUD-RELEASE-FFMPEG-001 | P0 | Open | Audit the exact FFmpeg binary and notices selected for public/commercial distribution. | Confirm no `--enable-nonfree`; decide LGPL/GPL package boundary; include exact license/source notices and retain `BUILD_INFO.txt`. |

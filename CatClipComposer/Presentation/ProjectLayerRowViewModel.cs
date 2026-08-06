@@ -1,0 +1,47 @@
+using CatClipComposer.Core.Models;
+using CatClipComposer.Core.Utilities;
+
+namespace CatClipComposer.Presentation;
+
+public sealed class ProjectLayerRowViewModel
+{
+    private ProjectLayerRowViewModel(
+        ProjectTrack track,
+        ProjectTimelineItem? item,
+        string title,
+        string detail)
+    {
+        Track = track;
+        Item = item;
+        Title = title;
+        Detail = detail;
+    }
+
+    public ProjectTrack Track { get; }
+
+    public ProjectTimelineItem? Item { get; }
+
+    public bool IsTrackHeader => Item is null;
+
+    public string Title { get; }
+
+    public string Detail { get; }
+
+    public static ProjectLayerRowViewModel ForTrack(ProjectTrack track) => new(
+        track,
+        null,
+        track.Name.ToUpperInvariant(),
+        $"{track.Items.Count} item(s){(track.IsEnabled ? string.Empty : " • disabled")}");
+
+    public static ProjectLayerRowViewModel ForItem(ProjectTrack track, ProjectTimelineItem item)
+    {
+        var effects = item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage
+            ? $" • {item.FitMode} • fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s"
+            : string.Empty;
+        return new ProjectLayerRowViewModel(
+            track,
+            item,
+            item.Name,
+            $"{DurationFormatter.Format(item.Start)} → {DurationFormatter.Format(item.Start + item.Duration)} • {item.Kind}{effects}");
+    }
+}

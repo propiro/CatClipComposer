@@ -35,22 +35,22 @@ The application should work for personal use and remain suitable for possible co
 | Timeline | Configurable duration axis and total | Done | Progress against target duration is shown. |
 | Timeline | Add, duplicate, select, remove, and reorder clips | Done | Buttons and Delete-key removal supported. |
 | Screens | Splash, mid-video, and outro screens | Done | Still images can be inserted anywhere and reordered. |
-| Overlays | PNG/text overlays and custom fonts | Partial | One compilation-wide image/text layer exists; independently timed overlays remain `OVERLAY-001`. |
+| Overlays | PNG/text overlays and custom fonts | Done | Multiple timed editable image/text layers plus the legacy compilation-wide preference. |
 | Progress | Per-clip or whole-video progress bars | Done | Rendered into final output. |
-| Output | Landscape and portrait YouTube formats | Done | 1920×1080 and 1080×1920. |
+| Output | Landscape and portrait YouTube formats | Done | YouTube 1080p/4K/Shorts plus custom frame sizes. |
 | Output | Join selected items into a final video | Done | Safe temporary output and cancellation. |
 | History | Record use time and final output for source files | Done | Export jobs and ordered source clip history. |
 | History | Open prior output/source locations | Done | History browser integrates with File Explorer. |
 | Configuration | INI file beside executable | Done | Atomic `CatClipComposer.ini` store with safe defaults and escaping. |
-| Automation | Headless command-line mode | Done | Config, scan, list, render, and history commands with JSON and stable exit codes. |
+| Automation | Headless command-line mode | Done | Config, catalog metadata, project/layer render, and history commands with JSON and stable exit codes. |
 | Licensing | Default path without required GPL components | Done | Native MPEG-4 default; Media Foundation H.264 option; libx264 explicitly GPL opt-in. |
 | Projects | Save and reopen named timelines | Done | Versioned `.ccproject` JSON with stable track/item IDs and atomic writes. |
 | Projects | Crash-recovery autosave | Done | Every timeline mutation writes atomic recovery under the configured metadata folder and startup restores it. |
 | Catalog | Tags, contact-sheet previews, and project-use metadata | Done | Searchable normalized tags, cached sheets, and successful-export project identity/history. |
-| Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Partial | Five-track project schema and fields persist; editing controls/render projection remain `LAYERS-001` and `FX-001`. |
-| Output | Resolution/aspect/codec/quality/frame-rate presets | Not done | `OUTPUT-001`. |
-| Deployment | One-folder deployment with external tools under `thirdparty` | Not done | `DEPLOY-001`; licensing audit required before bundling FFmpeg. |
-| Editing | Trim and per-clip volume | Not done | Deferred narrow-editor enhancement `EDIT-001`. |
+| Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Done | Add/edit/remove controls project through the shared render mapper into verified FFmpeg output. |
+| Output | Resolution/aspect/codec/quality/frame-rate presets | Done | Seven common presets plus validated custom values stored per project. |
+| Deployment | One-folder deployment with external tools under `thirdparty` | Done | Framework-dependent/self-contained publisher plus optional audited-tool copy and automatic discovery. |
+| Editing | Trim and per-clip volume | Partial | Per-clip volume is done; trimming remains deferred under `EDIT-001`. |
 
 ## Definition of an MVP release
 

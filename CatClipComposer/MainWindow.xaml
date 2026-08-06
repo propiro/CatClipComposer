@@ -46,6 +46,7 @@
                     <Button Click="NewProject_Click" Content="New" />
                     <Button Margin="4,0,0,0" Click="OpenProject_Click" Content="Open" />
                     <Button Margin="4,0,0,0" Click="SaveProject_Click" Content="Save" />
+                    <Button Margin="4,0,0,0" Click="OutputSettings_Click" Content="Output" />
                     <TextBlock Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{StaticResource MutedTextBrush}"
@@ -308,7 +309,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
-                        <RowDefinition Height="56" />
+                        <RowDefinition Height="44" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -333,51 +334,52 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock FontSize="10" FontWeight="SemiBold" Text="VIDEO TRACK" />
+                        <TextBlock FontSize="10" FontWeight="SemiBold" Text="PROJECT TRACKS" />
                         <TextBlock Grid.Row="1"
                                    Foreground="{StaticResource MutedTextBrush}"
                                    Text="{Binding Timeline.TotalText}" />
                     </Grid>
                     <ListBox Grid.Row="2"
                              Margin="4,0"
-                             ItemsSource="{Binding Timeline.Clips}"
-                             SelectedItem="{Binding Timeline.SelectedClip}">
+                             ItemsSource="{Binding ProjectLayers}"
+                             SelectedItem="{Binding SelectedProjectLayer}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid Height="42">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="48" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border Background="{StaticResource PreviewBrush}">
-                                        <Image Source="{Binding ThumbnailPath}" Stretch="UniformToFill" />
-                                    </Border>
-                                    <StackPanel Grid.Column="1" Margin="6,2,2,0">
-                                        <TextBlock FontSize="10"
+                                <Border x:Name="LayerRow" Padding="7,4" BorderThickness="0,0,0,1"
+                                        BorderBrush="{StaticResource BorderBrush}">
+                                    <StackPanel>
+                                        <TextBlock x:Name="LayerTitle"
+                                                   FontSize="10"
                                                    FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"
-                                                   Text="{Binding FileName}" />
-                                        <TextBlock Margin="0,2,0,0"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock x:Name="LayerDetail"
+                                                   Margin="0,2,0,0"
                                                    FontSize="9"
                                                    Foreground="{StaticResource MutedTextBrush}"
-                                                   Text="{Binding KindText}" />
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Detail}" />
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2"
-                                               Margin="4,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="10"
-                                               Foreground="{StaticResource AccentBrush}"
-                                               Text="{Binding DurationText}" />
-                                </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsTrackHeader}" Value="True">
+                                        <Setter TargetName="LayerRow" Property="Background" Value="{StaticResource ToolbarBrush}" />
+                                        <Setter TargetName="LayerTitle" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter TargetName="LayerDetail" Property="Foreground" Value="{StaticResource FaintTextBrush}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <StackPanel Grid.Row="3" Margin="6" Orientation="Horizontal">
-                        <Button Click="AddStillScreen_Click" Content="Add image" />
-                        <Button Margin="4,0,0,0" IsEnabled="False" Content="Add text" />
-                        <Button Margin="4,0,0,0" Click="RemoveTimeline_Click" Content="Remove" />
-                    </StackPanel>
+                    <WrapPanel Grid.Row="3" Margin="6">
+                        <Button Tag="Text" Click="AddLayer_Click" Content="+ Text" />
+                        <Button Tag="Image" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ PNG" />
+                        <Button Tag="Audio" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Music" />
+                        <Button Tag="Progress" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Progress" />
+                        <Button Margin="4,0,0,0" Click="EditLayer_Click" Content="Edit" />
+                        <Button Margin="4,0,0,0" Click="ClipEffects_Click" Content="Clip FX" />
+                        <Button Margin="4,0,0,0" Click="RemoveLayer_Click" Content="Remove" />
+                    </WrapPanel>
                 </Grid>
             </Border>
 

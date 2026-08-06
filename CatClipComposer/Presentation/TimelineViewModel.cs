@@ -123,6 +123,18 @@ public sealed class TimelineViewModel : ObservableObject
         return true;
     }
 
+    public bool Select(Guid instanceId)
+    {
+        var clip = _clips.FirstOrDefault(item => item.InstanceId == instanceId);
+        if (clip is null)
+        {
+            return false;
+        }
+
+        SelectedClip = clip;
+        return true;
+    }
+
     public void Clear()
     {
         _clips.Clear();
@@ -133,6 +145,21 @@ public sealed class TimelineViewModel : ObservableObject
     {
         _targetDuration = TimeSpan.FromMinutes(minutes);
         RefreshSummary();
+    }
+
+    public void UpdateSelectedEffects(
+        VideoFitMode fitMode,
+        double fadeInSeconds,
+        double fadeOutSeconds,
+        double volume)
+    {
+        if (SelectedClip is null)
+        {
+            return;
+        }
+
+        SelectedClip.UpdateEffects(fitMode, fadeInSeconds, fadeOutSeconds, volume);
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     public IReadOnlyList<RenderSegment> CreateRenderSegments() =>

@@ -34,7 +34,7 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 | SQLite | Via SQLitePCLRaw 2.1.12 | Embedded catalog database | Public domain | Accepted. |
 | SQLitePCLRaw | 2.1.12 | Native SQLite interop/bundle | Apache-2.0 | Accepted; explicitly pinned past vulnerable native SQLite versions. |
 | System.Text.Json | .NET 8 | Structured CLI output and internal serialization where needed | MIT as a .NET library package | Accepted. |
-| FFmpeg / FFprobe | User supplied | Probe, thumbnails, filters, encoding | LGPL-2.1-or-later by default; optional GPL parts change build status | External only; default features must work with LGPL build. |
+| FFmpeg / FFprobe | User supplied or publisher-supplied audited pair | Probe, thumbnails, filters, encoding | LGPL-2.1-or-later by default; optional GPL parts change build status | Separate executable under `thirdparty`; default features must work with an LGPL-compatible build. |
 | FFmpeg native `mpeg4` | Selected FFmpeg build | Default MPEG-4 Part 2 encoder | Native FFmpeg encoder, available without external GPL library | Accepted non-GPL compatibility default. YouTube accepts MPEG4 uploads but recommends H.264. |
 | FFmpeg `h264_mf` | Selected Windows FFmpeg build | Preferred H.264 encoder | Media Foundation wrapper documented by FFmpeg; no `--enable-gpl` dependency | Accepted optional non-GPL Windows preset; availability is build-dependent. |
 | libx264 | Selected FFmpeg build | Optional H.264 encoder | GPL when enabled in FFmpeg | Allowed only as an explicit `Libx264Gpl` user opt-in; never required/default. |
@@ -49,7 +49,7 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 
 ## FFmpeg distribution boundary
 
-The repository does not include FFmpeg binaries. Users configure `ffmpeg.exe`; `ffprobe.exe` is located beside it or on `PATH`. Documentation must explain how to inspect a build with `ffmpeg -version` and must distinguish:
+The repository does not include FFmpeg binaries. Users configure `ffmpeg.exe`; `ffprobe.exe` is located beside it, under the portable `thirdparty\ffmpeg` boundary, or on `PATH`. The publisher records `ffmpeg -version` as `BUILD_INFO.txt`. Release review must distinguish:
 
 - LGPL-compatible builds without `--enable-gpl` or `--enable-nonfree`;
 - GPL builds, which may be used personally as an explicit opt-in but are not required;

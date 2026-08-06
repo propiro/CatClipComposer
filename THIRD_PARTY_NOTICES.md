@@ -32,7 +32,7 @@ The `Microsoft.Data.Sqlite` package brings in SQLitePCLRaw packages under the Ap
 
 ## FFmpeg and FFprobe
 
-FFmpeg is not bundled by this repository. The user configures external `ffmpeg.exe` and `ffprobe.exe` executables.
+FFmpeg is not bundled by this repository. The user configures external `ffmpeg.exe` and `ffprobe.exe` executables, or a distributor may use the portable publisher to place an independently audited pair under `thirdparty\ffmpeg` together with its exact notices and build information.
 
 FFmpeg is LGPL 2.1-or-later by default. Enabling optional GPL components makes the corresponding build GPL. Builds configured with `--enable-nonfree` are not redistributable. Consult the configuration printed by `ffmpeg -version` and follow the obligations of the exact binary distribution.
 

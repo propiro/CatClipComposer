@@ -2,8 +2,21 @@ namespace CatClipComposer.Infrastructure;
 
 internal static class FfmpegToolPaths
 {
-    public static string ResolveFfmpeg(string configuredPath) =>
-        string.IsNullOrWhiteSpace(configuredPath) ? "ffmpeg.exe" : configuredPath;
+    public static string ResolveFfmpeg(string configuredPath)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath) &&
+            !configuredPath.Equals("ffmpeg.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            return configuredPath;
+        }
+
+        var packagedPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "thirdparty",
+            "ffmpeg",
+            "ffmpeg.exe");
+        return File.Exists(packagedPath) ? packagedPath : "ffmpeg.exe";
+    }
 
     public static string ResolveFfprobe(string configuredFfmpegPath)
     {

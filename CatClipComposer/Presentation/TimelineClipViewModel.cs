@@ -7,6 +7,10 @@ namespace CatClipComposer.Presentation;
 public sealed class TimelineClipViewModel : ObservableObject
 {
     private int _order;
+    private VideoFitMode _fitMode;
+    private double _fadeInSeconds;
+    private double _fadeOutSeconds;
+    private double _volume;
 
     private TimelineClipViewModel(
         RenderSegmentKind kind,
@@ -15,7 +19,11 @@ public sealed class TimelineClipViewModel : ObservableObject
         bool hasAudio,
         MediaFile? media,
         int order,
-        Guid? instanceId = null)
+        Guid? instanceId = null,
+        VideoFitMode fitMode = VideoFitMode.Fit,
+        double fadeInSeconds = 0,
+        double fadeOutSeconds = 0,
+        double volume = 1)
     {
         Kind = kind;
         SourcePath = sourcePath;
@@ -24,6 +32,10 @@ public sealed class TimelineClipViewModel : ObservableObject
         Media = media;
         _order = order;
         InstanceId = instanceId ?? Guid.NewGuid();
+        _fitMode = fitMode;
+        _fadeInSeconds = fadeInSeconds;
+        _fadeOutSeconds = fadeOutSeconds;
+        _volume = volume;
     }
 
     public Guid InstanceId { get; }
@@ -37,6 +49,14 @@ public sealed class TimelineClipViewModel : ObservableObject
     public bool HasAudio { get; }
 
     public MediaFile? Media { get; }
+
+    public VideoFitMode FitMode => _fitMode;
+
+    public double FadeInSeconds => _fadeInSeconds;
+
+    public double FadeOutSeconds => _fadeOutSeconds;
+
+    public double Volume => _volume;
 
     public int Order
     {
@@ -87,7 +107,11 @@ public sealed class TimelineClipViewModel : ObservableObject
         item.HasAudio,
         media,
         order,
-        item.Id);
+        item.Id,
+        item.FitMode,
+        item.FadeInSeconds,
+        item.FadeOutSeconds,
+        item.Volume);
 
     public ProjectTimelineItem ToProjectItem(TimeSpan start) => new()
     {
@@ -100,7 +124,11 @@ public sealed class TimelineClipViewModel : ObservableObject
         MediaFileId = Media?.Id,
         StartTicks = start.Ticks,
         DurationTicks = Duration.Ticks,
-        HasAudio = HasAudio
+        HasAudio = HasAudio,
+        FitMode = FitMode,
+        FadeInSeconds = FadeInSeconds,
+        FadeOutSeconds = FadeOutSeconds,
+        Volume = Volume
     };
 
     public RenderSegment ToRenderSegment() => new(
@@ -108,5 +136,40 @@ public sealed class TimelineClipViewModel : ObservableObject
         SourcePath,
         Duration,
         HasAudio,
-        Media?.Id);
+        Media?.Id,
+        FitMode,
+        FadeInSeconds,
+        FadeOutSeconds,
+        Volume);
+
+    public void UpdateEffects(
+        VideoFitMode fitMode,
+        double fadeInSeconds,
+        double fadeOutSeconds,
+        double volume)
+    {
+        if (_fitMode != fitMode)
+        {
+            _fitMode = fitMode;
+            OnPropertyChanged(nameof(FitMode));
+        }
+
+        if (!double.Equals(_fadeInSeconds, fadeInSeconds))
+        {
+            _fadeInSeconds = fadeInSeconds;
+            OnPropertyChanged(nameof(FadeInSeconds));
+        }
+
+        if (!double.Equals(_fadeOutSeconds, fadeOutSeconds))
+        {
+            _fadeOutSeconds = fadeOutSeconds;
+            OnPropertyChanged(nameof(FadeOutSeconds));
+        }
+
+        if (!double.Equals(_volume, volume))
+        {
+            _volume = volume;
+            OnPropertyChanged(nameof(Volume));
+        }
+    }
 }

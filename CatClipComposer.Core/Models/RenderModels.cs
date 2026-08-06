@@ -11,7 +11,36 @@ public sealed record RenderSegment(
     string SourcePath,
     TimeSpan Duration,
     bool HasAudio,
-    long? MediaFileId = null);
+    long? MediaFileId = null,
+    VideoFitMode FitMode = VideoFitMode.Fit,
+    double FadeInSeconds = 0,
+    double FadeOutSeconds = 0,
+    double Volume = 1);
+
+public enum RenderOverlayKind
+{
+    Text,
+    Image,
+    ProgressBar
+}
+
+public sealed record RenderOverlay(
+    RenderOverlayKind Kind,
+    TimeSpan Start,
+    TimeSpan Duration,
+    string? Text = null,
+    string? SourcePath = null,
+    string? FontPath = null,
+    int FontSize = 42,
+    OverlayPosition Position = OverlayPosition.Center);
+
+public sealed record RenderAudioLayer(
+    string SourcePath,
+    TimeSpan Start,
+    TimeSpan Duration,
+    double Volume = 0.35,
+    double FadeInSeconds = 0,
+    double FadeOutSeconds = 0);
 
 public sealed record RenderRequest(
     IReadOnlyList<RenderSegment> Segments,
@@ -24,9 +53,16 @@ public sealed record RenderRequest(
     int OverlayTextSize = 42,
     OverlayPosition OverlayPosition = OverlayPosition.TopRight,
     VideoEncoderPreset VideoEncoder = VideoEncoderPreset.NativeMpeg4,
-    int FramesPerSecond = 30,
+    double FramesPerSecond = 30,
     string? ProjectName = null,
-    string? ProjectFilePath = null);
+    string? ProjectFilePath = null,
+    int OutputWidth = 0,
+    int OutputHeight = 0,
+    int QualityPercent = 80,
+    int VideoBitrateKbps = 8000,
+    int AudioBitrateKbps = 192,
+    IReadOnlyList<RenderOverlay>? TimedOverlays = null,
+    IReadOnlyList<RenderAudioLayer>? AudioLayers = null);
 
 public sealed record RenderProgress(
     double Percent,

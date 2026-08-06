@@ -173,6 +173,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OutputSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OutputSettingsWindow(_viewModel.OutputSettings) { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.ResultSettings is not null)
+        {
+            _viewModel.ApplyOutputSettings(dialog.ResultSettings);
+        }
+    }
+
     private void History_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new HistoryWindow(_catalog) { Owner = this };
@@ -294,6 +303,72 @@ public partial class MainWindow : Window
             _viewModel.AddStillImageToTimeline(dialog.ImagePath, dialog.Duration);
         }
     }
+
+    private void AddLayer_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            !Enum.TryParse<LayerEditorKind>(button.Tag?.ToString(), out var kind))
+        {
+            return;
+        }
+
+        var dialog = new LayerItemEditorWindow(kind, _viewModel.Timeline.Duration) { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
+        {
+            _viewModel.AddLayerItem(dialog.TrackKind, dialog.ResultItem);
+        }
+    }
+
+    private void ClipEffects_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.Timeline.SelectedClip is null)
+        {
+            MessageBox.Show(
+                this,
+                "Select a video or still screen on the main timeline first.",
+                "No selected clip",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new ClipEffectsWindow(_viewModel.Timeline.SelectedClip) { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            _viewModel.UpdateSelectedClipEffects(
+                dialog.FitMode,
+                dialog.FadeInSeconds,
+                dialog.FadeOutSeconds,
+                dialog.Volume);
+        }
+    }
+
+    private void EditLayer_Click(object sender, RoutedEventArgs e)
+    {
+        var row = _viewModel.SelectedProjectLayer;
+        if (row?.Item is null)
+        {
+            return;
+        }
+
+        if (row.Track.Kind == ProjectTrackKind.Video)
+        {
+            if (_viewModel.Timeline.Select(row.Item.Id))
+            {
+                ClipEffects_Click(sender, e);
+            }
+            return;
+        }
+
+        var dialog = new LayerItemEditorWindow(row.Item, _viewModel.Timeline.Duration) { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
+        {
+            _viewModel.UpdateSelectedLayerItem(dialog.ResultItem);
+        }
+    }
+
+    private void RemoveLayer_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.RemoveSelectedLayerItem();
 
     private void OpenLastOutput_Click(object sender, RoutedEventArgs e)
     {

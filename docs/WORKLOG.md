@@ -2,6 +2,19 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Editable render layers, output presets, and portable publish
+
+- Connected five persisted project tracks to one shared Core render mapper consumed by WPF and the headless CLI.
+- Added layer controls to add/edit/remove timed text, PNG/JPEG, looped music with volume/fades, and whole/custom progress ranges.
+- Added per-video/still Fit, Fill, Stretch, animated Blur Background, fade-in/out, and source volume controls.
+- Added seven common YouTube/social output presets plus validated custom dimensions, FPS, encoder, quality, and video/audio bitrates saved per project.
+- Expanded FFmpeg normalization/mixing for timed layers and fixed looped-image framesync termination found during the real render smoke.
+- Added a one-folder publisher for GUI, CLI, runtime, config, docs, and an explicit `thirdparty\ffmpeg` boundary with automatic tool discovery/build-info capture.
+- Verified a 6.000-second 640×360/24 MPEG-4 + AAC output with blur, fades, text, PNG, progress, and music; inspected sampled frames. Published framework-dependent and 154 MB self-contained folders; published CLI and packaged-tool rendering passed.
+- Closed: `LAYERS-001`, `FX-001`, `OUTPUT-001`, `OVERLAY-001`, `DEPLOY-001`, `AUD-FX-001`, `AUD-PORTABLE-001`.
+- Open release gate: `AUD-RELEASE-FFMPEG-001` for the exact redistributed binary/notices.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Catalog metadata and lightweight content previews
 
 - Kept SQLite as the searchable mutable catalog because multiple changing source roots, tags, availability, stable media IDs, and project/export joins are relational state; kept JPEG previews as replaceable files rather than database blobs.

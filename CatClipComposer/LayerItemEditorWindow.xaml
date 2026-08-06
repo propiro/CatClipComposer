@@ -1,0 +1,73 @@
+<Window x:Class="CatClipComposer.LayerItemEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add layer item"
+        Width="620"
+        Height="520"
+        MinWidth="520"
+        MinHeight="440"
+        Background="{StaticResource WindowBrush}"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="14" Background="{StaticResource WindowBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TitleText" FontSize="18" FontWeight="SemiBold" />
+        <Border Grid.Row="1" Margin="0,12,0,0" Padding="12"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="145" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="76" />
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="42" />
+                    <RowDefinition Height="42" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="SourceLabel" VerticalAlignment="Center" Text="Source file" />
+                <TextBox x:Name="SourceTextBox" Grid.Column="1" VerticalContentAlignment="Center" />
+                <Button x:Name="BrowseButton" Grid.Column="2" Margin="5,0,0,0"
+                        Click="Browse_Click" Content="Browse" />
+
+                <TextBlock x:Name="TextLabel" Grid.Row="1" VerticalAlignment="Top" Margin="0,5,0,0" Text="Text" />
+                <TextBox x:Name="OverlayTextBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                         AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+
+                <TextBlock x:Name="FontLabel" Grid.Row="2" VerticalAlignment="Center" Text="Font file (optional)" />
+                <TextBox x:Name="FontTextBox" Grid.Row="2" Grid.Column="1" />
+                <Button x:Name="BrowseFontButton" Grid.Row="2" Grid.Column="2" Margin="5,0,0,0"
+                        Click="BrowseFont_Click" Content="Browse" />
+
+                <TextBlock x:Name="FontSizeLabel" Grid.Row="3" VerticalAlignment="Center" Text="Font size" />
+                <TextBox x:Name="FontSizeTextBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="42" />
+
+                <TextBlock x:Name="PositionLabel" Grid.Row="4" VerticalAlignment="Center" Text="Position" />
+                <ComboBox x:Name="PositionComboBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" />
+
+                <TextBlock Grid.Row="5" VerticalAlignment="Center" Text="Start (seconds)" />
+                <TextBox x:Name="StartTextBox" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Text="0" />
+
+                <TextBlock Grid.Row="6" VerticalAlignment="Center" Text="Duration (seconds)" />
+                <TextBox x:Name="DurationTextBox" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Text="5" />
+
+                <TextBlock x:Name="VolumeLabel" Grid.Row="7" VerticalAlignment="Center" Text="Volume (0–4)" />
+                <TextBox x:Name="VolumeTextBox" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Text="0.35" />
+            </Grid>
+        </Border>
+        <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="80" IsCancel="True" Content="Cancel" />
+            <Button x:Name="AddButton" MinWidth="90" Margin="6,0,0,0" Click="Add_Click"
+                    Style="{StaticResource PrimaryButtonStyle}" Content="Add" />
+        </StackPanel>
+    </Grid>
+</Window>

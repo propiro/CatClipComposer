@@ -14,7 +14,7 @@ Use **New**, **Open**, and **Save** in the main toolbar. New projects contain fi
 4. Progress
 5. Effects
 
-The video track currently round-trips ordered source clips and still images. The schema already reserves timing, enabled state, fit mode, fade in/out, volume, text/font/position, and progress-range fields for the layer/effect editor. Controls and renderer projection for those fields are tracked under `LAYERS-001` and `FX-001`.
+The video track round-trips ordered source clips and still images. The layer panel adds/edits/removes timed text, image, audio, and progress items; clip effects edit fit/fill/stretch/animated-blur, fades, and volume. A shared Core mapper projects the complete enabled track model into both GUI and headless renders.
 
 Each project has a GUID, name, creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Source references use absolute paths and optional catalog media IDs. When loading, the GUI resolves catalog media by ID first and path second; missing source paths remain represented so they can be diagnosed or replaced in a later editing pass.
 
@@ -55,3 +55,13 @@ CatClipComposer.Cli.exe project `
 ```
 
 Creation refuses to replace an existing file unless `--overwrite` is explicit.
+
+Render the saved project's enabled tracks and project output settings without WPF:
+
+```powershell
+CatClipComposer.Cli.exe render `
+  --project-file "D:\Cat Projects\Example.ccproject" `
+  --output "Example.mp4"
+```
+
+`--project-file` is intentionally not combined with ad-hoc `--clip`/`--screen` arguments; choose one source of timeline truth.

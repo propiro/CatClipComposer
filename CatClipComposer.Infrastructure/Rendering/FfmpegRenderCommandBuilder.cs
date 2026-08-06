@@ -10,7 +10,8 @@ internal sealed class FfmpegRenderCommandBuilder
         RenderRequest request,
         string configuredFfmpegPath,
         string temporaryOutputPath,
-        string? overlayTextPath,
+        string? legacyOverlayTextPath,
+        IReadOnlyDictionary<int, string> timedTextPaths,
         int width,
         int height)
     {
@@ -31,8 +32,22 @@ internal sealed class FfmpegRenderCommandBuilder
             AddArguments(
                 startInfo,
                 "-loop", "1",
-                "-framerate", request.FramesPerSecond.ToString(CultureInfo.InvariantCulture),
+                "-framerate", FormatNumber(request.FramesPerSecond),
                 "-i", request.OverlayImagePath!);
+        }
+
+        foreach (var overlay in (request.TimedOverlays ?? []).Where(item => item.Kind == RenderOverlayKind.Image))
+        {
+            AddArguments(
+                startInfo,
+                "-loop", "1",
+                "-framerate", FormatNumber(request.FramesPerSecond),
+                "-i", overlay.SourcePath!);
+        }
+
+        foreach (var audioLayer in request.AudioLayers ?? [])
+        {
+            AddArguments(startInfo, "-stream_loop", "-1", "-i", audioLayer.SourcePath);
         }
 
         AddArguments(
@@ -42,15 +57,16 @@ internal sealed class FfmpegRenderCommandBuilder
                 request,
                 width,
                 height,
-                overlayTextPath,
+                legacyOverlayTextPath,
+                timedTextPaths,
                 hasImageOverlay),
             "-map", "[outv]",
             "-map", "[outa]");
-        AddVideoEncoder(startInfo, request.VideoEncoder);
+        AddVideoEncoder(startInfo, request);
         AddArguments(
             startInfo,
             "-c:a", "aac",
-            "-b:a", "192k",
+            "-b:a", $"{Math.Clamp(request.AudioBitrateKbps, 64, 512)}k",
             "-movflags", "+faststart",
             "-progress", "pipe:1",
             "-nostats",
@@ -58,19 +74,31 @@ internal sealed class FfmpegRenderCommandBuilder
         return startInfo;
     }
 
-    private static void AddVideoEncoder(ProcessStartInfo startInfo, VideoEncoderPreset preset)
+    private static void AddVideoEncoder(ProcessStartInfo startInfo, RenderRequest request)
     {
-        switch (preset)
+        var bitrate = $"{Math.Clamp(request.VideoBitrateKbps, 500, 150000)}k";
+        var quality = Math.Clamp(request.QualityPercent, 1, 100);
+        switch (request.VideoEncoder)
         {
             case VideoEncoderPreset.NativeMpeg4:
-                AddArguments(startInfo, "-c:v", "mpeg4", "-q:v", "3", "-bf", "2");
+                var nativeQMin = Math.Clamp(
+                    (int)Math.Round(31 - quality * 0.29),
+                    2,
+                    30);
+                AddArguments(
+                    startInfo,
+                    "-c:v", "mpeg4",
+                    "-b:v", bitrate,
+                    "-qmin", nativeQMin.ToString(CultureInfo.InvariantCulture),
+                    "-qmax", Math.Min(31, nativeQMin + 6).ToString(CultureInfo.InvariantCulture),
+                    "-bf", "2");
                 break;
             case VideoEncoderPreset.WindowsMediaFoundationH264:
                 AddArguments(
                     startInfo,
                     "-c:v", "h264_mf",
                     "-rate_control", "quality",
-                    "-quality", "80",
+                    "-quality", quality.ToString(CultureInfo.InvariantCulture),
                     "-scenario", "archive");
                 break;
             case VideoEncoderPreset.Libx264Gpl:
@@ -78,10 +106,16 @@ internal sealed class FfmpegRenderCommandBuilder
                     startInfo,
                     "-c:v", "libx264",
                     "-preset", "medium",
-                    "-crf", "20");
+                    "-crf", Math.Clamp(
+                        (int)Math.Round(36 - quality * 0.24),
+                        12,
+                        35).ToString(CultureInfo.InvariantCulture));
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unsupported video encoder preset.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(request.VideoEncoder),
+                    request.VideoEncoder,
+                    "Unsupported video encoder preset.");
         }
     }
 
@@ -94,13 +128,16 @@ internal sealed class FfmpegRenderCommandBuilder
                 AddArguments(
                     startInfo,
                     "-loop", "1",
-                    "-framerate", request.FramesPerSecond.ToString(CultureInfo.InvariantCulture),
+                    "-framerate", FormatNumber(request.FramesPerSecond),
                     "-t", segment.Duration.TotalSeconds.ToString("0.######", CultureInfo.InvariantCulture));
             }
 
             AddArguments(startInfo, "-i", segment.SourcePath);
         }
     }
+
+    private static string FormatNumber(double value) =>
+        value.ToString("0.######", CultureInfo.InvariantCulture);
 
     private static void AddArguments(ProcessStartInfo startInfo, params string[] arguments)
     {

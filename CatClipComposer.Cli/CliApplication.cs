@@ -219,7 +219,7 @@ internal sealed class CliApplication(
           --screen "S|PATH"      Add a still image for S seconds; repeat in the desired order.
           --orientation <value>  landscape or portrait; defaults to INI.
           --encoder <value>      native-mpeg4, windows-h264, or libx264-gpl; defaults to INI.
-          --project-file <file>  Associate a saved project with the completed export.
+          --project-file <file>  Render saved tracks/settings and record project identity.
           --project-name <name>  Associate a project name with the completed export.
           --overwrite            Permit replacement of an existing output file.
 

@@ -16,7 +16,7 @@ The CLI also accepts `--config <file>` and `--data <folder>` overrides for isola
 
 The executable directory must be writable when saving Options. This is intentionally a portable-configuration model. A future installer must either install to a user-writable application directory or explicitly arrange appropriate permissions; the application does not silently redirect configuration elsewhere.
 
-Catalog data and generated thumbnails remain machine-local under `%LOCALAPPDATA%\CatClipComposer` and are not configuration.
+Catalog data and generated previews default to `%LOCALAPPDATA%\CatClipComposer`; `Library.MetadataFolder` can relocate them and is itself configuration.
 
 ## Schema
 

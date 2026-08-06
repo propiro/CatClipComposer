@@ -43,13 +43,14 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 ### Composition and render
 
-1. The GUI or CLI creates ordered `RenderSegment` values.
-2. Render options are copied from application settings, with allowed command-line overrides.
-3. `ICompositionExporter` owns the shared GUI/CLI export transaction.
-4. `IVideoRenderer` validates inputs and produces a normalized filter graph.
-5. FFmpeg renders to a unique partial path.
-6. A successful render atomically replaces the selected output.
-7. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
+1. The GUI synchronizes timeline items into the versioned project; the CLI can load that same project or create ad-hoc ordered segments.
+2. `ProjectRenderMapper` projects enabled Video, Overlay, Audio, and Progress track items into one renderer plan without WPF/CLI duplication.
+3. Project output dimensions/FPS/encoder/quality/bitrates are copied into the render request, with narrow command-line overrides.
+4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
+5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
+6. FFmpeg renders to a unique partial path.
+7. A successful render atomically replaces the selected output.
+8. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
 
 ### Project save and recovery
 
@@ -68,6 +69,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `CompositionExportService` | Render a request and record successful output history | Shared application workflow for GUI and CLI; no presentation or FFmpeg construction responsibility. |
 | `JsonProjectStore` | Validate and atomically serialize/load normal and recovery project documents | No timeline, UI, catalog, or render responsibility. |
 | `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
+| `ProjectRenderMapper` | Convert enabled persisted tracks/items into renderer-domain values | Shared pure Core projection used by GUI and CLI; no WPF, process, or persistence dependency. |
 | `FfmpegVideoRenderer` | Validate/orchestrate temporary render output | Focused coordinator. |
 | `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
 | `FfmpegRenderCommandBuilder` | Build argument-safe FFmpeg process configuration | Focused command responsibility. |
@@ -80,7 +82,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `WorkspaceLayoutController` | Map four panels to four dock slots and swap occupied positions | WPF-only layout mechanics; durable slot values remain in shared application settings. |
 | Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
-| CLI command modules | Config, scan, list, render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
+| CLI command modules | Config, scan, list, metadata, project render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
+| Portable publisher | Compose a one-folder GUI/CLI/runtime/docs/thirdparty layout | Build-time script only; exact external-tool licensing remains an explicit release audit. |
 | Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |
 | INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
 
@@ -94,4 +97,4 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 ## Final responsibility audit conclusion
 
-The 2026-08-06 post-MVP audit found no remaining P0/P1 responsibility violation. The larger presentation, scanning, CLI dispatch, filter-graph, INI mapping, and catalog classes each retain one cohesive workflow and delegate process execution, persistence projection, timeline state, executable composition, and desktop integration to focused collaborators. Future feature work must preserve these boundaries. The open P2/P3 items in `TODO.md` are product capabilities rather than known class-splitting or duplicated-workflow debt.
+The 2026-08-06 post-MVP audit found no remaining P0/P1 responsibility violation. The larger presentation, scanning, CLI dispatch, filter-graph, INI mapping, and catalog classes each retain one cohesive workflow and delegate process execution, persistence projection, timeline state, executable composition, and desktop integration to focused collaborators. Future feature work must preserve these boundaries. Remaining work is the exact release-FFmpeg audit and deferred trimming, not known class-splitting or duplicated-workflow debt.

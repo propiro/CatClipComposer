@@ -1,5 +1,33 @@
 # Audit log
 
+## AUDIT-2026-08-06-017 — Portable deployment
+
+Scope: `DEPLOY-001`, runtime completeness, tool boundary, and redistributable-build guardrails.
+
+Verification:
+
+- Framework-dependent publish contained GUI/CLI, managed assemblies, native SQLite, INI, docs, notices, and `thirdparty` layout; published JSON help ran.
+- Self-contained win-x64 publish contained 260 root runtime/application files totaling 154,208,032 bytes; published JSON help ran without `dotnet` invocation.
+- Publisher copied `ffmpeg.exe`/`ffprobe.exe`, recorded build information, and automatic `thirdparty\ffmpeg` discovery completed a layered render.
+- The available test FFmpeg was used only for smoke verification and is not approved as the commercial/public release binary.
+
+Result: deployment mechanics passed and `AUD-PORTABLE-001` closed. Exact binary license/source-notice approval remains open as `AUD-RELEASE-FFMPEG-001`.
+
+## AUDIT-2026-08-06-016 — Layered render and output settings
+
+Scope: `LAYERS-001`, `FX-001`, `OVERLAY-001`, and `OUTPUT-001`.
+
+Verification:
+
+- Saved five-track project mapped through shared Core code into both WPF and CLI renderer requests.
+- Real portrait source rendered with animated blurred background, 0.5/0.75-second clip fades, 70% source volume, timed text, timed PNG, custom progress, and looped/faded music.
+- Initial smoke exposed a non-terminating looped still overlay; adding framesync `shortest=1` fixed it and the rerun completed in normal time.
+- FFprobe reported exactly 6.000 seconds, 640×360, 24/1 fps, native `mpeg4` video, and AAC audio.
+- A four-frame visual sheet showed the changing blurred background, dark fade endpoints, correctly timed text, and correctly timed PNG.
+- Release build passed with zero warnings/errors.
+
+Result: `LAYERS-001`, `FX-001`, `OVERLAY-001`, `OUTPUT-001`, and `AUD-FX-001` closed.
+
 ## AUDIT-2026-08-06-015 — Catalog metadata and preview cache
 
 Scope: `CATMETA-001`, `PREVIEW-001`, and successful-export usage semantics.

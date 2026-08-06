@@ -10,6 +10,8 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - [INI configuration reference](docs/CONFIGURATION.md)
 - [Headless CLI reference](docs/HEADLESS.md)
 - [Project files and crash recovery](docs/PROJECT_FILES.md)
+- [Output presets and render layers](docs/OUTPUT_PRESETS.md)
+- [Portable deployment](docs/DEPLOYMENT.md)
 - [Prioritized TODO register](docs/TODO.md)
 - [Worklog](docs/WORKLOG.md)
 - [Audit log](docs/AUDIT_LOG.md)
@@ -25,16 +27,18 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Preview a selected clip through the Windows media stack, with the contact sheet as a codec-independent content preview.
 - Add clips more than once, reorder them, remove them, and compare the total against a configurable timeline axis.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
-- Render an optional PNG/JPG watermark, text overlay, system font or custom TTF/OTF font, and choose the overlay position.
+- Add, edit, time, and remove multiple PNG/JPG, text/custom-font, music, and progress layers.
+- Set clip Fit, Fill, Stretch, or animated Blur Background plus fade-in/out and source volume.
 - Render no progress bar, one bar for the complete compilation, or a separate bar for every timeline segment.
-- Normalize mixed resolutions and aspect ratios to 1920×1080 landscape or 1080×1920 portrait, 30 fps, configurable MPEG-4/H.264 video, and AAC audio.
+- Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and per-clip completed-project use, including project name/path, date, and final output.
 - Create, save, reopen, and automatically recover versioned editable project timelines.
-- Run config inspection, scanning, listing, ordered rendering, and history queries headlessly with text or JSON output and stable exit codes.
+- Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
 - Browse large catalogs through a recycled virtualized list and drag thumbnail rows directly onto the project timeline.
+- Render saved layered projects headlessly and publish GUI/CLI/runtime/optional audited tools as one portable folder.
 
 ## Requirements
 
@@ -48,6 +52,8 @@ The non-GPL default uses FFmpeg's native `mpeg4` encoder. On Windows, `h264_mf` 
 FFmpeg can be placed on `PATH`, or `ffmpeg.exe` can be selected in the application’s Options window. When an explicit executable is selected, `ffprobe.exe` is expected beside it.
 
 FFmpeg binaries are intentionally not committed or bundled. This keeps the application independent from a particular FFmpeg distribution and its exact license/configuration.
+
+For a complete portable folder, the publish script can copy an audited FFmpeg/FFprobe pair under `thirdparty\ffmpeg`; see [deployment](docs/DEPLOYMENT.md). The exact binary and notices must be reviewed before redistribution.
 
 ## Build and run
 
@@ -103,7 +109,5 @@ In particular, FFmpeg is LGPL 2.1-or-later by default, but optional GPL componen
 
 ## Next refinements
 
-- Save and reopen named timeline projects.
-- Add multiple overlays with individual start/end times instead of one compilation-wide image and text layer.
 - Add capability detection and additional non-GPL hardware encoder presets.
-- Add trimming and per-segment volume controls without turning the application into a general-purpose editor.
+- Add trimming without turning the application into a general-purpose editor.

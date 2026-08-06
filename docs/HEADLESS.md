@@ -86,11 +86,11 @@ Renders an ordered composition and records the completed export and source usage
 | `--screen "<seconds>\|<image-path>"` | Add a still screen of positive duration. In PowerShell, quote the value because `\|` is a shell operator. |
 | `--orientation <value>` | Optional `landscape` or `portrait`; otherwise use the INI. |
 | `--encoder <value>` | Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the INI. |
-| `--project-file <file>` | Validate and associate a saved project with successful-export history. |
+| `--project-file <file>` | Render a saved project's enabled tracks/output settings and associate its identity with history. |
 | `--project-name <name>` | Associate a name when no project file supplies one. |
 | `--overwrite` | Explicitly permit replacement when the output already exists. |
 
-At least one `--clip` or `--screen` is required. The INI controls progress-bar style, overlay image/text/font/position, and FFmpeg path.
+Choose either a saved `--project-file` or at least one ad-hoc `--clip`/`--screen`. A saved project supplies video/still ordering, effects, timed overlays, progress, audio layers, output dimensions/FPS/quality/bitrates, and history identity. It cannot be mixed with ad-hoc segments. The INI still supplies FFmpeg and legacy compilation-wide overlay/progress defaults.
 
 ```powershell
 CatClipComposer.Cli.exe render `
