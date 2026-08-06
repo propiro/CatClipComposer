@@ -1,7 +1,5 @@
 using System.Windows;
-using CatClipComposer.Core.Services;
-using CatClipComposer.Infrastructure;
-using CatClipComposer.Infrastructure.Configuration;
+using CatClipComposer.Infrastructure.Composition;
 
 namespace CatClipComposer;
 
@@ -13,23 +11,15 @@ public partial class App : Application
 
         try
         {
-            var paths = new AppPaths();
-            paths.EnsureCreated();
-            ISettingsStore settingsStore = new IniSettingsStore(paths);
-            IMediaCatalog catalog = new SqliteMediaCatalog(paths);
-            await catalog.InitializeAsync();
-            var settings = await settingsStore.LoadAsync();
-            IMediaProbe mediaProbe = new FfprobeMediaProbe();
-            IThumbnailGenerator thumbnailGenerator = new FfmpegThumbnailGenerator(paths);
-            IMediaScanner scanner = new MediaScanner(catalog, mediaProbe, thumbnailGenerator);
-            IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
+            var services = await ApplicationServicesFactory.CreateAsync();
+            var settings = await services.SettingsStore.LoadAsync();
 
             var mainWindow = new MainWindow(
                 settings,
-                settingsStore,
-                catalog,
-                scanner,
-                videoRenderer);
+                services.SettingsStore,
+                services.Catalog,
+                services.Scanner,
+                services.VideoRenderer);
             MainWindow = mainWindow;
             mainWindow.Show();
         }

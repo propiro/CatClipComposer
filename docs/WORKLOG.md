@@ -2,6 +2,14 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Shared application composition root
+
+- Added a focused `ApplicationServicesFactory` that constructs paths, INI settings, SQLite, scanning, probing, thumbnails, and rendering services.
+- Moved WPF startup onto the shared factory and removed duplicated manual construction from `App`.
+- Prepared the same composition root for headless CLI consumption.
+- `BOOT-001` is in progress until the CLI uses the factory.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Executable-directory INI configuration
 
 - Replaced the JSON settings implementation with focused INI reader, mapper, and atomic store classes.

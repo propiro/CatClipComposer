@@ -11,7 +11,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | CFG-001 | P0 | Done | Replace JSON settings with `CatClipComposer.ini` beside the executable. | INI round-trip/malformed-input smoke passed; JSON store removed; schema documented. |
 | CLI-001 | P0 | Open | Add a headless CLI project in this repository. | Commands support config inspection, scan, list, render, and history; documented exit codes and JSON output; Release build passes. |
 | LIC-001 | P0 | Open | Remove required `libx264`/GPL encoding from the default render path. | Default export passes with an LGPL-compatible FFmpeg build; optional GPL preset is clearly opt-in. |
-| BOOT-001 | P0 | Open | Share service composition between GUI and CLI. | One bootstrap/service factory constructs paths, settings, catalog, scanner, probe, thumbnails, and renderer. |
+| BOOT-001 | P0 | In progress | Share service composition between GUI and CLI. | Factory implemented and used by GUI; close when CLI consumes it. |
 | MOD-001 | P1 | Open | Split `MainViewModel` orchestration and timeline state. | Timeline operations and summary calculations have a focused independently testable class. |
 | MOD-002 | P1 | Open | Split FFmpeg filter/argument construction from process execution. | Renderer coordinates focused builder and runner services; filter generation can be tested without launching FFmpeg. |
 | MOD-003 | P2 | Open | Split SQLite schema creation and row mapping from catalog operations. | Schema/mapping are focused internal classes without changing the Core catalog interface. |

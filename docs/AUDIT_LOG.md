@@ -2,6 +2,18 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-006 — Composition-root progress review
+
+Scope: `BOOT-001` and GUI/CLI construction duplication risk.
+
+Findings:
+
+- Added one Infrastructure composition root returning Core interface types.
+- WPF startup now consumes the factory and contains no concrete scanner, probe, thumbnail, catalog, or renderer construction.
+- The factory accepts optional data/configuration paths for deterministic CLI and test use.
+
+Result: design accepted; `BOOT-001` remains in progress until CLI consumption is verified.
+
 ## AUDIT-2026-08-06-005 — INI configuration closure
 
 Scope: `CFG-001` and `AUD-CFG-001`.

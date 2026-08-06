@@ -57,7 +57,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `FfmpegVideoRenderer` | Validation, process arguments, filter graph, execution, progress, cleanup | Too broad; split command/filter construction from execution (`MOD-002`). |
 | `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |
-| Application startup | Manual service composition | Must be shared with the CLI (`BOOT-001`). |
+| Application startup | Focused `ApplicationServicesFactory` composition root | GUI migrated; CLI consumption remains before `BOOT-001` closes. |
 | INI configuration | Generic reader, application mapper, atomic store | Focused split; configuration audit passed (`CFG-001`, `AUD-CFG-001`). |
 
 ## Architectural rules
