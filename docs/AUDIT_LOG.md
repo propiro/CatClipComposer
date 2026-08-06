@@ -2,6 +2,22 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-008 — FFmpeg module responsibility closure
+
+Scope: `MOD-002`.
+
+Findings:
+
+- Render request validation and atomic-output coordination remain in `FfmpegVideoRenderer`.
+- Filter graph construction has no process-launch responsibility.
+- Command construction uses `ProcessStartInfo.ArgumentList` and has no execution responsibility.
+- Process execution exclusively owns start errors, cancellation, progress parsing, exit code, and standard error collection.
+- Temporary cleanup is a narrow shared helper.
+
+Verification: Release build passed; a real mixed video/still render with audio, text, PNG overlay, per-clip progress, and 1920×1080 output passed.
+
+Result: `MOD-002` closed. Encoder licensing remains separately open under `LIC-001`.
+
 ## AUDIT-2026-08-06-007 — Timeline responsibility closure
 
 Scope: `MOD-001`.

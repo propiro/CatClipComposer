@@ -1,5 +1,6 @@
 using CatClipComposer.Core.Services;
 using CatClipComposer.Infrastructure.Configuration;
+using CatClipComposer.Infrastructure.Rendering;
 
 namespace CatClipComposer.Infrastructure.Composition;
 

@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — FFmpeg rendering module split
+
+- Replaced the multi-purpose FFmpeg renderer with a small render coordinator.
+- Extracted pure filter-graph construction, argument-safe command construction, process execution/progress/cancellation, and temporary-file cleanup.
+- Moved the renderer into an explicit `Rendering` feature namespace and updated shared service composition.
+- Passed a mixed video/still-image render with audio, text, PNG overlay, and per-clip progress after the split.
+- Closed: `MOD-002`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Timeline presentation module extraction
 
 - Extracted ordered segments, selection, insert/move/remove/clear operations, target duration, axis labels, summary values, and render-segment projection from `MainViewModel`.

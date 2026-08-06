@@ -55,7 +55,10 @@ The executable modules may reference Core and Infrastructure for composition. Co
 |---|---|---|
 | `MainViewModel` | Catalog/settings/scan/export orchestration | Timeline state removed; remaining responsibility is application workflow coordination. |
 | `TimelineViewModel` | Ordered segments, selection, editing, duration/axis summaries | Focused and independently smoke-tested; `MOD-001` closed. |
-| `FfmpegVideoRenderer` | Validation, process arguments, filter graph, execution, progress, cleanup | Too broad; split command/filter construction from execution (`MOD-002`). |
+| `FfmpegVideoRenderer` | Validate/orchestrate temporary render output | Focused coordinator. |
+| `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
+| `FfmpegRenderCommandBuilder` | Build argument-safe FFmpeg process configuration | Focused command responsibility. |
+| `FfmpegProcessRunner` | Execute FFmpeg, cancel, collect errors, and report progress | Focused process responsibility; `MOD-002` closed. |
 | `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |
 | Application startup | Focused `ApplicationServicesFactory` composition root | GUI migrated; CLI consumption remains before `BOOT-001` closes. |
