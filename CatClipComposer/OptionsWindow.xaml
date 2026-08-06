@@ -1,0 +1,175 @@
+<Window x:Class="CatClipComposer.OptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cat Clip Composer — Options"
+        Width="760"
+        Height="650"
+        MinWidth="680"
+        MinHeight="580"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock FontSize="24" FontWeight="SemiBold" Text="Options" />
+            <TextBlock Margin="0,6,0,0"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       Text="Choose where clips come from and how compilations should be prepared." />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Source folders" />
+                <TextBlock Margin="0,4,0,10"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           Text="MP4, WebM, AVI, MOV, MKV, and M4V files are cataloged." />
+                <Border BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        MinHeight="120">
+                    <ListBox x:Name="SourceFoldersList"
+                             ItemsSource="{Binding SourceFolders}"
+                             SelectionMode="Extended" />
+                </Border>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,18">
+                    <Button Click="AddSourceFolder_Click" Content="Add folder…" />
+                    <Button Margin="8,0,0,0" Click="RemoveSourceFolder_Click" Content="Remove selected" />
+                </StackPanel>
+
+                <CheckBox x:Name="IncludeSubfoldersCheckBox"
+                          Margin="0,0,0,20"
+                          Content="Include subfolders" />
+
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Output folder" />
+                <Grid Margin="0,8,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="OutputFolderTextBox" VerticalContentAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Click="BrowseOutputFolder_Click"
+                            Content="Browse…" />
+                </Grid>
+
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="FFmpeg executable" />
+                <TextBlock Margin="0,4,0,8"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           Text="Select ffmpeg.exe. ffprobe.exe must be beside it, or both tools must be on PATH." />
+                <Grid Margin="0,0,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="FfmpegPathTextBox" VerticalContentAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Click="BrowseFfmpeg_Click"
+                            Content="Browse…" />
+                </Grid>
+
+                <Grid Margin="0,0,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Timeline target (minutes)" />
+                        <TextBox x:Name="TargetMinutesTextBox" Margin="0,8,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="YouTube format" />
+                        <ComboBox x:Name="OrientationComboBox" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <CheckBox x:Name="ShowFileNamesCheckBox"
+                          Margin="0,0,0,22"
+                          Content="Show file names on catalog cards" />
+
+                <TextBlock FontSize="16" FontWeight="SemiBold" Text="Rendered overlays" />
+                <TextBlock Margin="0,4,0,14"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           Text="These elements are applied to the complete exported compilation." />
+
+                <Grid Margin="0,0,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Progress bar" />
+                        <ComboBox x:Name="ProgressStyleComboBox" Margin="0,8,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Overlay position" />
+                        <ComboBox x:Name="OverlayPositionComboBox" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="PNG overlay / watermark (optional)" />
+                <Grid Margin="0,8,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="OverlayImagePathTextBox" VerticalContentAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Click="BrowseOverlayImage_Click"
+                            Content="Browse…" />
+                </Grid>
+
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Text overlay (optional)" />
+                <TextBox x:Name="OverlayTextTextBox"
+                         Height="58"
+                         Margin="0,8,0,18"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" />
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="110" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Custom font file (optional)" />
+                        <TextBox x:Name="OverlayFontPathTextBox" Margin="0,8,0,0" VerticalContentAlignment="Center" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Margin="8,27,0,0"
+                            Click="BrowseOverlayFont_Click"
+                            Content="Browse…" />
+                    <StackPanel Grid.Column="3">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Text size" />
+                        <TextBox x:Name="OverlayTextSizeTextBox" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="2" Margin="0,24,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right"
+                    MinWidth="96"
+                    IsDefault="True"
+                    Click="Save_Click"
+                    Content="Save" />
+            <Button DockPanel.Dock="Right"
+                    MinWidth="96"
+                    Margin="0,0,8,0"
+                    IsCancel="True"
+                    Content="Cancel" />
+        </DockPanel>
+    </Grid>
+</Window>

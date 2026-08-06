@@ -1,0 +1,63 @@
+<Window x:Class="CatClipComposer.StillScreenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add still screen"
+        Width="620"
+        Height="470"
+        MinWidth="520"
+        MinHeight="420"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,18">
+            <TextBlock FontSize="22" FontWeight="SemiBold" Text="Add still screen" />
+            <TextBlock Margin="0,5,0,0"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       Text="Place it first for a splash, between clips for a mid-roll, or last for an outro." />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="ImagePathTextBox" IsReadOnly="True" VerticalContentAlignment="Center" />
+            <Button Grid.Column="1" Margin="8,0,0,0" Click="BrowseImage_Click" Content="Choose image…" />
+        </Grid>
+
+        <Border Grid.Row="2"
+                Background="#090B10"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <Image x:Name="ImagePreview" Stretch="Uniform" />
+        </Border>
+
+        <StackPanel Grid.Row="3" Margin="0,14,0,0" Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="Duration (seconds)" />
+            <TextBox x:Name="DurationTextBox" Width="90" Margin="12,0,0,0" Text="3" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="4" Margin="0,18,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right"
+                    MinWidth="110"
+                    IsDefault="True"
+                    Click="Add_Click"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="Add to timeline" />
+            <Button DockPanel.Dock="Right"
+                    MinWidth="90"
+                    Margin="0,0,8,0"
+                    IsCancel="True"
+                    Content="Cancel" />
+        </DockPanel>
+    </Grid>
+</Window>
