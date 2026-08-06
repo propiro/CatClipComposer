@@ -2,6 +2,16 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
+## Documentation
+
+- [Project goals and feature status](docs/PROJECT.md)
+- [Architecture and module boundaries](docs/ARCHITECTURE.md)
+- [Software stack and license policy](docs/STACK_AND_LICENSES.md)
+- [Prioritized TODO register](docs/TODO.md)
+- [Worklog](docs/WORKLOG.md)
+- [Audit log](docs/AUDIT_LOG.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
+
 ## Current features
 
 - Configure one or more source folders, an output folder, FFmpeg, a target duration, and landscape or portrait output.
