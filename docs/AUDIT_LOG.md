@@ -1,5 +1,18 @@
 # Audit log
 
+## AUDIT-2026-08-06-020 — Visual Studio designer workspace
+
+Scope: reported empty/incomplete `MainWindow` XAML designer; `WORKSPACE-002` and `AUD-DESIGNER-001`.
+
+Findings and verification:
+
+- The panels were declared in XAML, but none had initial `Grid.Row`/`Grid.Column` values. Visual Studio therefore placed all four in row 0/column 0 and showed only the last overlapping panel.
+- Content Browser, Preview, Layers/Used Clips, and Timeline now declare the same default positions and margins used by `ApplicationSettings` and `WorkspaceLayoutController`.
+- Runtime docking remains dynamic and persisted; the controller continues to replace the initial XAML values when settings select a different layout.
+- Release compilation, explicit coordinate audit, default startup, and a custom saved-layout startup passed without changing runtime docking behavior.
+
+Result: `WORKSPACE-002` and `AUD-DESIGNER-001` closed; application/component version advanced to 0.1.2.
+
 ## AUDIT-2026-08-06-019 — Button and small-text readability
 
 Scope: reported unreadable main-window text, especially button labels; `UI-002` and `AUD-UX-002`.

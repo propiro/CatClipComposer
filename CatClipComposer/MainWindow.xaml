@@ -1,6 +1,11 @@
 <Window x:Class="CatClipComposer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1440"
+        d:DesignHeight="900"
         Title="{Binding WindowTitle}"
         Width="1440"
         Height="900"
@@ -90,7 +95,11 @@
                           HorizontalAlignment="Stretch"
                           ResizeDirection="Rows" />
 
-            <Border x:Name="ContentBrowserPanel" Style="{StaticResource PanelBorderStyle}">
+            <Border x:Name="ContentBrowserPanel"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource PanelBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
@@ -221,7 +230,11 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="PreviewPanel" Style="{StaticResource PanelBorderStyle}">
+            <Border x:Name="PreviewPanel"
+                    Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource PanelBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
@@ -305,7 +318,10 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="LayersPanel" Style="{StaticResource PanelBorderStyle}">
+            <Border x:Name="LayersPanel"
+                    Grid.Row="0"
+                    Grid.Column="4"
+                    Style="{StaticResource PanelBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
@@ -383,7 +399,12 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="TimelinePanel" Style="{StaticResource PanelBorderStyle}">
+            <Border x:Name="TimelinePanel"
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="5"
+                    Margin="0,4,0,0"
+                    Style="{StaticResource PanelBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />

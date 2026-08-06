@@ -2,6 +2,16 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Complete XAML designer workspace
+
+- Diagnosed the apparently empty Visual Studio designer as four XAML panels overlapping in the default grid cell until runtime docking code executed.
+- Declared the default left/center/right/bottom grid coordinates, spans, and gutters directly on the four panels in `MainWindow.xaml`.
+- Kept persisted docking unchanged: `WorkspaceLayoutController` still overrides the XAML defaults before the window is displayed.
+- Added design namespaces explicitly and advanced all application components to 0.1.2.
+- Verified by Release build, XAML coordinate audit, default runtime startup, and saved-layout override smoke.
+- Closed: `WORKSPACE-002` and `AUD-DESIGNER-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — UI text readability correction
 
 - Reproduced the reported unreadable button labels in a 1440x900 runtime capture.
