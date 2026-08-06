@@ -1,13 +1,8 @@
 <Window x:Class="CatClipComposer.LayerItemEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Add layer item"
-        Width="620"
-        Height="520"
-        MinWidth="520"
-        MinHeight="440"
-        Background="{StaticResource WindowBrush}"
-        WindowStartupLocation="CenterOwner">
+        Title="Layer item" Width="650" Height="680" MinWidth="560" MinHeight="520"
+        Background="{StaticResource WindowBrush}" WindowStartupLocation="CenterOwner">
     <Grid Margin="14" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -15,58 +10,122 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock x:Name="TitleText" FontSize="18" FontWeight="SemiBold" />
-        <Border Grid.Row="1" Margin="0,12,0,0" Padding="12"
+        <Border Grid.Row="1" Margin="0,10,0,0" Padding="12"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="145" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="76" />
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="42" />
-                    <RowDefinition Height="42" />
-                </Grid.RowDefinitions>
-                <TextBlock x:Name="SourceLabel" VerticalAlignment="Center" Text="Source file" />
-                <TextBox x:Name="SourceTextBox" Grid.Column="1" VerticalContentAlignment="Center" />
-                <Button x:Name="BrowseButton" Grid.Column="2" Margin="5,0,0,0"
-                        Click="Browse_Click" Content="Browse" />
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <StackPanel x:Name="SourceFields" Margin="0,0,0,10">
+                        <TextBlock x:Name="SourceLabel" Margin="0,0,0,4" Text="Source file" />
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBox x:Name="SourceTextBox" />
+                            <Button Grid.Column="1" Margin="5,0,0,0" Click="Browse_Click" Content="Browse…" />
+                        </Grid>
+                    </StackPanel>
 
-                <TextBlock x:Name="TextLabel" Grid.Row="1" VerticalAlignment="Top" Margin="0,5,0,0" Text="Text" />
-                <TextBox x:Name="OverlayTextBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-                         AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    <StackPanel x:Name="TextFields" Margin="0,0,0,10">
+                        <TextBlock Margin="0,0,0,4" Text="Text" />
+                        <TextBox x:Name="OverlayTextBox" Height="70" AcceptsReturn="True"
+                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
 
-                <TextBlock x:Name="FontLabel" Grid.Row="2" VerticalAlignment="Center" Text="Font file (optional)" />
-                <TextBox x:Name="FontTextBox" Grid.Row="2" Grid.Column="1" />
-                <Button x:Name="BrowseFontButton" Grid.Row="2" Grid.Column="2" Margin="5,0,0,0"
-                        Click="BrowseFont_Click" Content="Browse" />
+                    <StackPanel x:Name="FontFields" Margin="0,0,0,10">
+                        <TextBlock Margin="0,0,0,4" Text="Font" />
+                        <ComboBox x:Name="FontComboBox">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ToolTip="{Binding Details}">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock FontFamily="{Binding PreviewFontFamily}" Text="{Binding FamilyName}" />
+                                        <TextBlock Grid.Column="1" Margin="12,0,0,0" FontSize="9"
+                                                   Foreground="{StaticResource AccentBrush}" Text="{Binding SourceBadge}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Margin="0,3,0,0" FontSize="10" Foreground="{StaticResource FaintTextBrush}"
+                                   Text="System fonts are installed in Windows; ◆ marks a file from the configured custom font folder." />
+                    </StackPanel>
 
-                <TextBlock x:Name="FontSizeLabel" Grid.Row="3" VerticalAlignment="Center" Text="Font size" />
-                <TextBox x:Name="FontSizeTextBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="42" />
+                    <StackPanel x:Name="TextPlacementFields" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="Font size" />
+                                <TextBox x:Name="FontSizeTextBox" Text="42" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Position" />
+                                <ComboBox x:Name="PositionComboBox" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
 
-                <TextBlock x:Name="PositionLabel" Grid.Row="4" VerticalAlignment="Center" Text="Position" />
-                <ComboBox x:Name="PositionComboBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" />
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,4" Text="Start (seconds)" />
+                            <TextBox x:Name="StartTextBox" Text="0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Margin="0,0,0,4" Text="Duration (seconds)" />
+                            <TextBox x:Name="DurationTextBox" Text="5" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock x:Name="SnapDescriptionText" Margin="0,-5,0,10" FontSize="10"
+                               Foreground="{StaticResource FaintTextBrush}" />
 
-                <TextBlock Grid.Row="5" VerticalAlignment="Center" Text="Start (seconds)" />
-                <TextBox x:Name="StartTextBox" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Text="0" />
+                    <StackPanel x:Name="AudioFields" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="Volume (0–4)" />
+                                <TextBox x:Name="VolumeTextBox" Text="0.35" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Fade in (seconds)" />
+                                <TextBox x:Name="FadeInTextBox" Text="0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Margin="0,0,0,4" Text="Fade out (seconds)" />
+                                <TextBox x:Name="FadeOutTextBox" Text="0" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
 
-                <TextBlock Grid.Row="6" VerticalAlignment="Center" Text="Duration (seconds)" />
-                <TextBox x:Name="DurationTextBox" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Text="5" />
-
-                <TextBlock x:Name="VolumeLabel" Grid.Row="7" VerticalAlignment="Center" Text="Volume (0–4)" />
-                <TextBox x:Name="VolumeTextBox" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Text="0.35" />
-            </Grid>
+                    <StackPanel x:Name="ProgressFields">
+                        <TextBlock Margin="0,0,0,4" Text="Timing" />
+                        <ComboBox x:Name="ProgressTimingComboBox" Margin="0,0,0,10" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="Style" />
+                                <ComboBox x:Name="ProgressStyleComboBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Screen position" />
+                                <ComboBox x:Name="ProgressPositionComboBox" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="Color (#RRGGBB)" />
+                                <TextBox x:Name="ProgressColorTextBox" Text="#C8C0B2" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Height (pixels)" />
+                                <TextBox x:Name="ProgressHeightTextBox" Text="10" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
         <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button MinWidth="80" IsCancel="True" Content="Cancel" />
-            <Button x:Name="AddButton" MinWidth="90" Margin="6,0,0,0" Click="Add_Click"
+            <Button x:Name="AddButton" MinWidth="90" Margin="5,0,0,0" Click="Add_Click"
                     Style="{StaticResource PrimaryButtonStyle}" Content="Add" />
         </StackPanel>
     </Grid>

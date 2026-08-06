@@ -52,7 +52,7 @@ internal static class RenderCommand
         }
 
         var fallbackOrientation = project is null
-            ? context.Settings.Orientation
+            ? OutputOrientation.Landscape
             : project.Output.Height > project.Output.Width
                 ? OutputOrientation.Portrait
                 : OutputOrientation.Landscape;
@@ -61,7 +61,7 @@ internal static class RenderCommand
             fallbackOrientation);
         var encoder = ParseEncoder(
             invocation.GetSingleValue("encoder"),
-            project?.Output.VideoEncoder ?? context.Settings.VideoEncoder);
+            project?.Output.VideoEncoder ?? VideoEncoderPreset.NativeMpeg4);
         var outputWidth = project?.Output.Width ?? 0;
         var outputHeight = project?.Output.Height ?? 0;
         if (project is not null && invocation.GetSingleValue("orientation") is not null &&
@@ -95,12 +95,6 @@ internal static class RenderCommand
             segments,
             outputPath,
             orientation,
-            context.Settings.ProgressStyle,
-            context.Settings.OverlayImagePath,
-            context.Settings.OverlayText,
-            context.Settings.OverlayFontPath,
-            context.Settings.OverlayTextSize,
-            context.Settings.OverlayPosition,
             encoder,
             project?.Output.FramesPerSecond ?? 30,
             ProjectName: projectName,

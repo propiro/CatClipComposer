@@ -10,10 +10,16 @@ public sealed class TimelineViewModel : ObservableObject
     private TimelineClipViewModel? _selectedClip;
     private TimeSpan _targetDuration;
     private bool _suppressChanged;
+    private double _pixelsPerSecond = 8;
+    private double _trackHeight = 64;
+    private double _framesPerSecond = 30;
+    private TimelineRulerMode _rulerMode = TimelineRulerMode.TimeAndFrames;
+    private TimelineSnapMode _snapMode = TimelineSnapMode.TenthSecond;
 
     public TimelineViewModel(double targetDurationMinutes)
     {
         Clips = new ReadOnlyObservableCollection<TimelineClipViewModel>(_clips);
+        RulerTicks = [];
         _targetDuration = TimeSpan.FromMinutes(targetDurationMinutes);
         _clips.CollectionChanged += (_, _) =>
         {
@@ -23,19 +29,101 @@ public sealed class TimelineViewModel : ObservableObject
                 Changed?.Invoke(this, EventArgs.Empty);
             }
         };
+        RefreshRuler();
     }
 
     public event EventHandler? Changed;
+
+    public event EventHandler? DisplaySettingsChanged;
+
+    public event EventHandler? SelectionChanged;
 
     public ReadOnlyObservableCollection<TimelineClipViewModel> Clips { get; }
 
     public TimelineClipViewModel? SelectedClip
     {
         get => _selectedClip;
-        set => SetProperty(ref _selectedClip, value);
+        set
+        {
+            if (SetProperty(ref _selectedClip, value))
+            {
+                OnPropertyChanged(nameof(SelectedClipStart));
+                SelectionChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
     }
 
+    public ObservableCollection<TimelineTickViewModel> RulerTicks { get; }
+
+    public double PixelsPerSecond
+    {
+        get => _pixelsPerSecond;
+        set
+        {
+            var normalized = Math.Clamp(value, 1, 40);
+            if (SetProperty(ref _pixelsPerSecond, normalized))
+            {
+                RefreshRuler();
+                DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    public double TrackHeight
+    {
+        get => _trackHeight;
+        set
+        {
+            var normalized = Math.Clamp(value, 42, 110);
+            if (SetProperty(ref _trackHeight, normalized))
+            {
+                DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    public double FramesPerSecond => _framesPerSecond;
+
+    public TimelineRulerMode RulerMode => _rulerMode;
+
+    public TimelineSnapMode SnapMode => _snapMode;
+
+    public string RulerModeButtonText => _rulerMode switch
+    {
+        TimelineRulerMode.Time => "Ruler: time",
+        TimelineRulerMode.Frames => "Ruler: frames",
+        _ => "Ruler: time + frames"
+    };
+
+    public string SnapModeButtonText => _snapMode switch
+    {
+        TimelineSnapMode.Frame => "Snap: 1 frame",
+        TimelineSnapMode.TenthSecond => "Snap: 0.1 sec",
+        TimelineSnapMode.HalfSecond => "Snap: 0.5 sec",
+        _ => "Snap: 1 sec"
+    };
+
+    public double TimelineWidth => Math.Max(
+        720,
+        Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds) * PixelsPerSecond + 1);
+
     public TimeSpan Duration => TimeSpan.FromTicks(_clips.Sum(clip => clip.Duration.Ticks));
+
+    public TimeSpan? SelectedClipStart
+    {
+        get
+        {
+            if (SelectedClip is null)
+            {
+                return null;
+            }
+
+            var index = _clips.IndexOf(SelectedClip);
+            return index < 0
+                ? null
+                : TimeSpan.FromTicks(_clips.Take(index).Sum(clip => clip.Duration.Ticks));
+        }
+    }
 
     public TimeSpan TargetDuration => _targetDuration;
 
@@ -147,6 +235,52 @@ public sealed class TimelineViewModel : ObservableObject
         RefreshSummary();
     }
 
+    public void SetFrameRate(double framesPerSecond)
+    {
+        _framesPerSecond = Math.Clamp(framesPerSecond, 1, 240);
+        RefreshRuler();
+    }
+
+    public void SetDisplaySettings(TimelineRulerMode rulerMode, TimelineSnapMode snapMode)
+    {
+        _rulerMode = rulerMode;
+        _snapMode = snapMode;
+        OnPropertyChanged(nameof(RulerMode));
+        OnPropertyChanged(nameof(SnapMode));
+        OnPropertyChanged(nameof(RulerModeButtonText));
+        OnPropertyChanged(nameof(SnapModeButtonText));
+        RefreshRuler();
+    }
+
+    public void CycleRulerMode()
+    {
+        _rulerMode = _rulerMode switch
+        {
+            TimelineRulerMode.Time => TimelineRulerMode.Frames,
+            TimelineRulerMode.Frames => TimelineRulerMode.TimeAndFrames,
+            _ => TimelineRulerMode.Time
+        };
+        OnPropertyChanged(nameof(RulerMode));
+        OnPropertyChanged(nameof(RulerModeButtonText));
+        RefreshRuler();
+        DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void CycleSnapMode()
+    {
+        _snapMode = _snapMode switch
+        {
+            TimelineSnapMode.Frame => TimelineSnapMode.TenthSecond,
+            TimelineSnapMode.TenthSecond => TimelineSnapMode.HalfSecond,
+            TimelineSnapMode.HalfSecond => TimelineSnapMode.Second,
+            _ => TimelineSnapMode.Frame
+        };
+        OnPropertyChanged(nameof(SnapMode));
+        OnPropertyChanged(nameof(SnapModeButtonText));
+        RefreshRuler();
+        DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public void UpdateSelectedEffects(
         VideoFitMode fitMode,
         double fadeInSeconds,
@@ -241,5 +375,51 @@ public sealed class TimelineViewModel : ObservableObject
         OnPropertyChanged(nameof(AxisHalfText));
         OnPropertyChanged(nameof(AxisThreeQuarterText));
         OnPropertyChanged(nameof(AxisEndText));
+        OnPropertyChanged(nameof(TimelineWidth));
+        RefreshRuler();
+    }
+
+    private void RefreshRuler()
+    {
+        RulerTicks.Clear();
+        var seconds = Math.Max(1, Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds));
+        var requestedMinor = _snapMode switch
+        {
+            TimelineSnapMode.Frame => 1 / _framesPerSecond,
+            TimelineSnapMode.TenthSecond => 0.1,
+            TimelineSnapMode.HalfSecond => 0.5,
+            _ => 1
+        };
+        var visualMinor = requestedMinor;
+        while (seconds / visualMinor > 1800 || visualMinor * PixelsPerSecond < 4)
+        {
+            visualMinor *= visualMinor < 1 ? 2 : 5;
+        }
+
+        var majorEvery = Math.Max(1, (int)Math.Ceiling(72 / (visualMinor * PixelsPerSecond)));
+        var tickCount = (int)Math.Ceiling(seconds / visualMinor);
+        for (var index = 0; index <= tickCount; index++)
+        {
+            var at = Math.Min(seconds, index * visualMinor);
+            var major = index % majorEvery == 0 || index == tickCount;
+            RulerTicks.Add(new TimelineTickViewModel(
+                at * PixelsPerSecond,
+                major ? 19 : 8,
+                major ? FormatRulerLabel(at) : string.Empty));
+        }
+
+        OnPropertyChanged(nameof(TimelineWidth));
+    }
+
+    private string FormatRulerLabel(double seconds)
+    {
+        var time = DurationFormatter.Format(TimeSpan.FromSeconds(seconds));
+        var frame = $"f{Math.Round(seconds * _framesPerSecond):0}";
+        return _rulerMode switch
+        {
+            TimelineRulerMode.Time => time,
+            TimelineRulerMode.Frames => frame,
+            _ => $"{time} · {frame}"
+        };
     }
 }

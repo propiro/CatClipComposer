@@ -29,18 +29,15 @@ internal static class ProjectCommand
             }
 
             var projectName = invocation.GetSingleValue("project-name");
-            var (width, height) = context.Settings.Orientation == OutputOrientation.Portrait
-                ? (1080, 1920)
-                : (1920, 1080);
             project = EditorProject.Create(
                 string.IsNullOrWhiteSpace(projectName)
                     ? Path.GetFileNameWithoutExtension(projectPath)
                     : projectName.Trim(),
                 new ProjectOutputSettings
                 {
-                    Width = width,
-                    Height = height,
-                    VideoEncoder = context.Settings.VideoEncoder
+                    Width = 1920,
+                    Height = 1080,
+                    VideoEncoder = VideoEncoderPreset.NativeMpeg4
                 });
             project.ProjectFilePath = projectPath;
             await context.Services.ProjectStore.SaveAsync(

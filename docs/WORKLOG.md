@@ -2,6 +2,27 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Project-centered editing, precision timeline, and startup feedback
+
+- Reorganized the visible Preferences around application-level folders, library scanning, previews, tools,
+  fonts, and docking; moved target/output choices into project settings and added their right-panel rollout.
+- Made Preferences open at 760x850 so normal content fits without a vertical scrollbar; shrinking the window
+  still enables scrolling.
+- Added default-on startup rescanning, 12-slide contact sheets, bundled-FFmpeg missing guidance, and a
+  packaged `fonts` folder with installed/custom font selection and visible custom markers.
+- Changed normal project/recovery names to `.nya`/`autosave.nya`, advanced the project schema to version 2,
+  and retained atomic saves plus readable schema-1 loading.
+- Added muted preview transport, five scalable timeline lanes, time zoom, track height, time/frame ruler
+  modes, snapping, direct selected-clip controls, and individually styled progress timeline effects.
+- Added the user-supplied Mr Cat startup/rescan splash with a lightly sharpened image, progress, diagnostics,
+  and cancel support for manual scans.
+- Reworked ComboBox templates to retain the dark theme and recycle long font lists.
+- Advanced all application components to 0.1.5.
+- Verification: recorded by the audit entry and final commit containing this work.
+- Closed: `UX-PROJECT-002`, `UX-TIMELINE-002`, `UX-PREVIEW-002`, `UX-FONT-001`, `UX-SPLASH-001`, and
+  `AUD-UX-003`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Mandatory audited FFmpeg bundle and readable documentation
 
 - Audited the previously used Gyan full build and rejected it for mandatory distribution because its own

@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.4**.
+Current application and component version: **0.1.5**.
 
 ## Documentation
 
@@ -21,28 +21,30 @@ Current application and component version: **0.1.4**.
 
 ## Current features
 
-- Configure one or more source folders, an output folder, a target duration, and landscape or portrait output.
+- Configure one or more source folders, portable metadata/custom-font locations, output/project folders, and automatic startup rescanning.
 - Scan MP4, WebM, AVI, MOV, MKV, and M4V files, including optional subfolder scanning.
 - Store clip metadata and export history in a durable SQLite database.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in selectable, recycled catalog rows without opening every video.
-- Preview a selected clip through the Windows media stack, with the contact sheet as a codec-independent content preview.
-- Add clips more than once, reorder them, remove them, and compare the total against a configurable timeline axis.
+- Preview a selected clip through the Windows media stack with muted-by-default transport, seek, mute, and volume controls, plus a codec-independent contact sheet.
+- Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
-- Add, edit, time, and remove multiple PNG/JPG, text/custom-font, music, and progress layers.
+- Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
 - Set clip Fit, Fill, Stretch, or animated Blur Background plus fade-in/out and source volume.
-- Render no progress bar, one bar for the complete compilation, or a separate bar for every timeline segment.
+- Render solid, segmented, or tick progress effects over the complete project, a selected segment, or a custom range.
 - Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and per-clip completed-project use, including project name/path, date, and final output.
-- Create, save, reopen, and automatically recover versioned editable project timelines.
+- Create, save, reopen, and automatically recover versioned `.nya` project timelines.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
+- Edit five scalable timeline lanes with zoom, frame/time ruler modes, configurable snapping, and direct controls on the selected video clip.
 - Browse large catalogs through a recycled virtualized list, expand the browser across the workspace while keeping the timeline available, and drag thumbnail rows directly onto it.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
-  with the pinned audited FFmpeg runtime under `thirdparty`.
+  with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
+- See a Mr Cat startup/rescan splash with progress and diagnostic output while library work is running.
 
 ## Requirements
 
@@ -55,7 +57,7 @@ The repository includes a pinned Windows x64 FFmpeg/FFprobe shared runtime with 
 The bundled LGPL v3 build provides native MPEG-4, AAC, and Media Foundation H.264 without GPL/nonfree build
 flags. `libx264` remains an explicitly labeled opt-in for a user-supplied GPL build and is never required.
 
-An explicit `ffmpeg.exe` can still be selected in Options as a local override; its matching `ffprobe.exe`
+An explicit `ffmpeg.exe` can still be selected in Preferences as a local override; its matching `ffprobe.exe`
 must sit beside it. See [deployment](docs/DEPLOYMENT.md) for the pinned version, hashes, notices, and upgrade
 procedure.
 
@@ -70,12 +72,12 @@ dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj -- --help
 
 On the first run:
 
-1. Open **Options**.
+1. Open **Preferences**.
 2. Add the folders containing source clips.
-3. Choose the output folder. Leave the FFmpeg field at its default to use the bundled runtime.
-4. Choose the timeline target, orientation, overlays, and progress-bar style.
-5. Select **Update catalog**.
-6. Double-click clips or use **Add to timeline**, arrange the timeline, add any still screens, and select **Export MP4**.
+3. Choose the output and editable-project folders. Leave FFmpeg at its default to use the bundle.
+4. Save Preferences; startup rescanning is enabled by default.
+5. Open **Project settings** to choose the timeline target and output preset.
+6. Drag clips to the timeline, add any still screens or timed effects, and select **Export**.
 
 ## Configuration and local application data
 
@@ -85,7 +87,7 @@ Configuration is stored beside the executable:
 <executable directory>\CatClipComposer.ini
 ```
 
-The executable directory must be writable when Options are saved. The catalog and generated cache remain outside the repository:
+The executable directory must be writable when Preferences are saved. The catalog and generated cache remain outside the repository:
 
 ```text
 %LOCALAPPDATA%\CatClipComposer\

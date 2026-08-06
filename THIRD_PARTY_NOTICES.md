@@ -58,3 +58,7 @@ never the normal packaged path.
 - Pinned FFmpeg source revision: <https://github.com/FFmpeg/FFmpeg/tree/9b6c8969e0>
 
 No paid runtime library is required by Cat Clip Composer. Open-source and public-domain components still retain their respective attribution, source-availability, redistribution, and other license requirements.
+
+The Mr Cat splash photograph is a user-supplied application asset, not a third-party software component.
+Custom TTF/OTF files placed in the portable `fonts` folder are not bundled dependencies by default; anyone
+redistributing added fonts must follow each font's license.

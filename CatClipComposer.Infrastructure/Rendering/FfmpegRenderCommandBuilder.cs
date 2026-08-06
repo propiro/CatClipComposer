@@ -10,7 +10,6 @@ internal sealed class FfmpegRenderCommandBuilder
         RenderRequest request,
         string configuredFfmpegPath,
         string temporaryOutputPath,
-        string? legacyOverlayTextPath,
         IReadOnlyDictionary<int, string> timedTextPaths,
         int width,
         int height)
@@ -25,16 +24,6 @@ internal sealed class FfmpegRenderCommandBuilder
         };
         AddArguments(startInfo, "-hide_banner", "-loglevel", "error", "-y");
         AddInputs(startInfo, request);
-
-        var hasImageOverlay = !string.IsNullOrWhiteSpace(request.OverlayImagePath);
-        if (hasImageOverlay)
-        {
-            AddArguments(
-                startInfo,
-                "-loop", "1",
-                "-framerate", FormatNumber(request.FramesPerSecond),
-                "-i", request.OverlayImagePath!);
-        }
 
         foreach (var overlay in (request.TimedOverlays ?? []).Where(item => item.Kind == RenderOverlayKind.Image))
         {
@@ -57,9 +46,7 @@ internal sealed class FfmpegRenderCommandBuilder
                 request,
                 width,
                 height,
-                legacyOverlayTextPath,
-                timedTextPaths,
-                hasImageOverlay),
+                timedTextPaths),
             "-map", "[outv]",
             "-map", "[outa]");
         AddVideoEncoder(startInfo, request);

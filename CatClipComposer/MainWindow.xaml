@@ -51,7 +51,7 @@
                     <Button Click="NewProject_Click" Content="New" />
                     <Button Margin="4,0,0,0" Click="OpenProject_Click" Content="Open" />
                     <Button Margin="4,0,0,0" Click="SaveProject_Click" Content="Save" />
-                    <Button Margin="4,0,0,0" Click="OutputSettings_Click" Content="Output" />
+                    <Button Margin="4,0,0,0" Click="OutputSettings_Click" Content="Project settings" />
                     <TextBlock Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{StaticResource MutedTextBrush}"
@@ -276,8 +276,12 @@
                             <MediaElement x:Name="PreviewPlayer"
                                           LoadedBehavior="Manual"
                                           UnloadedBehavior="Stop"
+                                          IsMuted="True"
+                                          Volume="0.5"
                                           ScrubbingEnabled="True"
                                           Stretch="Uniform"
+                                          MediaOpened="PreviewPlayer_MediaOpened"
+                                          MediaEnded="PreviewPlayer_MediaEnded"
                                           MediaFailed="PreviewPlayer_MediaFailed" />
                             <Border Grid.Row="1"
                                     BorderBrush="{StaticResource BorderBrush}"
@@ -290,6 +294,7 @@
                     </Border>
                     <Grid Grid.Row="2" Margin="6,0,6,6">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
@@ -313,9 +318,32 @@
                                     Style="{StaticResource PrimaryButtonStyle}"
                                     Content="Add clip" />
                         </Grid>
-                        <WrapPanel Grid.Row="1" Margin="0,5,0,0">
+                        <Grid Grid.Row="1" Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="PreviewPositionText" Width="43" VerticalAlignment="Center"
+                                       FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="0:00" />
+                            <Slider x:Name="PreviewSeekSlider" Grid.Column="1" Margin="5,0"
+                                    Minimum="0" Maximum="1" Value="0"
+                                    PreviewMouseLeftButtonDown="PreviewSeekSlider_PreviewMouseLeftButtonDown"
+                                    PreviewMouseLeftButtonUp="PreviewSeekSlider_PreviewMouseLeftButtonUp" />
+                            <TextBlock x:Name="PreviewDurationText" Grid.Column="2" Width="43"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       TextAlignment="Right" FontSize="10"
+                                       Foreground="{StaticResource MutedTextBrush}" Text="0:00" />
+                        </Grid>
+                        <WrapPanel Grid.Row="2" Margin="0,5,0,0">
                             <Button Click="PreviewPlay_Click" Content="Play" />
                             <Button Margin="4,0,0,0" Click="PreviewPause_Click" Content="Pause" />
+                            <Button x:Name="PreviewMuteButton" Margin="4,0,0,0"
+                                    Click="PreviewMute_Click" Content="Unmute" ToolTip="Preview starts muted" />
+                            <TextBlock Margin="8,0,4,0" VerticalAlignment="Center"
+                                       FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Volume" />
+                            <Slider x:Name="PreviewVolumeSlider" Width="72" Minimum="0" Maximum="1" Value="0.5"
+                                    VerticalAlignment="Center" ValueChanged="PreviewVolumeSlider_ValueChanged" />
                             <Button Margin="4,0,0,0" Click="OpenSource_Click" Content="Show file" />
                             <Button Margin="4,0,0,0" Click="OpenLastOutput_Click" Content="Last export" />
                             <Button Margin="4,0,0,0" Click="ClipMetadata_Click" Content="Metadata" />
@@ -331,6 +359,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="44" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
@@ -351,7 +380,30 @@
                                     Content="Dock" />
                         </Grid>
                     </Border>
-                    <Grid Grid.Row="1" Margin="7,6,7,3">
+                    <Expander Grid.Row="1" Margin="6,5,6,3" IsExpanded="True">
+                        <Expander.Header>
+                            <TextBlock FontSize="11" FontWeight="SemiBold" Text="PROJECT SETTINGS" />
+                        </Expander.Header>
+                        <Border Margin="0,4,0,2" Padding="7"
+                                Background="{StaticResource InputBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                           Text="{Binding ProjectName}" />
+                                <TextBlock Margin="0,3,0,0" FontSize="10"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           TextWrapping="Wrap" Text="{Binding ProjectSettingsSummary}" />
+                                <TextBlock Margin="0,2,0,5" FontSize="10"
+                                           Foreground="{StaticResource FaintTextBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding ProjectFilePath}"
+                                           Text="{Binding ProjectFilePath, TargetNullValue=Not saved yet}" />
+                                <Button HorizontalAlignment="Left" Click="OutputSettings_Click"
+                                        Content="Edit project settings…" />
+                            </StackPanel>
+                        </Border>
+                    </Expander>
+                    <Grid Grid.Row="2" Margin="7,6,7,3">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
@@ -361,7 +413,7 @@
                                    Foreground="{StaticResource MutedTextBrush}"
                                    Text="{Binding Timeline.TotalText}" />
                     </Grid>
-                    <ListBox Grid.Row="2"
+                    <ListBox Grid.Row="3"
                              Margin="4,0"
                              ItemsSource="{Binding ProjectLayers}"
                              SelectedItem="{Binding SelectedProjectLayer}">
@@ -393,7 +445,7 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <WrapPanel Grid.Row="3" Margin="6">
+                    <WrapPanel Grid.Row="4" Margin="6">
                         <Button Tag="Text" Click="AddLayer_Click" Content="+ Text" />
                         <Button Tag="Image" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ PNG" />
                         <Button Tag="Audio" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Music" />
@@ -414,7 +466,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
-                        <RowDefinition Height="42" />
+                        <RowDefinition Height="36" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <Border Background="{StaticResource ToolbarBrush}"
@@ -426,9 +478,6 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
@@ -443,124 +492,166 @@
                                        VerticalAlignment="Center"
                                        Foreground="{StaticResource MutedTextBrush}"
                                        Text="{Binding Timeline.RemainingText}" />
-                            <Button Grid.Column="4" Click="MoveLeft_Click" Style="{StaticResource HeaderButtonStyle}" Content="Move left" />
-                            <Button Grid.Column="5" Click="MoveRight_Click" Style="{StaticResource HeaderButtonStyle}" Content="Move right" />
-                            <Button Grid.Column="6" Click="RemoveTimeline_Click" Style="{StaticResource HeaderButtonStyle}" Content="Remove" />
-                            <Button Grid.Column="7" Click="ClearTimeline_Click" Style="{StaticResource HeaderButtonStyle}" Content="Clear" />
-                            <Button Grid.Column="8"
+                            <Button Grid.Column="4" Click="ClearTimeline_Click" Style="{StaticResource HeaderButtonStyle}" Content="Clear" />
+                            <Button Grid.Column="5"
                                     Tag="Timeline"
                                     Click="PanelDock_Click"
                                     Style="{StaticResource HeaderButtonStyle}"
                                     Content="Dock" />
                         </Grid>
                     </Border>
-                    <Grid Grid.Row="1" Margin="7,5,7,3">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="13" />
-                            <RowDefinition Height="17" />
-                        </Grid.RowDefinitions>
-                        <ProgressBar Height="10"
-                                     Maximum="100"
-                                     Value="{Binding Timeline.Progress, Mode=OneWay}" />
-                        <Grid Grid.Row="1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition />
-                                <ColumnDefinition />
-                                <ColumnDefinition />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisStartText}" />
-                            <TextBlock Grid.Column="1" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisQuarterText}" />
-                            <TextBlock Grid.Column="2" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisHalfText}" />
-                            <TextBlock Grid.Column="3" HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisThreeQuarterText}" />
-                            <TextBlock Grid.Column="4" HorizontalAlignment="Right" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.AxisEndText}" />
-                        </Grid>
-                    </Grid>
-                    <Grid Grid.Row="2" Margin="6,0,6,6">
+                    <Grid Grid.Row="1" Margin="7,3">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="54" />
+                            <ColumnDefinition Width="170" />
+                            <ColumnDefinition Width="170" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border Background="{StaticResource ToolbarBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
-                                BorderThickness="1,1,0,1">
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock HorizontalAlignment="Center" FontSize="10" FontWeight="SemiBold" Text="VIDEO" />
-                                <TextBlock HorizontalAlignment="Center" FontSize="10" Foreground="{StaticResource FaintTextBrush}" Text="V1" />
-                            </StackPanel>
-                        </Border>
-                        <ListBox x:Name="TimelineListBox"
-                                 Grid.Column="1"
-                                 AllowDrop="True"
-                                 ItemsSource="{Binding Timeline.Clips}"
-                                 SelectedItem="{Binding Timeline.SelectedClip}"
-                                 DragOver="TimelineListBox_DragOver"
-                                 Drop="TimelineListBox_Drop"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                 KeyDown="TimelineListBox_KeyDown">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel IsItemsHost="True" Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                                    <Setter Property="Margin" Value="0,0,3,0" />
-                                    <Setter Property="Padding" Value="0" />
-                                </Style>
-                            </ListBox.ItemContainerStyle>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="{Binding CardWidth}"
-                                            MinWidth="100"
-                                            Height="108"
-                                            Background="{StaticResource CardBrush}"
-                                            BorderBrush="{StaticResource BorderBrush}"
-                                            BorderThickness="1">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="62" />
-                                                <RowDefinition Height="*" />
-                                            </Grid.RowDefinitions>
-                                            <Grid Background="{StaticResource PreviewBrush}">
-                                                <Image Source="{Binding ThumbnailPath}" Stretch="UniformToFill" />
-                                                <Border HorizontalAlignment="Left"
-                                                        VerticalAlignment="Top"
-                                                        Padding="3,1"
-                                                        Background="#DD151513">
-                                                    <TextBlock FontSize="10" FontWeight="SemiBold" Text="{Binding Order, StringFormat=# {0}}" />
-                                                </Border>
-                                            </Grid>
-                                            <Grid Grid.Row="1" Margin="5,3">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock FontSize="10"
-                                                               FontWeight="SemiBold"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTip="{Binding FileName}"
-                                                               Text="{Binding FileName}" />
-                                                    <TextBlock Margin="0,2,0,0"
-                                                               FontSize="10"
-                                                               Foreground="{StaticResource FaintTextBrush}"
-                                                               Text="{Binding KindText}" />
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="1"
-                                                           Margin="4,0,0,0"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="10"
-                                                           Foreground="{StaticResource AccentBrush}"
-                                                           Text="{Binding DurationText}" />
-                                            </Grid>
-                                        </Grid>
+                        <Button Click="TimelineRulerMode_Click" Content="{Binding Timeline.RulerModeButtonText}" />
+                        <Button Grid.Column="1" Margin="4,0,0,0" Click="TimelineSnapMode_Click"
+                                Content="{Binding Timeline.SnapModeButtonText}" />
+                        <TextBlock Grid.Column="2" Margin="9,0,4,0" VerticalAlignment="Center"
+                                   FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Time zoom" />
+                        <Slider Grid.Column="3" Minimum="1" Maximum="40"
+                                Value="{Binding Timeline.PixelsPerSecond, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="4" Margin="9,0,4,0" VerticalAlignment="Center"
+                                   FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Track height" />
+                        <Slider Grid.Column="5" Minimum="42" Maximum="110"
+                                Value="{Binding Timeline.TrackHeight, Mode=TwoWay}" />
+                        <ProgressBar Grid.Column="6" Height="7" Margin="12,0,0,0" VerticalAlignment="Center"
+                                     Maximum="100" Value="{Binding Timeline.Progress, Mode=OneWay}" />
+                    </Grid>
+
+                    <Grid x:Name="TimelineDropSurface" Grid.Row="2" Margin="6,0,6,6"
+                          AllowDrop="True" Focusable="True"
+                          DragOver="TimelineListBox_DragOver" Drop="TimelineListBox_Drop"
+                          KeyDown="TimelineListBox_KeyDown">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="68" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <Border Height="34" Background="{StaticResource ToolbarBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,1,0,1">
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   FontSize="9" Foreground="{StaticResource FaintTextBrush}" Text="TRACK" />
                                     </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                    <ItemsControl ItemsSource="{Binding TimelineLanes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        Background="{StaticResource ToolbarBrush}"
+                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,1">
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" FontWeight="SemiBold" Text="{Binding Name}" />
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9"
+                                                                   Foreground="{StaticResource FaintTextBrush}" Text="{Binding ShortName}" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Disabled">
+                                    <StackPanel Width="{Binding Timeline.TimelineWidth}">
+                                        <Border Height="34" Background="{StaticResource InputBrush}"
+                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                            <ItemsControl Width="{Binding Timeline.TimelineWidth}"
+                                                          Height="32" ItemsSource="{Binding Timeline.RulerTicks}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemContainerStyle>
+                                                    <Style TargetType="ContentPresenter">
+                                                        <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                                        <Setter Property="Canvas.Bottom" Value="0" />
+                                                    </Style>
+                                                </ItemsControl.ItemContainerStyle>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Width="105" Height="32">
+                                                            <Border Width="1" Height="{Binding TickHeight}"
+                                                                    HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                                                    Background="{StaticResource StrongBorderBrush}" />
+                                                            <TextBlock Margin="3,1,0,0" FontSize="9"
+                                                                       Foreground="{StaticResource MutedTextBrush}" Text="{Binding Label}" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+
+                                        <ItemsControl ItemsSource="{Binding TimelineLanes}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Background="#191918" BorderBrush="{StaticResource BorderBrush}"
+                                                            BorderThickness="1,0,1,1">
+                                                        <ItemsControl Width="{Binding DataContext.Timeline.TimelineWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                      Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                      ItemsSource="{Binding Items}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemContainerStyle>
+                                                                <Style TargetType="ContentPresenter">
+                                                                    <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                                                    <Setter Property="Canvas.Top" Value="2" />
+                                                                </Style>
+                                                            </ItemsControl.ItemContainerStyle>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border x:Name="TimelineItemBorder"
+                                                                            Width="{Binding Width}" Height="{Binding Height}"
+                                                                            Padding="4" Background="{Binding Background}"
+                                                                            BorderBrush="{StaticResource StrongBorderBrush}"
+                                                                            BorderThickness="1" Tag="{Binding}"
+                                                                            ToolTip="{Binding Title}"
+                                                                            MouseLeftButtonDown="TimelineLaneItem_MouseLeftButtonDown">
+                                                                        <Grid ClipToBounds="True">
+                                                                            <Image Opacity="0.34" Source="{Binding ThumbnailPath}"
+                                                                                   Stretch="UniformToFill"
+                                                                                   Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                            <Grid>
+                                                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                                                <WrapPanel Visibility="{Binding ShowClipActions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                    <Button Padding="4,1" MinHeight="20" Click="MoveLeft_Click" Content="←" ToolTip="Move clip left" />
+                                                                                    <Button Margin="2,0,0,0" Padding="4,1" MinHeight="20" Click="MoveRight_Click" Content="→" ToolTip="Move clip right" />
+                                                                                    <Button Margin="2,0,0,0" Padding="4,1" MinHeight="20" Click="RemoveTimeline_Click" Content="×" ToolTip="Remove clip" />
+                                                                                </WrapPanel>
+                                                                                <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                                                                    <TextBlock FontSize="10" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding Title}" />
+                                                                                    <TextBlock Margin="0,2,0,0" FontSize="9" Foreground="{StaticResource MutedTextBrush}"
+                                                                                               TextTrimming="CharacterEllipsis" Text="{Binding Detail}" />
+                                                                                </StackPanel>
+                                                                            </Grid>
+                                                                        </Grid>
+                                                                    </Border>
+                                                                    <DataTemplate.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter TargetName="TimelineItemBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                                            <Setter TargetName="TimelineItemBorder" Property="BorderThickness" Value="2" />
+                                                                        </DataTrigger>
+                                                                    </DataTemplate.Triggers>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
+                        </ScrollViewer>
                     </Grid>
                 </Grid>
             </Border>

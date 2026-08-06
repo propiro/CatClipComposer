@@ -45,6 +45,7 @@ public static class ProjectRenderMapper
                         item.Duration,
                         Text: item.Text,
                         FontPath: item.FontPath,
+                        FontFamily: item.FontFamily,
                         FontSize: item.FontSize,
                         Position: item.Position));
                 }
@@ -62,7 +63,11 @@ public static class ProjectRenderMapper
                     overlays.Add(new RenderOverlay(
                         RenderOverlayKind.ProgressBar,
                         item.Start,
-                        item.Duration));
+                        item.Duration,
+                        ProgressBarStyle: item.ProgressBarStyle,
+                        ProgressBarPosition: item.ProgressBarPosition,
+                        ProgressColor: item.ProgressColor,
+                        ProgressHeight: item.ProgressHeight));
                 }
             }
         }

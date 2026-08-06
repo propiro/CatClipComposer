@@ -10,9 +10,7 @@ internal static class FfmpegFilterGraphBuilder
         RenderRequest request,
         int width,
         int height,
-        string? legacyOverlayTextPath,
-        IReadOnlyDictionary<int, string> timedTextPaths,
-        bool hasLegacyImageOverlay)
+        IReadOnlyDictionary<int, string> timedTextPaths)
     {
         var graph = new StringBuilder();
         AddNormalizedSegments(graph, request, width, height);
@@ -20,32 +18,6 @@ internal static class FfmpegFilterGraphBuilder
         var currentLabel = "joinedv";
         var stage = 0;
         var nextInputIndex = request.Segments.Count;
-
-        if (hasLegacyImageOverlay)
-        {
-            currentLabel = AddImageOverlay(
-                graph,
-                request.OverlayPosition,
-                nextInputIndex++,
-                currentLabel,
-                stage++,
-                null,
-                null);
-        }
-
-        if (!string.IsNullOrWhiteSpace(legacyOverlayTextPath))
-        {
-            currentLabel = AddTextOverlay(
-                graph,
-                legacyOverlayTextPath,
-                request.OverlayFontPath,
-                request.OverlayTextSize,
-                request.OverlayPosition,
-                currentLabel,
-                stage++,
-                null,
-                null);
-        }
 
         var overlays = request.TimedOverlays ?? [];
         for (var index = 0; index < overlays.Count; index++)
@@ -63,6 +35,7 @@ internal static class FfmpegFilterGraphBuilder
                         graph,
                         textPath,
                         overlay.FontPath,
+                        overlay.FontFamily,
                         overlay.FontSize,
                         overlay.Position,
                         currentLabel,
@@ -88,12 +61,16 @@ internal static class FfmpegFilterGraphBuilder
                         currentLabel,
                         stage++,
                         overlay.Start,
-                        overlay.Duration);
+                        overlay.Duration,
+                        overlay.ProgressBarStyle,
+                        overlay.ProgressBarPosition,
+                        overlay.ProgressColor,
+                        overlay.ProgressHeight);
                     break;
             }
         }
 
-        AddWholeCompilationProgressOrOutput(graph, request, width, currentLabel);
+        graph.Append(CultureInfo.InvariantCulture, $"[{currentLabel}]null[outv];");
         AddMixedAudio(graph, request, nextInputIndex);
         return graph.ToString();
     }
@@ -108,9 +85,6 @@ internal static class FfmpegFilterGraphBuilder
         {
             var segment = request.Segments[index];
             var seconds = FormatSeconds(segment.Duration);
-            var videoOutputLabel = request.ProgressStyle == VideoProgressStyle.EachClip
-                ? $"basev{index}"
-                : $"v{index}";
             AddNormalizedVideo(
                 graph,
                 request,
@@ -119,12 +93,7 @@ internal static class FfmpegFilterGraphBuilder
                 width,
                 height,
                 seconds,
-                videoOutputLabel);
-
-            if (request.ProgressStyle == VideoProgressStyle.EachClip)
-            {
-                AddProgressBar(graph, width, request.FramesPerSecond, seconds, index);
-            }
+                $"v{index}");
 
             AddAudio(graph, segment, index, seconds);
         }
@@ -196,19 +165,6 @@ internal static class FfmpegFilterGraphBuilder
             graph.Append(CultureInfo.InvariantCulture,
                 $"fade=t=out:st={FormatNumber(start)}:d={FormatNumber(fadeOut)},");
         }
-    }
-
-    private static void AddProgressBar(
-        StringBuilder graph,
-        int width,
-        double framesPerSecond,
-        string seconds,
-        int index)
-    {
-        graph.Append(CultureInfo.InvariantCulture,
-            $"color=c=0xC8C0B2@0.92:s={width}x10:r={FormatNumber(framesPerSecond)}:d={seconds}[bar{index}];");
-        graph.Append(CultureInfo.InvariantCulture,
-            $"[basev{index}][bar{index}]overlay=x='-W+W*min(t/{seconds},1)':y=H-h:shortest=1[v{index}];");
     }
 
     private static void AddAudio(StringBuilder graph, RenderSegment segment, int index, string seconds)
@@ -290,6 +246,7 @@ internal static class FfmpegFilterGraphBuilder
         StringBuilder graph,
         string overlayTextPath,
         string? fontPath,
+        string? fontFamily,
         int fontSize,
         OverlayPosition position,
         string currentLabel,
@@ -299,7 +256,7 @@ internal static class FfmpegFilterGraphBuilder
     {
         var (x, y) = GetTextOverlayCoordinates(position);
         var fontOption = string.IsNullOrWhiteSpace(fontPath)
-            ? "font='Segoe UI':"
+            ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(fontFamily) ? "Segoe UI" : fontFamily)}':"
             : $"fontfile='{EscapeFilterValue(fontPath)}':";
         graph.Append(CultureInfo.InvariantCulture,
             $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
@@ -317,39 +274,31 @@ internal static class FfmpegFilterGraphBuilder
         string currentLabel,
         int stage,
         TimeSpan start,
-        TimeSpan duration)
+        TimeSpan duration,
+        ProgressBarStyle style,
+        ProgressBarPosition position,
+        string color,
+        int height)
     {
         var startSeconds = FormatSeconds(start);
         var seconds = FormatSeconds(duration);
+        var barHeight = Math.Clamp(height, 2, 100);
+        var barColor = NormalizeProgressColor(color);
+        var pattern = style switch
+        {
+            ProgressBarStyle.Segmented => $",drawgrid=w=80:h={barHeight}:t=3:c=black@0.75",
+            ProgressBarStyle.Ticks => $",drawgrid=w=24:h={barHeight}:t=5:c=black@0.82",
+            _ => string.Empty
+        };
+        var y = position == ProgressBarPosition.Top ? "0" : "H-h";
         graph.Append(CultureInfo.InvariantCulture,
-            $"color=c=0xC8C0B2@0.92:s={width}x10:r={FormatNumber(request.FramesPerSecond)}:" +
-            $"d={seconds},setpts=PTS+{startSeconds}/TB[timedbar{stage}];");
+            $"color=c={barColor}@0.92:s={width}x{barHeight}:r={FormatNumber(request.FramesPerSecond)}:" +
+            $"d={seconds}{pattern},setpts=PTS+{startSeconds}/TB[timedbar{stage}];");
         graph.Append(CultureInfo.InvariantCulture,
             $"[{currentLabel}][timedbar{stage}]overlay=" +
-            $"x='-W+W*min(max((t-{startSeconds})/{seconds},0),1)':y=H-h:" +
+            $"x='-W+W*min(max((t-{startSeconds})/{seconds},0),1)':y={y}:" +
             $"enable='between(t,{startSeconds},{FormatSeconds(start + duration)})'[stage{stage}];");
         return $"stage{stage}";
-    }
-
-    private static void AddWholeCompilationProgressOrOutput(
-        StringBuilder graph,
-        RenderRequest request,
-        int width,
-        string currentLabel)
-    {
-        if (request.ProgressStyle != VideoProgressStyle.WholeCompilation)
-        {
-            graph.Append(CultureInfo.InvariantCulture, $"[{currentLabel}]null[outv];");
-            return;
-        }
-
-        var totalSeconds = request.Segments.Sum(segment => segment.Duration.TotalSeconds);
-        graph.Append(CultureInfo.InvariantCulture,
-            $"color=c=0xC8C0B2@0.92:s={width}x10:r={FormatNumber(request.FramesPerSecond)}:" +
-            $"d={FormatNumber(totalSeconds)}[wholebar];");
-        graph.Append(
-            $"[{currentLabel}][wholebar]overlay=x='-W+W*min(t/{FormatNumber(totalSeconds)},1)':" +
-            "y=H-h:shortest=1[outv];");
     }
 
     private static void AddMixedAudio(
@@ -420,6 +369,12 @@ internal static class FfmpegFilterGraphBuilder
 
     private static string FormatNumber(double value) =>
         value.ToString("0.######", CultureInfo.InvariantCulture);
+
+    private static string NormalizeProgressColor(string color)
+    {
+        var hex = color.Trim().TrimStart('#');
+        return hex.Length == 6 && hex.All(Uri.IsHexDigit) ? $"0x{hex}" : "0xC8C0B2";
+    }
 
     private static string GetPixelFormat(VideoEncoderPreset preset) =>
         preset == VideoEncoderPreset.WindowsMediaFoundationH264 ? "nv12" : "yuv420p";

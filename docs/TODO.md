@@ -154,8 +154,37 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned five-track `.ccproject` documents and atomic recovery round-trip without
-  embedding media; GUI and CLI checks pass.
+- Acceptance: Versioned schema-2 five-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+  without embedding media; GUI and CLI checks pass.
+
+### `UX-PROJECT-002` — Separate durable Preferences from frequently changed project settings
+
+- Priority/status: P0 / Done
+- Acceptance: Preferences now contain application folders, scanning, previews, tools, fonts, and workspace
+  behavior; project target/output settings live in `.nya` and are visible from the Layers rollout.
+
+### `UX-TIMELINE-002` — Add precise scalable timeline editing
+
+- Priority/status: P0 / Done
+- Acceptance: Five independently visible lanes, vertical scrolling, track-height/time zoom, time/frame ruler
+  modes, configurable snapping, and selected-video move/remove controls are present.
+
+### `UX-PREVIEW-002` — Add muted preview transport controls
+
+- Priority/status: P1 / Done
+- Acceptance: Playback starts muted and exposes play/pause, seek, mute, volume, and time feedback.
+
+### `UX-FONT-001` — Support portable-folder and installed system fonts
+
+- Priority/status: P1 / Done
+- Acceptance: The default portable `fonts` folder is browsable/openable, custom TTF/OTF choices are marked,
+  installed font families remain selectable, and both paths reach FFmpeg text rendering.
+
+### `UX-SPLASH-001` — Report startup and rescan progress without an empty or frozen window
+
+- Priority/status: P1 / Done
+- Acceptance: The Mr Cat splash displays progress plus capped scrolling diagnostics during startup and manual
+  rescans; Preferences defaults tall enough to avoid a scrollbar until the user shrinks it.
 
 ### `EDIT-001` — Add trim-in/out and per-clip volume
 
@@ -236,6 +265,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P0 / Done
 - Evidence: CLI create/load preserved schema, GUID, five tracks, and output; overwrite returned 2; GUI
   startup and additive SQLite migration passed.
+
+### `AUD-UX-003` — Verify project settings, timeline precision, preview, fonts, and splash
+
+- Priority/status: P0 / Done
+- Evidence: Release build, schema/INI round-trip, system-font/progress render, image sampling, and source audit
+  confirm the requested settings split and editor behavior without launching another foreground GUI test.
 
 ### `AUD-CATMETA-001` — Verify metadata migration, previews, tags, and usage semantics
 

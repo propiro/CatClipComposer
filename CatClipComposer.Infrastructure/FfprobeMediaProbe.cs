@@ -37,7 +37,7 @@ public sealed class FfprobeMediaProbe : IMediaProbe
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or FileNotFoundException)
         {
             throw new InvalidOperationException(
-                $"FFprobe was not found. Configure the FFmpeg executable in Options. Tried: {startInfo.FileName}",
+                $"FFprobe was not found. Configure the FFmpeg executable in Preferences. Tried: {startInfo.FileName}",
                 exception);
         }
 

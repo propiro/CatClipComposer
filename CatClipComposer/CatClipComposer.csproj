@@ -13,4 +13,8 @@
     <ProjectReference Include="..\CatClipComposer.Infrastructure\CatClipComposer.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\mr-cat-bee-splash.png" />
+  </ItemGroup>
+
 </Project>

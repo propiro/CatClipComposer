@@ -6,13 +6,6 @@ public enum OutputOrientation
     Portrait
 }
 
-public enum VideoProgressStyle
-{
-    None,
-    WholeCompilation,
-    EachClip
-}
-
 public enum OverlayPosition
 {
     TopLeft,
@@ -47,31 +40,17 @@ public sealed class ApplicationSettings
 
     public string MetadataFolder { get; set; } = string.Empty;
 
-    public int PreviewSlideCount { get; set; } = 4;
+    public int PreviewSlideCount { get; set; } = 12;
 
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
-    public double TargetDurationMinutes { get; set; } = 15;
-
-    public OutputOrientation Orientation { get; set; } = OutputOrientation.Landscape;
-
-    public VideoEncoderPreset VideoEncoder { get; set; } = VideoEncoderPreset.NativeMpeg4;
+    public string CustomFontFolder { get; set; } = Path.Combine(AppContext.BaseDirectory, "fonts");
 
     public bool IncludeSubfolders { get; set; } = true;
 
     public bool ShowFileNames { get; set; } = true;
 
-    public VideoProgressStyle ProgressStyle { get; set; } = VideoProgressStyle.WholeCompilation;
-
-    public string OverlayImagePath { get; set; } = string.Empty;
-
-    public string OverlayText { get; set; } = string.Empty;
-
-    public string OverlayFontPath { get; set; } = string.Empty;
-
-    public int OverlayTextSize { get; set; } = 42;
-
-    public OverlayPosition OverlayPosition { get; set; } = OverlayPosition.TopRight;
+    public bool RescanLibraryOnStartup { get; set; } = true;
 
     public WorkspaceDockSlot ContentBrowserDock { get; set; } = WorkspaceDockSlot.Left;
 
@@ -89,17 +68,10 @@ public sealed class ApplicationSettings
         MetadataFolder = MetadataFolder,
         PreviewSlideCount = PreviewSlideCount,
         FfmpegPath = FfmpegPath,
-        TargetDurationMinutes = TargetDurationMinutes,
-        Orientation = Orientation,
-        VideoEncoder = VideoEncoder,
+        CustomFontFolder = CustomFontFolder,
         IncludeSubfolders = IncludeSubfolders,
         ShowFileNames = ShowFileNames,
-        ProgressStyle = ProgressStyle,
-        OverlayImagePath = OverlayImagePath,
-        OverlayText = OverlayText,
-        OverlayFontPath = OverlayFontPath,
-        OverlayTextSize = OverlayTextSize,
-        OverlayPosition = OverlayPosition,
+        RescanLibraryOnStartup = RescanLibraryOnStartup,
         ContentBrowserDock = ContentBrowserDock,
         PreviewDock = PreviewDock,
         LayersDock = LayersDock,

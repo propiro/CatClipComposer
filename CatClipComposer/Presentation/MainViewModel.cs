@@ -40,9 +40,13 @@ public sealed class MainViewModel : ObservableObject
         _catalog = catalog;
         _scanner = scanner;
         _compositionExporter = compositionExporter;
-        Timeline = new TimelineViewModel(settings.TargetDurationMinutes);
-        _project = EditorProject.Create("Untitled project", CreateOutputSettings(settings));
+        Timeline = new TimelineViewModel(15);
+        _project = EditorProject.Create("Untitled project", CreateOutputSettings());
         Timeline.Changed += Timeline_Changed;
+        Timeline.DisplaySettingsChanged += Timeline_DisplaySettingsChanged;
+        Timeline.SelectionChanged += (_, _) => RefreshTimelineLanes();
+        Timeline.SetFrameRate(_project.Output.FramesPerSecond);
+        Timeline.SetDisplaySettings(_project.TimelineRulerMode, _project.TimelineSnapMode);
         MediaView = CollectionViewSource.GetDefaultView(MediaFiles);
         MediaView.Filter = FilterMedia;
         RefreshProjectLayers();
@@ -51,6 +55,8 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<MediaCardViewModel> MediaFiles { get; } = [];
 
     public ObservableCollection<ProjectLayerRowViewModel> ProjectLayers { get; } = [];
+
+    public ObservableCollection<TimelineLaneViewModel> TimelineLanes { get; } = [];
 
     public TimelineViewModel Timeline { get; }
 
@@ -67,6 +73,14 @@ public sealed class MainViewModel : ObservableObject
     public string? ProjectFilePath => _project.ProjectFilePath;
 
     public ProjectOutputSettings OutputSettings => _project.Output;
+
+    public double TargetDurationMinutes => _project.TargetDurationMinutes;
+
+    public DateTime ProjectCreatedUtc => _project.CreatedUtc;
+
+    public string ProjectSettingsSummary =>
+        $"{_project.Output.Width}x{_project.Output.Height} · {_project.Output.FramesPerSecond:0.###} fps · " +
+        $"{_project.Output.VideoEncoder} · {_project.TargetDurationMinutes:0.##} min target";
 
     public ProjectLayerRowViewModel? SelectedProjectLayer
     {
@@ -124,15 +138,35 @@ public sealed class MainViewModel : ObservableObject
         _ => $"{MediaFiles.Count} clips in catalog"
     };
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    public async Task InitializeAsync(
+        IProgress<StartupProgress>? startupProgress = null,
+        CancellationToken cancellationToken = default)
     {
+        startupProgress?.Report(new StartupProgress(8, "Loading the existing clip catalog…"));
         await LoadCatalogAsync(cancellationToken);
+        if (_settings.RescanLibraryOnStartup && _settings.SourceFolders.Count > 0)
+        {
+            startupProgress?.Report(new StartupProgress(18, "Rescanning configured video folders…"));
+            var scanProgress = new Progress<ScanProgress>(update =>
+            {
+                var percent = update.Total == 0 ? 18 : 18 + update.Processed * 72d / update.Total;
+                var message = string.IsNullOrWhiteSpace(update.CurrentFile)
+                    ? "Finalizing the library catalog…"
+                    : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
+                startupProgress?.Report(new StartupProgress(percent, message));
+            });
+            await ScanAsync(scanProgress);
+        }
+
+        startupProgress?.Report(new StartupProgress(94, "Checking crash recovery data…"));
         var recovery = await _projectStore.LoadRecoveryAsync(cancellationToken);
         if (recovery is not null)
         {
             ApplyProject(recovery);
             StatusText = $"Recovered autosave: {recovery.Name}";
         }
+
+        startupProgress?.Report(new StartupProgress(100, "Editor ready."));
     }
 
     public async Task NewProjectAsync(CancellationToken cancellationToken = default)
@@ -141,10 +175,16 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             Timeline.Clear();
-            _project = EditorProject.Create("Untitled project", CreateOutputSettings(_settings));
+            _project = EditorProject.Create("Untitled project", CreateOutputSettings());
+            Timeline.SetTargetDuration(_project.TargetDurationMinutes);
+            Timeline.SetFrameRate(_project.Output.FramesPerSecond);
+            Timeline.SetDisplaySettings(_project.TimelineRulerMode, _project.TimelineSnapMode);
             OnPropertyChanged(nameof(ProjectName));
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
+            OnPropertyChanged(nameof(TargetDurationMinutes));
+            OnPropertyChanged(nameof(ProjectCreatedUtc));
+            OnPropertyChanged(nameof(ProjectSettingsSummary));
             RefreshProjectLayers();
         }
         finally
@@ -184,6 +224,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ProjectName));
         OnPropertyChanged(nameof(ProjectFilePath));
         OnPropertyChanged(nameof(OutputSettings));
+        OnPropertyChanged(nameof(ProjectSettingsSummary));
         StatusText = $"Saved project: {_project.Name}";
     }
 
@@ -206,11 +247,10 @@ public sealed class MainViewModel : ObservableObject
 
         OnPropertyChanged(nameof(Settings));
         OnPropertyChanged(nameof(SourceSummary));
-        Timeline.SetTargetDuration(_settings.TargetDurationMinutes);
-        StatusText = "Options saved";
+        StatusText = "Preferences saved";
     }
 
-    public async Task<ScanResult> ScanAsync()
+    public async Task<ScanResult> ScanAsync(IProgress<ScanProgress>? externalProgress = null)
     {
         if (IsBusy)
         {
@@ -226,6 +266,7 @@ public sealed class MainViewModel : ObservableObject
         {
             var progress = new Progress<ScanProgress>(update =>
             {
+                externalProgress?.Report(update);
                 ScanProgress = update.Total == 0
                     ? 0
                     : update.Processed * 100d / update.Total;
@@ -291,12 +332,6 @@ public sealed class MainViewModel : ObservableObject
                     renderPlan.Segments,
                     outputPath,
                     orientation,
-                    _settings.ProgressStyle,
-                    _settings.OverlayImagePath,
-                    _settings.OverlayText,
-                    _settings.OverlayFontPath,
-                    _settings.OverlayTextSize,
-                    _settings.OverlayPosition,
                     _project.Output.VideoEncoder,
                     _project.Output.FramesPerSecond,
                     ProjectName: _project.Name,
@@ -436,13 +471,23 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Layer item updated";
     }
 
-    public void ApplyOutputSettings(ProjectOutputSettings settings)
+    public void ApplyProjectSettings(
+        string projectName,
+        double targetDurationMinutes,
+        ProjectOutputSettings settings)
     {
+        _project.Name = projectName;
+        _project.TargetDurationMinutes = targetDurationMinutes;
         _project.Output = settings;
         _project.ModifiedUtc = DateTime.UtcNow;
+        Timeline.SetTargetDuration(targetDurationMinutes);
+        Timeline.SetFrameRate(settings.FramesPerSecond);
+        OnPropertyChanged(nameof(ProjectName));
         OnPropertyChanged(nameof(OutputSettings));
+        OnPropertyChanged(nameof(TargetDurationMinutes));
+        OnPropertyChanged(nameof(ProjectSettingsSummary));
         _ = SaveRecoverySafelyAsync();
-        StatusText = $"Output preset: {settings.PresetName}";
+        StatusText = $"Project settings updated: {settings.PresetName}";
     }
 
     public void MoveSelectedTimelineClip(int offset)
@@ -460,6 +505,22 @@ public sealed class MainViewModel : ObservableObject
         Timeline.Clear();
         StatusText = "Timeline cleared";
     }
+
+    public void SelectTimelineItem(Guid itemId)
+    {
+        if (Timeline.Select(itemId))
+        {
+            RefreshTimelineLanes();
+            return;
+        }
+
+        SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
+        RefreshTimelineLanes();
+    }
+
+    public void CycleTimelineRulerMode() => Timeline.CycleRulerMode();
+
+    public void CycleTimelineSnapMode() => Timeline.CycleSnapMode();
 
     private async Task LoadCatalogAsync(CancellationToken cancellationToken)
     {
@@ -512,6 +573,33 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private async void Timeline_DisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        RefreshTimelineLanes();
+        if (_suppressProjectAutosave)
+        {
+            return;
+        }
+
+        var projectSettingsChanged = _project.TimelineRulerMode != Timeline.RulerMode ||
+                                     _project.TimelineSnapMode != Timeline.SnapMode;
+        _project.TimelineRulerMode = Timeline.RulerMode;
+        _project.TimelineSnapMode = Timeline.SnapMode;
+        if (!projectSettingsChanged)
+        {
+            return;
+        }
+
+        try
+        {
+            await SaveRecoveryNowAsync();
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"Recovery autosave failed: {exception.Message}";
+        }
+    }
+
     private void ApplyProject(EditorProject project)
     {
         EnsureProjectTracks(project);
@@ -526,10 +614,16 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             _project = project;
+            Timeline.SetTargetDuration(project.TargetDurationMinutes);
+            Timeline.SetFrameRate(project.Output.FramesPerSecond);
+            Timeline.SetDisplaySettings(project.TimelineRulerMode, project.TimelineSnapMode);
             Timeline.ReplaceProjectItems(videoItems, mediaById, mediaByPath);
             OnPropertyChanged(nameof(ProjectName));
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
+            OnPropertyChanged(nameof(TargetDurationMinutes));
+            OnPropertyChanged(nameof(ProjectCreatedUtc));
+            OnPropertyChanged(nameof(ProjectSettingsSummary));
             RefreshProjectLayers();
         }
         finally
@@ -563,6 +657,31 @@ public sealed class MainViewModel : ObservableObject
         SelectedProjectLayer = selectedItemId.HasValue
             ? ProjectLayers.FirstOrDefault(row => row.Item?.Id == selectedItemId.Value)
             : ProjectLayers.FirstOrDefault();
+        RefreshTimelineLanes();
+    }
+
+    private void RefreshTimelineLanes()
+    {
+        EnsureProjectTracks(_project);
+        var clips = Timeline.Clips.ToDictionary(clip => clip.InstanceId);
+        var selectedVideoId = Timeline.SelectedClip?.InstanceId;
+        var selectedLayerId = SelectedProjectLayer?.Item?.Id;
+        TimelineLanes.Clear();
+        foreach (var track in _project.Tracks.OrderBy(track => track.Order))
+        {
+            var items = track.Items
+                .OrderBy(item => item.StartTicks)
+                .Select(item => new TimelineLaneItemViewModel(
+                    track,
+                    item,
+                    clips.GetValueOrDefault(item.Id),
+                    Timeline.PixelsPerSecond,
+                    Timeline.TrackHeight,
+                    track.Kind == ProjectTrackKind.Video
+                        ? selectedVideoId == item.Id
+                        : selectedLayerId == item.Id));
+            TimelineLanes.Add(new TimelineLaneViewModel(track, items));
+        }
     }
 
     private async Task SaveRecoverySafelyAsync()
@@ -595,17 +714,6 @@ public sealed class MainViewModel : ObservableObject
         project.Tracks = project.Tracks.OrderBy(track => track.Order).ToList();
     }
 
-    private static ProjectOutputSettings CreateOutputSettings(ApplicationSettings settings)
-    {
-        var (width, height) = settings.Orientation == OutputOrientation.Portrait
-            ? (1080, 1920)
-            : (1920, 1080);
-        return new ProjectOutputSettings
-        {
-            Width = width,
-            Height = height,
-            VideoEncoder = settings.VideoEncoder
-        };
-    }
+    private static ProjectOutputSettings CreateOutputSettings() => new();
 
 }

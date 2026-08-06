@@ -181,6 +181,8 @@ try {
         -Destination (Join-Path $packageRoot "docs\THIRD_PARTY_NOTICES.md") -Force
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "thirdparty") `
         -Destination $packageRoot -Recurse -Force
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot "fonts") `
+        -Destination $packageRoot -Recurse -Force
     Assert-FfmpegPayload (Join-Path $packageRoot "thirdparty\ffmpeg") $false
 
     if (Test-Path -LiteralPath $resolvedOutput) {

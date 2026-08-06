@@ -31,8 +31,13 @@ public sealed record RenderOverlay(
     string? Text = null,
     string? SourcePath = null,
     string? FontPath = null,
+    string? FontFamily = null,
     int FontSize = 42,
-    OverlayPosition Position = OverlayPosition.Center);
+    OverlayPosition Position = OverlayPosition.Center,
+    ProgressBarStyle ProgressBarStyle = ProgressBarStyle.Solid,
+    ProgressBarPosition ProgressBarPosition = ProgressBarPosition.Bottom,
+    string ProgressColor = "#C8C0B2",
+    int ProgressHeight = 10);
 
 public sealed record RenderAudioLayer(
     string SourcePath,
@@ -46,12 +51,6 @@ public sealed record RenderRequest(
     IReadOnlyList<RenderSegment> Segments,
     string OutputPath,
     OutputOrientation Orientation,
-    VideoProgressStyle ProgressStyle = VideoProgressStyle.None,
-    string? OverlayImagePath = null,
-    string? OverlayText = null,
-    string? OverlayFontPath = null,
-    int OverlayTextSize = 42,
-    OverlayPosition OverlayPosition = OverlayPosition.TopRight,
     VideoEncoderPreset VideoEncoder = VideoEncoderPreset.NativeMpeg4,
     double FramesPerSecond = 30,
     string? ProjectName = null,

@@ -33,6 +33,8 @@ CatClipComposer/
 |-- CatClipComposer.exe
 |-- CatClipComposer.Cli.exe
 |-- CatClipComposer.ini
+|-- fonts/
+|   `-- README.txt
 |-- docs/
 |   |-- README.md
 |   `-- THIRD_PARTY_NOTICES.md
@@ -48,10 +50,14 @@ CatClipComposer/
         `-- MANIFEST.sha256
 ```
 
-The root contains only the GUI/CLI entry points, portable INI, documentation, and the third-party boundary.
+The root contains only the GUI/CLI entry points and portable INI plus organized `fonts`, `docs`, and
+`thirdparty` subfolders.
 Application assemblies, native SQLite, and the optional .NET runtime remain inside the single-file programs.
 FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
 interface-compatible build as required by the applicable license.
+
+The portable `fonts` folder is copied into every GUI build and package. Users can add TTF/OTF files there;
+font files are not embedded in `.nya` documents and remain subject to their own redistribution licenses.
 
 When the INI keeps its default `FfmpegPath=ffmpeg.exe`, GUI and CLI resolve
 `thirdparty\ffmpeg\ffmpeg.exe` beside the application. An explicit configured path remains a local user
@@ -84,6 +90,7 @@ Before publishing, the script verifies:
 4. FFmpeg reports neither `--enable-gpl` nor `--enable-nonfree`.
 5. `drawtext`, native `mpeg4`, native `aac`, and `h264_mf` are available.
 6. The copied package payload still matches its manifest.
+7. The portable custom-font folder is included separately from the application executables.
 
 ## Updating FFmpeg
 

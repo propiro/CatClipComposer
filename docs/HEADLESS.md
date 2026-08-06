@@ -82,14 +82,19 @@ Renders an ordered composition and records the completed export and source usage
 - **`--clip <catalog-id>`:** Add an available catalog clip. Repeat it to reuse a clip.
 - **`--screen "<seconds>|<image-path>"`:** Add a positive-duration still. Quote it in PowerShell because
   `|` is a shell operator.
-- **`--orientation <value>`:** Optional `landscape` or `portrait`; otherwise use the INI.
-- **`--encoder <value>`:** Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the INI.
+- **`--orientation <value>`:** Optional `landscape` or `portrait`; otherwise use the saved project's shape
+  or landscape for an ad-hoc render.
+- **`--encoder <value>`:** Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the saved
+  project or the non-GPL native MPEG-4 default.
 - **`--project-file <file>`:** Render a saved project's enabled tracks and output settings and associate its
   identity with history.
 - **`--project-name <name>`:** Associate a name when no project file supplies one.
 - **`--overwrite`:** Explicitly permit replacement when the output already exists.
 
-Choose either a saved `--project-file` or at least one ad-hoc `--clip`/`--screen`. A saved project supplies video/still ordering, effects, timed overlays, progress, audio layers, output dimensions/FPS/quality/bitrates, and history identity. It cannot be mixed with ad-hoc segments. The INI still supplies FFmpeg and legacy compilation-wide overlay/progress defaults.
+Choose either a saved `--project-file` or at least one ad-hoc `--clip`/`--screen`. A saved project supplies
+video/still ordering, effects, timed overlays, progress, audio layers, output dimensions/FPS/quality/bitrates,
+and history identity. It cannot be mixed with ad-hoc segments. The INI supplies tool and output-folder paths,
+not compilation-wide effects.
 
 ```powershell
 CatClipComposer.Cli.exe render `
@@ -106,11 +111,14 @@ Existing outputs are rejected with exit code `2` unless `--overwrite` is present
 
 ### `project`
 
-Creates or inspects a versioned `.ccproject` document. `--project-file <file>` is required. Add `--create`, optional `--project-name <name>`, and optional `--overwrite` to create a new empty five-track document; without `--create`, the command validates and prints the existing project. JSON includes identity, timestamps, output settings, ordered track metadata, and item counts.
+Creates or inspects a versioned `.nya` document. `--project-file <file>` is required. Add `--create`, optional
+`--project-name <name>`, and optional `--overwrite` to create a new empty five-track document; without
+`--create`, the command validates and prints the existing project. JSON includes identity, timestamps,
+output settings, ordered track metadata, and item counts.
 
 ```powershell
-CatClipComposer.Cli.exe project --create --project-file "D:\Projects\Cats.ccproject" --project-name "Cats"
-CatClipComposer.Cli.exe project --project-file "D:\Projects\Cats.ccproject" --json
+CatClipComposer.Cli.exe project --create --project-file "D:\Projects\Cats.nya" --project-name "Cats"
+CatClipComposer.Cli.exe project --project-file "D:\Projects\Cats.nya" --json
 ```
 
 ### `history`

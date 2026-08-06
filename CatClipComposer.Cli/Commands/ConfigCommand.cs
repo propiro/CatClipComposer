@@ -24,18 +24,11 @@ internal static class ConfigCommand
                 settings.PreviewSlideCount,
                 settings.IncludeSubfolders,
                 settings.ShowFileNames,
+                settings.RescanLibraryOnStartup,
                 settings.OutputFolder,
                 settings.ProjectFolder,
-                settings.TargetDurationMinutes,
-                orientation = settings.Orientation.ToString(),
-                videoEncoder = settings.VideoEncoder.ToString(),
                 settings.FfmpegPath,
-                progressStyle = settings.ProgressStyle.ToString(),
-                settings.OverlayImagePath,
-                settings.OverlayText,
-                settings.OverlayFontPath,
-                settings.OverlayTextSize,
-                overlayPosition = settings.OverlayPosition.ToString(),
+                settings.CustomFontFolder,
                 workspace = new
                 {
                     contentBrowserDock = settings.ContentBrowserDock.ToString(),
@@ -66,10 +59,9 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Project folder: {settings.ProjectFolder}");
         await context.Output.WriteLineAsync($"Metadata folder: {settings.MetadataFolder}");
         await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
-        await context.Output.WriteLineAsync($"Target minutes: {settings.TargetDurationMinutes.ToString(CultureInfo.InvariantCulture)}");
-        await context.Output.WriteLineAsync($"Orientation: {settings.Orientation}");
-        await context.Output.WriteLineAsync($"Encoder: {settings.VideoEncoder}");
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
+        await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
+        await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");
         await context.Output.WriteLineAsync(
             $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
             $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");

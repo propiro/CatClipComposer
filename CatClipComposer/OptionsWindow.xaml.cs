@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -11,6 +12,8 @@ namespace CatClipComposer;
 
 public partial class OptionsWindow : Window
 {
+    private const string CompatibleFfmpegBuildsUrl =
+        "https://github.com/BtbN/FFmpeg-Builds/releases/tag/latest";
     private readonly ApplicationSettings _workingSettings;
 
     public OptionsWindow(ApplicationSettings settings)
@@ -26,23 +29,13 @@ public partial class OptionsWindow : Window
         MetadataFolderTextBox.Text = _workingSettings.MetadataFolder;
         PreviewSlideCountTextBox.Text = _workingSettings.PreviewSlideCount.ToString(CultureInfo.CurrentCulture);
         FfmpegPathTextBox.Text = _workingSettings.FfmpegPath;
-        TargetMinutesTextBox.Text = _workingSettings.TargetDurationMinutes.ToString(
-            "0.##",
-            CultureInfo.CurrentCulture);
-        OrientationComboBox.ItemsSource = Enum.GetValues<OutputOrientation>();
-        OrientationComboBox.SelectedItem = _workingSettings.Orientation;
-        VideoEncoderComboBox.ItemsSource = EncoderChoices;
-        VideoEncoderComboBox.SelectedItem = EncoderChoices.First(choice => choice.Value == _workingSettings.VideoEncoder);
-        ProgressStyleComboBox.ItemsSource = Enum.GetValues<VideoProgressStyle>();
-        ProgressStyleComboBox.SelectedItem = _workingSettings.ProgressStyle;
-        OverlayPositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
-        OverlayPositionComboBox.SelectedItem = _workingSettings.OverlayPosition;
-        OverlayImagePathTextBox.Text = _workingSettings.OverlayImagePath;
-        OverlayTextTextBox.Text = _workingSettings.OverlayText;
-        OverlayFontPathTextBox.Text = _workingSettings.OverlayFontPath;
-        OverlayTextSizeTextBox.Text = _workingSettings.OverlayTextSize.ToString(CultureInfo.CurrentCulture);
+        CustomFontFolderTextBox.Text = _workingSettings.CustomFontFolder;
         IncludeSubfoldersCheckBox.IsChecked = _workingSettings.IncludeSubfolders;
         ShowFileNamesCheckBox.IsChecked = _workingSettings.ShowFileNames;
+        RescanOnStartupCheckBox.IsChecked = _workingSettings.RescanLibraryOnStartup;
+        MissingFfmpegNotice.Visibility = File.Exists(GetBundledFfmpegPath())
+            ? Visibility.Collapsed
+            : Visibility.Visible;
     }
 
     public ObservableCollection<string> SourceFolders { get; }
@@ -51,11 +44,7 @@ public partial class OptionsWindow : Window
 
     private void AddSourceFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog
-        {
-            Title = "Choose one or more video source folders",
-            Multiselect = true
-        };
+        var dialog = new OpenFolderDialog { Title = "Choose video source folders", Multiselect = true };
         if (dialog.ShowDialog(this) != true)
         {
             return;
@@ -72,40 +61,31 @@ public partial class OptionsWindow : Window
 
     private void RemoveSourceFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = SourceFoldersList.SelectedItems.Cast<string>().ToList();
-        foreach (var folder in selected)
+        foreach (var folder in SourceFoldersList.SelectedItems.Cast<string>().ToList())
         {
             SourceFolders.Remove(folder);
         }
     }
 
-    private void BrowseOutputFolder_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFolderDialog
-        {
-            Title = "Choose the compilation output folder",
-            InitialDirectory = Directory.Exists(OutputFolderTextBox.Text)
-                ? OutputFolderTextBox.Text
-                : null
-        };
-        if (dialog.ShowDialog(this) == true)
-        {
-            OutputFolderTextBox.Text = dialog.FolderName;
-        }
-    }
+    private void BrowseOutputFolder_Click(object sender, RoutedEventArgs e) =>
+        BrowseFolderIntoTextBox(OutputFolderTextBox, "Choose the final video output folder");
 
-    private void BrowseProjectFolder_Click(object sender, RoutedEventArgs e)
-    {
-        BrowseFolderIntoTextBox(
-            ProjectFolderTextBox,
-            "Choose the folder for editable project files");
-    }
+    private void BrowseProjectFolder_Click(object sender, RoutedEventArgs e) =>
+        BrowseFolderIntoTextBox(ProjectFolderTextBox, "Choose the editable project folder");
 
-    private void BrowseMetadataFolder_Click(object sender, RoutedEventArgs e)
+    private void BrowseMetadataFolder_Click(object sender, RoutedEventArgs e) =>
+        BrowseFolderIntoTextBox(MetadataFolderTextBox, "Choose the catalog and preview metadata folder");
+
+    private void BrowseFontFolder_Click(object sender, RoutedEventArgs e) =>
+        BrowseFolderIntoTextBox(CustomFontFolderTextBox, "Choose the custom font folder");
+
+    private void OpenFontFolder_Click(object sender, RoutedEventArgs e)
     {
-        BrowseFolderIntoTextBox(
-            MetadataFolderTextBox,
-            "Choose the catalog, preview, and recovery metadata folder");
+        var folder = string.IsNullOrWhiteSpace(CustomFontFolderTextBox.Text)
+            ? Path.Combine(AppContext.BaseDirectory, "fonts")
+            : Path.GetFullPath(CustomFontFolderTextBox.Text.Trim());
+        Directory.CreateDirectory(folder);
+        Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
     }
 
     private void BrowseFfmpeg_Click(object sender, RoutedEventArgs e)
@@ -113,7 +93,7 @@ public partial class OptionsWindow : Window
         var dialog = new OpenFileDialog
         {
             Title = "Choose ffmpeg.exe",
-            Filter = "FFmpeg executable (ffmpeg.exe)|ffmpeg.exe|Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+            Filter = "FFmpeg executable (ffmpeg.exe)|ffmpeg.exe|Executable files (*.exe)|*.exe",
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) == true)
@@ -122,97 +102,24 @@ public partial class OptionsWindow : Window
         }
     }
 
-    private void BrowseOverlayImage_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Choose a PNG overlay",
-            Filter = "PNG image (*.png)|*.png|Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg",
-            CheckFileExists = true
-        };
-        if (dialog.ShowDialog(this) == true)
-        {
-            OverlayImagePathTextBox.Text = dialog.FileName;
-        }
-    }
-
-    private void BrowseOverlayFont_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Choose a TrueType or OpenType font",
-            Filter = "Font files (*.ttf;*.otf)|*.ttf;*.otf|All files (*.*)|*.*",
-            CheckFileExists = true
-        };
-        if (dialog.ShowDialog(this) == true)
-        {
-            OverlayFontPathTextBox.Text = dialog.FileName;
-        }
-    }
+    private void DownloadFfmpeg_Click(object sender, RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo(CompatibleFfmpegBuildsUrl) { UseShellExecute = true });
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (!double.TryParse(
-                TargetMinutesTextBox.Text,
-                NumberStyles.Float,
-                CultureInfo.CurrentCulture,
-                out var targetMinutes) ||
-            targetMinutes is < 1 or > 720)
+        if (string.IsNullOrWhiteSpace(OutputFolderTextBox.Text) ||
+            string.IsNullOrWhiteSpace(ProjectFolderTextBox.Text) ||
+            string.IsNullOrWhiteSpace(MetadataFolderTextBox.Text) ||
+            !int.TryParse(PreviewSlideCountTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
+                out var previewSlideCount) || previewSlideCount is < 1 or > 24)
         {
-            MessageBox.Show(
-                this,
-                "Timeline target must be between 1 and 720 minutes.",
-                "Invalid timeline target",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            TargetMinutesTextBox.Focus();
+            MessageBox.Show(this,
+                "Choose the output, project, and metadata folders and use 1–24 contact-sheet slides.",
+                "Invalid preferences", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(OutputFolderTextBox.Text))
-        {
-            MessageBox.Show(
-                this,
-                "Choose an output folder.",
-                "Output folder required",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
-
-        if (!int.TryParse(OverlayTextSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture, out var textSize) ||
-            textSize is < 8 or > 200)
-        {
-            MessageBox.Show(
-                this,
-                "Overlay text size must be between 8 and 200 pixels.",
-                "Invalid text size",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            OverlayTextSizeTextBox.Focus();
-            return;
-        }
-
-        if (!int.TryParse(
-                PreviewSlideCountTextBox.Text,
-                NumberStyles.Integer,
-                CultureInfo.CurrentCulture,
-                out var previewSlideCount) ||
-            previewSlideCount is < 1 or > 12)
-        {
-            MessageBox.Show(
-                this,
-                "Preview slide count must be between 1 and 12.",
-                "Invalid preview slide count",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            PreviewSlideCountTextBox.Focus();
-            return;
-        }
-
-        _workingSettings.SourceFolders = SourceFolders
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        _workingSettings.SourceFolders = SourceFolders.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         _workingSettings.OutputFolder = OutputFolderTextBox.Text.Trim();
         _workingSettings.ProjectFolder = ProjectFolderTextBox.Text.Trim();
         _workingSettings.MetadataFolder = MetadataFolderTextBox.Text.Trim();
@@ -220,26 +127,12 @@ public partial class OptionsWindow : Window
         _workingSettings.FfmpegPath = string.IsNullOrWhiteSpace(FfmpegPathTextBox.Text)
             ? "ffmpeg.exe"
             : FfmpegPathTextBox.Text.Trim();
-        _workingSettings.TargetDurationMinutes = targetMinutes;
-        _workingSettings.Orientation = OrientationComboBox.SelectedItem is OutputOrientation orientation
-            ? orientation
-            : OutputOrientation.Landscape;
-        _workingSettings.VideoEncoder = VideoEncoderComboBox.SelectedItem is EncoderChoice encoder
-            ? encoder.Value
-            : VideoEncoderPreset.NativeMpeg4;
-        _workingSettings.ProgressStyle = ProgressStyleComboBox.SelectedItem is VideoProgressStyle progressStyle
-            ? progressStyle
-            : VideoProgressStyle.None;
-        _workingSettings.OverlayPosition = OverlayPositionComboBox.SelectedItem is OverlayPosition overlayPosition
-            ? overlayPosition
-            : OverlayPosition.TopRight;
-        _workingSettings.OverlayImagePath = OverlayImagePathTextBox.Text.Trim();
-        _workingSettings.OverlayText = OverlayTextTextBox.Text.Trim();
-        _workingSettings.OverlayFontPath = OverlayFontPathTextBox.Text.Trim();
-        _workingSettings.OverlayTextSize = textSize;
+        _workingSettings.CustomFontFolder = string.IsNullOrWhiteSpace(CustomFontFolderTextBox.Text)
+            ? Path.Combine(AppContext.BaseDirectory, "fonts")
+            : CustomFontFolderTextBox.Text.Trim();
         _workingSettings.IncludeSubfolders = IncludeSubfoldersCheckBox.IsChecked == true;
         _workingSettings.ShowFileNames = ShowFileNamesCheckBox.IsChecked == true;
-
+        _workingSettings.RescanLibraryOnStartup = RescanOnStartupCheckBox.IsChecked == true;
         ResultSettings = _workingSettings.Copy();
         DialogResult = true;
     }
@@ -257,15 +150,6 @@ public partial class OptionsWindow : Window
         }
     }
 
-    private static IReadOnlyList<EncoderChoice> EncoderChoices { get; } =
-    [
-        new(VideoEncoderPreset.NativeMpeg4, "FFmpeg native MPEG-4 — non-GPL default"),
-        new(VideoEncoderPreset.WindowsMediaFoundationH264, "Windows Media Foundation H.264 — non-GPL"),
-        new(VideoEncoderPreset.Libx264Gpl, "libx264 H.264 — GPL opt-in")
-    ];
-
-    private sealed record EncoderChoice(VideoEncoderPreset Value, string Label)
-    {
-        public override string ToString() => Label;
-    }
+    private static string GetBundledFfmpegPath() => Path.Combine(
+        AppContext.BaseDirectory, "thirdparty", "ffmpeg", "ffmpeg.exe");
 }

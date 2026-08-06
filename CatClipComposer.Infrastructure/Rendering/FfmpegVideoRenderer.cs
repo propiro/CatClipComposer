@@ -22,7 +22,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
 
         var operationId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
         var temporaryOutputPath = CreateTemporaryOutputPath(request.OutputPath, operationId);
-        string? overlayTextPath = null;
         IReadOnlyDictionary<int, string> timedTextPaths = new Dictionary<int, string>();
         var totalDuration = TimeSpan.FromTicks(request.Segments.Sum(segment => segment.Duration.Ticks));
         var (fallbackWidth, fallbackHeight) = request.Orientation == OutputOrientation.Portrait
@@ -33,11 +32,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
 
         try
         {
-            overlayTextPath = await CreateOverlayTextFileAsync(
-                request,
-                outputDirectory,
-                operationId,
-                cancellationToken);
             timedTextPaths = await CreateTimedOverlayTextFilesAsync(
                 request,
                 outputDirectory,
@@ -47,7 +41,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
                 request,
                 ffmpegPath,
                 temporaryOutputPath,
-                overlayTextPath,
                 timedTextPaths,
                 width,
                 height);
@@ -77,7 +70,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         finally
         {
             TemporaryFile.TryDelete(temporaryOutputPath);
-            TemporaryFile.TryDelete(overlayTextPath);
             foreach (var path in timedTextPaths.Values)
             {
                 TemporaryFile.TryDelete(path);
@@ -103,16 +95,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         {
             throw new InvalidOperationException(
                 $"A timeline source is missing or has no duration: {invalidSegment.SourcePath}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.OverlayImagePath) && !File.Exists(request.OverlayImagePath))
-        {
-            throw new InvalidOperationException($"The overlay image does not exist: {request.OverlayImagePath}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.OverlayFontPath) && !File.Exists(request.OverlayFontPath))
-        {
-            throw new InvalidOperationException($"The overlay font does not exist: {request.OverlayFontPath}");
         }
 
         if (request.FramesPerSecond is < 1 or > 240 || !double.IsFinite(request.FramesPerSecond))
@@ -177,26 +159,6 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         return Path.Combine(
             outputDirectory,
             $".{Path.GetFileNameWithoutExtension(outputPath)}.{operationId}.partial{Path.GetExtension(outputPath)}");
-    }
-
-    private static async Task<string?> CreateOverlayTextFileAsync(
-        RenderRequest request,
-        string outputDirectory,
-        string operationId,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.OverlayText))
-        {
-            return null;
-        }
-
-        var path = Path.Combine(outputDirectory, $".overlay-{operationId}.txt");
-        await File.WriteAllTextAsync(
-            path,
-            request.OverlayText,
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            cancellationToken);
-        return path;
     }
 
     private static async Task<IReadOnlyDictionary<int, string>> CreateTimedOverlayTextFilesAsync(

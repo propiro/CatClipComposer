@@ -73,9 +73,19 @@ that reports `--enable-gpl` or `--enable-nonfree`.
 
 ## Application versioning
 
-`Directory.Build.props` supplies version 0.1.4 to the WPF, CLI, Core, and Infrastructure projects, including
+`Directory.Build.props` supplies version 0.1.5 to the WPF, CLI, Core, and Infrastructure projects, including
 assembly, file, and informational metadata. User-visible strings resolve from Core assembly metadata so the
 main-window title/status bars and headless output cannot drift from the built components.
+
+## User interface artwork and fonts
+
+The startup/rescan splash embeds the user-supplied Mr Cat bee-costume photograph, lightly sharpened with the
+built-in image-generation tool. It is an application asset rather than a software dependency. The project
+owner remains responsible for confirming image-distribution rights for a public release.
+
+The packaged `fonts` folder contains instructions but no third-party font by default. User-added TTF/OTF
+files remain separately replaceable and subject to their own licenses; installed Windows fonts are selected
+by family name and are not copied into the package.
 
 FFmpeg documents its native `mpeg4` encoder as usable without the GPL `libxvid` wrapper and documents `h264_mf` as a Media Foundation encoder. YouTube lists MPEG4 as a supported upload format and recommends MP4/H.264/AAC for optimal uploads. These sources establish the default/optional preset boundary; a distributor must still audit the exact configured FFmpeg binary.
 

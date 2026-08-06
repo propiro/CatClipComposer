@@ -235,7 +235,7 @@ internal sealed class CliApplication(
           --overwrite            Permit replacement of an existing output file.
 
         Project options:
-          --project-file <file>  Required .ccproject path.
+          --project-file <file>  Required .nya path.
           --create               Create a new empty five-track project.
           --project-name <name>  Optional name used with --create.
           --overwrite            Permit replacement when creating a project.

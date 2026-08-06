@@ -57,8 +57,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 1. The presentation timeline raises a change event only for mutations, not selection.
 2. `MainViewModel` synchronizes ordered video/still items into the project's Video track.
 3. `IProjectStore` writes the complete versioned document atomically to recovery.
-4. Normal Save writes the selected `.ccproject` and refreshes recovery.
-5. Startup loads recovery after the catalog so media IDs/paths can be resolved into timeline view models.
+4. Normal Save writes the selected `.nya` and refreshes `autosave.nya` recovery.
+5. Startup shows progress, optionally rescans the catalog, then loads recovery so media IDs/paths can be
+   resolved into timeline view models.
 6. A successful render carries project identity into history; editing and autosave alone never update catalog usage.
 
 ## Responsibility audit
@@ -71,8 +72,8 @@ Each component is listed separately to keep its responsibility and boundary read
   and owns neither presentation nor FFmpeg construction.
 - **`JsonProjectStore`:** Validate and atomically save/load normal and recovery project documents. It owns
   no timeline, UI, catalog, or render behavior.
-- **`TimelineViewModel`:** Ordered segments, selection, editing, duration, and axis summaries. `MOD-001`
-  is closed.
+- **`TimelineViewModel`:** Ordered segments, selection, editing, duration, target, ruler/snap state, and axis
+  summaries. Lane projection is kept in focused timeline presentation models; `MOD-001` is closed.
 - **`ProjectRenderMapper`:** Convert enabled persisted tracks/items into renderer values. It is pure Core
   code shared by GUI and CLI.
 - **`FfmpegVideoRenderer`:** Validate and coordinate temporary render output.
@@ -84,8 +85,8 @@ Each component is listed separately to keep its responsibility and boundary read
 - **Preview generators:** Produce a static thumbnail and evenly sampled contact sheet. A shared process
   runner removes duplicated process/cancellation behavior; images remain replaceable cache files.
 - **SQLite persistence helpers:** Own one schema, connection, conversion, or row-projection task each.
-- **WPF window code-behind:** Own window events, validation prompts, and dialog flow. Explorer launch and
-  exception presentation are delegated; `MOD-004` is closed.
+- **WPF window code-behind:** Own window events, media transport, validation prompts, and dialog flow.
+  Explorer launch and exception presentation are delegated; `MOD-004` is closed.
 - **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
 - **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary browser focus. Browser focus
   never overwrites durable settings.
@@ -94,10 +95,11 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.
-- **Portable publisher:** Compose the two single-file entry points, INI, docs, and mandatory pinned FFmpeg
-  payload. It validates hashes, license flags, versions, and required render capabilities before publishing.
-- **Application startup:** Provide the shared `ApplicationServicesFactory` composition root. `BOOT-001` is
-  closed.
+- **Portable publisher:** Compose the two single-file entry points, INI, docs, mandatory pinned FFmpeg
+  payload, and custom-font folder. It validates hashes, license flags, versions, and required render
+  capabilities before publishing.
+- **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate
+  splash progress, optional scan, recovery, and main-window handoff. `BOOT-001` is closed.
 - **INI configuration:** Split generic reading, application mapping, and atomic storage. `CFG-001` and
   `AUD-CFG-001` are closed.
 

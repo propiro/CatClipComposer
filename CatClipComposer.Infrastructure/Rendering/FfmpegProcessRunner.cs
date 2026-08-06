@@ -37,7 +37,7 @@ internal sealed class FfmpegProcessRunner
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or FileNotFoundException)
         {
             throw new InvalidOperationException(
-                $"FFmpeg was not found. Configure ffmpeg.exe in Options. Tried: {process.StartInfo.FileName}",
+                $"FFmpeg was not found. Configure ffmpeg.exe in Preferences. Tried: {process.StartInfo.FileName}",
                 exception);
         }
     }

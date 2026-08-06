@@ -4,6 +4,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Desktop;
@@ -20,6 +21,8 @@ public partial class MainWindow : Window
     private readonly WorkspaceLayoutController _workspaceLayout;
     private Point _catalogDragStart;
     private bool _isBrowserExpanded;
+    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    private bool _previewSeekDragging;
 
     public MainWindow(
         ApplicationSettings settings,
@@ -46,16 +49,19 @@ public partial class MainWindow : Window
             TimelinePanel);
         _workspaceLayout.Apply(settings);
         DataContext = _viewModel;
-        Loaded += MainWindow_Loaded;
-        Closed += (_, _) => _viewModel.CancelOperation();
+        _previewTimer.Tick += PreviewTimer_Tick;
+        Closed += (_, _) =>
+        {
+            _previewTimer.Stop();
+            _viewModel.CancelOperation();
+        };
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    public async Task InitializeAsync(IProgress<StartupProgress>? progress = null)
     {
-        Loaded -= MainWindow_Loaded;
         try
         {
-            await _viewModel.InitializeAsync();
+            await _viewModel.InitializeAsync(progress);
         }
         catch (Exception exception)
         {
@@ -90,7 +96,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            DesktopDialogs.ShowError(this, "Could not save the options.", exception);
+            DesktopDialogs.ShowError(this, "Could not save the preferences.", exception);
         }
     }
 
@@ -123,7 +129,7 @@ public partial class MainWindow : Window
         {
             Title = "Open Cat Clip Composer project",
             InitialDirectory = _viewModel.Settings.ProjectFolder,
-            Filter = "Cat Clip Composer project (*.ccproject)|*.ccproject|All files (*.*)|*.*",
+            Filter = "Cat Clip Composer project (*.nya)|*.nya|All files (*.*)|*.*",
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) != true)
@@ -151,9 +157,9 @@ public partial class MainWindow : Window
             {
                 Title = "Save Cat Clip Composer project",
                 InitialDirectory = _viewModel.Settings.ProjectFolder,
-                FileName = $"CatProject-{DateTime.Now:yyyyMMdd-HHmm}.ccproject",
-                DefaultExt = ".ccproject",
-                Filter = "Cat Clip Composer project (*.ccproject)|*.ccproject",
+                FileName = $"CatProject-{DateTime.Now:yyyyMMdd-HHmm}.nya",
+                DefaultExt = ".nya",
+                Filter = "Cat Clip Composer project (*.nya)|*.nya",
                 AddExtension = true,
                 OverwritePrompt = true
             };
@@ -177,10 +183,23 @@ public partial class MainWindow : Window
 
     private void OutputSettings_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OutputSettingsWindow(_viewModel.OutputSettings) { Owner = this };
-        if (dialog.ShowDialog() == true && dialog.ResultSettings is not null)
+        var dialog = new OutputSettingsWindow(
+            _viewModel.OutputSettings,
+            _viewModel.ProjectName,
+            _viewModel.TargetDurationMinutes,
+            _viewModel.ProjectCreatedUtc,
+            _viewModel.ProjectFilePath)
         {
-            _viewModel.ApplyOutputSettings(dialog.ResultSettings);
+            Owner = this
+        };
+        if (dialog.ShowDialog() == true &&
+            dialog.ResultSettings is not null &&
+            dialog.ResultProjectName is not null)
+        {
+            _viewModel.ApplyProjectSettings(
+                dialog.ResultProjectName,
+                dialog.ResultTargetDurationMinutes,
+                dialog.ResultSettings);
         }
     }
 
@@ -201,7 +220,7 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                "Add at least one source folder in Options before updating the catalog.",
+                "Add at least one source folder in Preferences before updating the catalog.",
                 "No source folders",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -211,7 +230,36 @@ public partial class MainWindow : Window
 
         try
         {
-            var result = await _viewModel.ScanAsync();
+            var splash = new SplashWindow(canCancel: true)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            splash.CancelRequested += (_, _) => _viewModel.CancelOperation();
+            splash.Report(new StartupProgress(0, "Discovering video files…"));
+            splash.Show();
+            IsEnabled = false;
+            ScanResult result;
+            try
+            {
+                var progress = new Progress<ScanProgress>(update =>
+                {
+                    var percent = update.Total == 0 ? 0 : update.Processed * 100d / update.Total;
+                    var message = string.IsNullOrWhiteSpace(update.CurrentFile)
+                        ? "Finalizing the library catalog…"
+                        : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
+                    splash.Report(new StartupProgress(percent, message));
+                });
+                result = await _viewModel.ScanAsync(progress);
+                splash.Report(new StartupProgress(100, "Library refresh complete."));
+            }
+            finally
+            {
+                IsEnabled = true;
+                splash.Close();
+                Activate();
+            }
+
             if (result.Errors.Count > 0)
             {
                 var shownErrors = string.Join(Environment.NewLine, result.Errors.Take(8));
@@ -265,14 +313,87 @@ public partial class MainWindow : Window
     private void CatalogListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         PreviewPlayer.Stop();
+        PreviewPlayer.IsMuted = true;
+        PreviewMuteButton.Content = "Unmute";
+        PreviewSeekSlider.Value = 0;
+        PreviewPositionText.Text = "0:00";
+        PreviewDurationText.Text = "0:00";
         PreviewPlayer.Source = _viewModel.SelectedMedia is null
             ? null
             : new Uri(_viewModel.SelectedMedia.FullPath, UriKind.Absolute);
     }
 
-    private void PreviewPlay_Click(object sender, RoutedEventArgs e) => PreviewPlayer.Play();
+    private void PreviewPlay_Click(object sender, RoutedEventArgs e)
+    {
+        PreviewPlayer.Play();
+        _previewTimer.Start();
+    }
 
-    private void PreviewPause_Click(object sender, RoutedEventArgs e) => PreviewPlayer.Pause();
+    private void PreviewPause_Click(object sender, RoutedEventArgs e)
+    {
+        PreviewPlayer.Pause();
+        _previewTimer.Stop();
+    }
+
+    private void PreviewMute_Click(object sender, RoutedEventArgs e)
+    {
+        PreviewPlayer.IsMuted = !PreviewPlayer.IsMuted;
+        PreviewMuteButton.Content = PreviewPlayer.IsMuted ? "Unmute" : "Mute";
+    }
+
+    private void PreviewVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (PreviewPlayer is not null)
+        {
+            PreviewPlayer.Volume = e.NewValue;
+        }
+    }
+
+    private void PreviewPlayer_MediaOpened(object sender, RoutedEventArgs e)
+    {
+        var duration = PreviewPlayer.NaturalDuration.HasTimeSpan
+            ? PreviewPlayer.NaturalDuration.TimeSpan
+            : TimeSpan.Zero;
+        PreviewSeekSlider.Maximum = Math.Max(0.001, duration.TotalSeconds);
+        PreviewDurationText.Text = FormatPreviewTime(duration);
+    }
+
+    private void PreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)
+    {
+        _previewTimer.Stop();
+        PreviewPlayer.Position = TimeSpan.Zero;
+        UpdatePreviewPosition();
+    }
+
+    private void PreviewTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_previewSeekDragging)
+        {
+            UpdatePreviewPosition();
+        }
+    }
+
+    private void PreviewSeekSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        _previewSeekDragging = true;
+
+    private void PreviewSeekSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        PreviewPlayer.Position = TimeSpan.FromSeconds(PreviewSeekSlider.Value);
+        _previewSeekDragging = false;
+        UpdatePreviewPosition();
+    }
+
+    private void UpdatePreviewPosition()
+    {
+        PreviewSeekSlider.Value = Math.Clamp(
+            PreviewPlayer.Position.TotalSeconds,
+            PreviewSeekSlider.Minimum,
+            PreviewSeekSlider.Maximum);
+        PreviewPositionText.Text = FormatPreviewTime(PreviewPlayer.Position);
+    }
+
+    private static string FormatPreviewTime(TimeSpan value) =>
+        value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
 
     private void PreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
     {
@@ -314,7 +435,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new LayerItemEditorWindow(kind, _viewModel.Timeline.Duration) { Owner = this };
+        var dialog = new LayerItemEditorWindow(
+            kind,
+            _viewModel.Timeline.Duration,
+            _viewModel.Settings.CustomFontFolder,
+            _viewModel.Timeline.SnapMode,
+            _viewModel.Timeline.FramesPerSecond,
+            _viewModel.Timeline.SelectedClipStart,
+            _viewModel.Timeline.SelectedClip?.Duration)
+        {
+            Owner = this
+        };
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
             _viewModel.AddLayerItem(dialog.TrackKind, dialog.ResultItem);
@@ -362,7 +493,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new LayerItemEditorWindow(row.Item, _viewModel.Timeline.Duration) { Owner = this };
+        var dialog = new LayerItemEditorWindow(
+            row.Item,
+            _viewModel.Timeline.Duration,
+            _viewModel.Settings.CustomFontFolder,
+            _viewModel.Timeline.SnapMode,
+            _viewModel.Timeline.FramesPerSecond)
+        {
+            Owner = this
+        };
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
             _viewModel.UpdateSelectedLayerItem(dialog.ResultItem);
@@ -476,6 +615,21 @@ public partial class MainWindow : Window
 
     private void RemoveTimeline_Click(object sender, RoutedEventArgs e) =>
         _viewModel.RemoveSelectedTimelineClip();
+
+    private void TimelineRulerMode_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.CycleTimelineRulerMode();
+
+    private void TimelineSnapMode_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.CycleTimelineSnapMode();
+
+    private void TimelineLaneItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border { Tag: TimelineLaneItemViewModel item })
+        {
+            _viewModel.SelectTimelineItem(item.Id);
+            TimelineDropSurface.Focus();
+        }
+    }
 
     private void ClearTimeline_Click(object sender, RoutedEventArgs e)
     {

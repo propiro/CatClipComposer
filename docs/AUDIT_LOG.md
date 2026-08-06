@@ -1,5 +1,41 @@
 # Audit log
 
+## AUDIT-2026-08-06-023 — Project settings and editor interaction pass
+
+Scope: requested Preferences/project split, dark ComboBoxes, portable fonts, progress effects, preview
+transport, precise timeline lanes, `.nya` files, startup scanning/splash, and default Preferences sizing;
+`AUD-UX-003`.
+
+Findings:
+
+- The former application settings mixed durable folder/tool preferences with values that change per project.
+  Project target and output choices now persist in schema-2 `.nya` files and are exposed through a default
+  right-side rollout; legacy compilation-wide progress/overlay settings were removed rather than retained.
+- Preferences now opens at 760x850, uses automatic scrolling only when needed, defaults contact sheets to 12,
+  rescans on startup, manages a portable custom-font folder, and offers compatible FFmpeg-download guidance
+  only when the mandatory bundle is unavailable.
+- The custom ComboBox template paints selection and popup surfaces dark and recycles item containers. Text
+  effects distinguish installed font families from custom TTF/OTF files, while both feed the shared renderer.
+- Progress is represented only as an editable timeline effect with independent timing, style, color, height,
+  and position. Five lanes, scalable height/time zoom, ruler modes, snapping, and selected-video controls make
+  timeline placement explicit without stretching one video lane over the whole panel.
+- Preview playback is muted by default and exposes transport, seek, mute, volume, and elapsed/total feedback.
+- Startup and manual rescans report work through the sharpened Mr Cat splash instead of appearing empty; the
+  manual scan can be cancelled. No final foreground launch was performed after the user clarified that an
+  earlier test window had merely been closed accidentally.
+
+Verification:
+
+- Release solution build passed with zero warnings and errors after the final source changes.
+- A headless schema/settings smoke confirmed 12-slide and startup-rescan defaults, `.nya` recovery, schema-2
+  persistence, and project-effect round trips.
+- The mandatory bundled FFmpeg rendered a two-second MPEG-4/AAC sample containing installed-system-font text
+  and a segmented top progress effect; a sampled frame showed both correctly.
+- Final package, CLI, vulnerability, and repository-integrity checks are recorded with the containing commit.
+
+Result: requested behavior is implemented; application/component version advanced to 0.1.5 and
+`AUD-UX-003` is closed.
+
 ## AUDIT-2026-08-06-022 — Mandatory FFmpeg bundle and documentation readability
 
 Scope: requested always-present FFmpeg tools, exact-binary release gate, and unreadable Markdown tables;

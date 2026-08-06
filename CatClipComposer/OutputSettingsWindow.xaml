@@ -1,13 +1,9 @@
 <Window x:Class="CatClipComposer.OutputSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Project output"
-        Width="620"
-        Height="520"
-        MinWidth="520"
-        MinHeight="440"
-        Background="{StaticResource WindowBrush}"
-        WindowStartupLocation="CenterOwner">
+        Title="Project settings"
+        Width="650" Height="670" MinWidth="560" MinHeight="600"
+        Background="{StaticResource WindowBrush}" WindowStartupLocation="CenterOwner">
     <Grid Margin="14" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -15,68 +11,84 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,12">
-            <TextBlock FontSize="18" FontWeight="SemiBold" Text="Project output" />
-            <TextBlock Margin="0,3,0,0"
-                       Foreground="{StaticResource MutedTextBrush}"
-                       Text="Presets are editable; choosing Custom keeps the current values." />
+            <TextBlock FontSize="20" FontWeight="SemiBold" Text="Project settings" />
+            <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedTextBrush}"
+                       Text="These values are saved in this .nya project and can change during editing." />
         </StackPanel>
 
-        <Border Grid.Row="1"
-                Padding="12"
-                Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="165" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="38" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <TextBlock VerticalAlignment="Center" Text="Preset" />
-                <ComboBox x:Name="PresetComboBox"
-                          Grid.Column="1"
-                          DisplayMemberPath="Name"
-                          SelectionChanged="PresetComboBox_SelectionChanged" />
-                <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Width (pixels)" />
-                <TextBox x:Name="WidthTextBox" Grid.Row="1" Grid.Column="1" />
-                <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="Height (pixels)" />
-                <TextBox x:Name="HeightTextBox" Grid.Row="2" Grid.Column="1" />
-                <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Frame rate" />
-                <TextBox x:Name="FrameRateTextBox" Grid.Row="3" Grid.Column="1" />
-                <TextBlock Grid.Row="4" VerticalAlignment="Center" Text="Video encoder" />
-                <ComboBox x:Name="EncoderComboBox" Grid.Row="4" Grid.Column="1" />
-                <TextBlock Grid.Row="5" VerticalAlignment="Center" Text="Quality (1–100)" />
-                <TextBox x:Name="QualityTextBox" Grid.Row="5" Grid.Column="1" />
-                <TextBlock Grid.Row="6" VerticalAlignment="Center" Text="Video bitrate (kbps)" />
-                <TextBox x:Name="VideoBitrateTextBox" Grid.Row="6" Grid.Column="1" />
-                <TextBlock Grid.Row="7" VerticalAlignment="Center" Text="Audio bitrate (kbps)" />
-                <TextBox x:Name="AudioBitrateTextBox" Grid.Row="7" Grid.Column="1" />
-                <TextBlock x:Name="PresetDescriptionText"
-                           Grid.Row="8"
-                           Grid.ColumnSpan="2"
-                           Margin="0,8,0,0"
-                           Foreground="{StaticResource MutedTextBrush}"
-                           TextWrapping="Wrap" />
-            </Grid>
-        </Border>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Padding="11" Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="38" />
+                        </Grid.RowDefinitions>
+                        <TextBlock VerticalAlignment="Center" Text="Project name" />
+                        <TextBox x:Name="ProjectNameTextBox" Grid.Column="1" />
+                        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Created" />
+                        <TextBlock x:Name="CreatedText" Grid.Row="1" Grid.Column="1"
+                                   VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" />
+                        <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="Project file" />
+                        <TextBlock x:Name="ProjectFileText" Grid.Row="2" Grid.Column="1"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Foreground="{StaticResource MutedTextBrush}" />
+                        <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Timeline target (minutes)" />
+                        <TextBox x:Name="TargetMinutesTextBox" Grid.Row="3" Grid.Column="1" />
+                    </Grid>
+                </Border>
+
+                <TextBlock Margin="0,14,0,7" FontSize="14" FontWeight="SemiBold" Text="Output format" />
+                <Border Padding="11" Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="155" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="38" /><RowDefinition Height="38" />
+                            <RowDefinition Height="38" /><RowDefinition Height="38" />
+                            <RowDefinition Height="38" /><RowDefinition Height="38" />
+                            <RowDefinition Height="38" /><RowDefinition Height="38" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock VerticalAlignment="Center" Text="Preset" />
+                        <ComboBox x:Name="PresetComboBox" Grid.Column="1" DisplayMemberPath="Name"
+                                  SelectionChanged="PresetComboBox_SelectionChanged" />
+                        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Width (pixels)" />
+                        <TextBox x:Name="WidthTextBox" Grid.Row="1" Grid.Column="1" />
+                        <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="Height (pixels)" />
+                        <TextBox x:Name="HeightTextBox" Grid.Row="2" Grid.Column="1" />
+                        <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Frame rate" />
+                        <TextBox x:Name="FrameRateTextBox" Grid.Row="3" Grid.Column="1" />
+                        <TextBlock Grid.Row="4" VerticalAlignment="Center" Text="Video encoder" />
+                        <ComboBox x:Name="EncoderComboBox" Grid.Row="4" Grid.Column="1" />
+                        <TextBlock Grid.Row="5" VerticalAlignment="Center" Text="Quality (1–100)" />
+                        <TextBox x:Name="QualityTextBox" Grid.Row="5" Grid.Column="1" />
+                        <TextBlock Grid.Row="6" VerticalAlignment="Center" Text="Video bitrate (kbps)" />
+                        <TextBox x:Name="VideoBitrateTextBox" Grid.Row="6" Grid.Column="1" />
+                        <TextBlock Grid.Row="7" VerticalAlignment="Center" Text="Audio bitrate (kbps)" />
+                        <TextBox x:Name="AudioBitrateTextBox" Grid.Row="7" Grid.Column="1" />
+                        <TextBlock x:Name="PresetDescriptionText" Grid.Row="8" Grid.ColumnSpan="2"
+                                   Margin="0,7,0,0" Foreground="{StaticResource MutedTextBrush}"
+                                   TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
 
         <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button MinWidth="80" IsCancel="True" Content="Cancel" />
-            <Button MinWidth="90"
-                    Margin="6,0,0,0"
-                    Click="Save_Click"
-                    Style="{StaticResource PrimaryButtonStyle}"
-                    Content="Apply" />
+            <Button MinWidth="100" Margin="5,0,0,0" Click="Save_Click"
+                    Style="{StaticResource PrimaryButtonStyle}" Content="Apply to project" />
         </StackPanel>
     </Grid>
 </Window>

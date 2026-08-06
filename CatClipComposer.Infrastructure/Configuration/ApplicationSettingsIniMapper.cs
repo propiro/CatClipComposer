@@ -30,6 +30,11 @@ internal static class ApplicationSettingsIniMapper
             "Sources",
             "ShowFileNames",
             settings.ShowFileNames);
+        settings.RescanLibraryOnStartup = ReadBool(
+            ini,
+            "Sources",
+            "RescanLibraryOnStartup",
+            settings.RescanLibraryOnStartup);
         settings.MetadataFolder = ini.Get("Library", "MetadataFolder") ?? settings.MetadataFolder;
         settings.PreviewSlideCount = ReadInt(
             ini,
@@ -38,40 +43,8 @@ internal static class ApplicationSettingsIniMapper
             settings.PreviewSlideCount);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
-        settings.TargetDurationMinutes = ReadDouble(
-            ini,
-            "Output",
-            "TargetDurationMinutes",
-            settings.TargetDurationMinutes);
-        settings.Orientation = ReadEnum(
-            ini,
-            "Output",
-            "Orientation",
-            settings.Orientation);
-        settings.VideoEncoder = ReadEnum(
-            ini,
-            "Output",
-            "VideoEncoder",
-            settings.VideoEncoder);
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
-        settings.ProgressStyle = ReadEnum(
-            ini,
-            "Overlays",
-            "ProgressStyle",
-            settings.ProgressStyle);
-        settings.OverlayImagePath = ini.Get("Overlays", "ImagePath") ?? string.Empty;
-        settings.OverlayText = UnescapeText(ini.Get("Overlays", "Text") ?? string.Empty);
-        settings.OverlayFontPath = ini.Get("Overlays", "FontPath") ?? string.Empty;
-        settings.OverlayTextSize = ReadInt(
-            ini,
-            "Overlays",
-            "TextSize",
-            settings.OverlayTextSize);
-        settings.OverlayPosition = ReadEnum(
-            ini,
-            "Overlays",
-            "Position",
-            settings.OverlayPosition);
+        settings.CustomFontFolder = ini.Get("Tools", "CustomFontFolder") ?? settings.CustomFontFolder;
         settings.ContentBrowserDock = ReadEnum(
             ini,
             "Workspace",
@@ -105,6 +78,7 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine("[Sources]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"IncludeSubfolders={settings.IncludeSubfolders.ToString().ToLowerInvariant()}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ShowFileNames={settings.ShowFileNames.ToString().ToLowerInvariant()}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"RescanLibraryOnStartup={settings.RescanLibraryOnStartup.ToString().ToLowerInvariant()}");
         for (var index = 0; index < settings.SourceFolders.Count; index++)
         {
             builder.AppendLine(CultureInfo.InvariantCulture, $"Folder{index}={settings.SourceFolders[index]}");
@@ -119,20 +93,10 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine("[Output]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ProjectFolder={settings.ProjectFolder}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"TargetDurationMinutes={settings.TargetDurationMinutes:0.##}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Orientation={settings.Orientation}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"VideoEncoder={settings.VideoEncoder}");
         builder.AppendLine();
         builder.AppendLine("[Tools]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"FfmpegPath={settings.FfmpegPath}");
-        builder.AppendLine();
-        builder.AppendLine("[Overlays]");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"ProgressStyle={settings.ProgressStyle}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"ImagePath={settings.OverlayImagePath}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Text={EscapeText(settings.OverlayText)}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"FontPath={settings.OverlayFontPath}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"TextSize={settings.OverlayTextSize}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Position={settings.OverlayPosition}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"CustomFontFolder={settings.CustomFontFolder}");
         builder.AppendLine();
         builder.AppendLine("[Workspace]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ContentBrowserDock={settings.ContentBrowserDock}");
@@ -150,7 +114,8 @@ internal static class ApplicationSettingsIniMapper
             "CatClipComposer Projects"),
         MetadataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "CatClipComposer")
+            "CatClipComposer"),
+        CustomFontFolder = Path.Combine(AppContext.BaseDirectory, "fonts")
     };
 
     private static ApplicationSettings Normalize(ApplicationSettings settings)
@@ -171,15 +136,13 @@ internal static class ApplicationSettingsIniMapper
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "CatClipComposer")
             : settings.MetadataFolder.Trim();
-        settings.PreviewSlideCount = Math.Clamp(settings.PreviewSlideCount, 1, 12);
+        settings.PreviewSlideCount = Math.Clamp(settings.PreviewSlideCount, 1, 24);
         settings.FfmpegPath = string.IsNullOrWhiteSpace(settings.FfmpegPath)
             ? "ffmpeg.exe"
             : settings.FfmpegPath.Trim();
-        settings.TargetDurationMinutes = Math.Clamp(settings.TargetDurationMinutes, 1, 720);
-        settings.OverlayImagePath = settings.OverlayImagePath?.Trim() ?? string.Empty;
-        settings.OverlayText = settings.OverlayText?.Trim() ?? string.Empty;
-        settings.OverlayFontPath = settings.OverlayFontPath?.Trim() ?? string.Empty;
-        settings.OverlayTextSize = Math.Clamp(settings.OverlayTextSize, 8, 200);
+        settings.CustomFontFolder = string.IsNullOrWhiteSpace(settings.CustomFontFolder)
+            ? Path.Combine(AppContext.BaseDirectory, "fonts")
+            : settings.CustomFontFolder.Trim();
         NormalizeWorkspace(settings);
         return settings;
     }
@@ -212,11 +175,6 @@ internal static class ApplicationSettingsIniMapper
             ? value
             : fallback;
 
-    private static double ReadDouble(IniFile ini, string section, string key, double fallback) =>
-        double.TryParse(ini.Get(section, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
-            ? value
-            : fallback;
-
     private static TEnum ReadEnum<TEnum>(IniFile ini, string section, string key, TEnum fallback)
         where TEnum : struct, Enum =>
         Enum.TryParse<TEnum>(ini.Get(section, key), ignoreCase: true, out var value)
@@ -228,34 +186,4 @@ internal static class ApplicationSettingsIniMapper
             ? index
             : -1;
 
-    private static string EscapeText(string value) => value
-        .Replace("\\", "\\\\", StringComparison.Ordinal)
-        .Replace("\r", "\\r", StringComparison.Ordinal)
-        .Replace("\n", "\\n", StringComparison.Ordinal)
-        .Replace("\t", "\\t", StringComparison.Ordinal);
-
-    private static string UnescapeText(string value)
-    {
-        var builder = new StringBuilder(value.Length);
-        for (var index = 0; index < value.Length; index++)
-        {
-            if (value[index] != '\\' || index + 1 >= value.Length)
-            {
-                builder.Append(value[index]);
-                continue;
-            }
-
-            var escaped = value[++index];
-            builder.Append(escaped switch
-            {
-                'r' => '\r',
-                'n' => '\n',
-                't' => '\t',
-                '\\' => '\\',
-                _ => escaped
-            });
-        }
-
-        return builder.ToString();
-    }
 }

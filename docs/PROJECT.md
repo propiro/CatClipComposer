@@ -28,7 +28,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 ### Configuration
 
 - **Multiple source folders — Done.** Recursive scanning is optional.
-- **Output directory and target timeline duration — Done.** Values persist in the executable-directory INI.
+- **Application folders and project-specific editing settings — Done.** Preferences persist library/tool
+  folders in the executable-directory INI; each project owns its target and output settings.
 - **INI beside the executable — Done.** The store uses atomic replacement, safe defaults, and escaping.
 
 ### Catalog and browser
@@ -41,8 +42,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   drag clips into the timeline.
 - **Full-width browser focus — Done.** A left-edge arrow expands the browser while preserving the timeline
   drop target; toggling back restores the saved dock layout.
-- **Video/contact-sheet preview — Done.** Windows media playback is backed by a configurable cached FFmpeg
-  contact sheet.
+- **Video/contact-sheet preview — Done.** Muted-by-default playback has play/pause, seek, mute, and volume
+  controls and is backed by a configurable cached FFmpeg contact sheet (12 slides by default).
 - **Tags and project-use metadata — Done.** Tags are normalized and searchable; successful exports add
   named-project usage history.
 
@@ -56,14 +57,19 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   replace them.
 - **Compact monochrome theme — Done.** Dark surfaces, warm neutral colors, square controls, reduced spacing,
   readable text, and distinct disabled states are applied consistently.
+- **Startup and scan feedback — Done.** The sharpened Mr Cat splash reports startup/library progress and a
+  scrolling diagnostic log; manual rescans use the same cancelable presentation.
 
 ### Timeline and presentation
 
-- **Configurable duration axis and total — Done.** Progress against the target duration is visible.
+- **Configurable duration axis and total — Done.** The target is project-specific; scalable lanes, timeline
+  zoom, frame/time/both rulers, and frame/0.1/0.5/1-second snapping support precise placement.
 - **Add, duplicate, select, remove, and reorder clips — Done.** Controls and Delete-key removal are available.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
-- **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable.
-- **Progress bars — Done.** Whole-video and per-segment modes render into the output.
+- **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
+  fonts or visibly marked TTF/OTF files from the portable custom-font folder.
+- **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
+  or custom timing and per-item style, color, size, and position.
 - **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, and fit/fill/stretch/
   animated-blur modes project through the shared renderer.
 
@@ -78,7 +84,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned `.ccproject` JSON uses stable track and item IDs.
+- **Named editable projects — Done.** Versioned schema-2 `.nya` JSON uses stable track and item IDs.
 - **Crash recovery — Done.** Every timeline mutation writes an atomic recovery file under metadata storage.
 - **Headless operation — Done.** Config, catalog metadata, project rendering, and history commands support
   JSON and stable exit codes.
@@ -89,7 +95,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.4 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.5 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

@@ -35,9 +35,37 @@ public enum ProgressTimeMode
     CustomRange
 }
 
+public enum ProgressBarStyle
+{
+    Solid,
+    Segmented,
+    Ticks
+}
+
+public enum ProgressBarPosition
+{
+    Top,
+    Bottom
+}
+
+public enum TimelineRulerMode
+{
+    Time,
+    Frames,
+    TimeAndFrames
+}
+
+public enum TimelineSnapMode
+{
+    Frame,
+    TenthSecond,
+    HalfSecond,
+    Second
+}
+
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -52,6 +80,12 @@ public sealed class EditorProject
     public string? ProjectFilePath { get; set; }
 
     public ProjectOutputSettings Output { get; set; } = new();
+
+    public double TargetDurationMinutes { get; set; } = 15;
+
+    public TimelineRulerMode TimelineRulerMode { get; set; } = TimelineRulerMode.TimeAndFrames;
+
+    public TimelineSnapMode TimelineSnapMode { get; set; } = TimelineSnapMode.TenthSecond;
 
     public List<ProjectTrack> Tracks { get; set; } = [];
 
@@ -119,11 +153,21 @@ public sealed class ProjectTimelineItem
 
     public string FontPath { get; set; } = string.Empty;
 
+    public string FontFamily { get; set; } = "Segoe UI";
+
     public int FontSize { get; set; } = 42;
 
     public OverlayPosition Position { get; set; } = OverlayPosition.Center;
 
     public ProgressTimeMode ProgressTimeMode { get; set; } = ProgressTimeMode.WholeProject;
+
+    public ProgressBarStyle ProgressBarStyle { get; set; } = ProgressBarStyle.Solid;
+
+    public ProgressBarPosition ProgressBarPosition { get; set; } = ProgressBarPosition.Bottom;
+
+    public string ProgressColor { get; set; } = "#C8C0B2";
+
+    public int ProgressHeight { get; set; } = 10;
 
     public TimeSpan Start => TimeSpan.FromTicks(StartTicks);
 

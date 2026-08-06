@@ -18,7 +18,7 @@ public sealed class JsonProjectStore : IProjectStore
 
     public JsonProjectStore(AppPaths paths)
     {
-        RecoveryPath = Path.Combine(paths.RecoveryFolder, "autosave.ccproject");
+        RecoveryPath = Path.Combine(paths.RecoveryFolder, "autosave.nya");
     }
 
     public string RecoveryPath { get; }
@@ -132,9 +132,23 @@ public sealed class JsonProjectStore : IProjectStore
 
         project.Tracks ??= [];
         project.Output ??= new ProjectOutputSettings();
+        project.TargetDurationMinutes = Math.Clamp(project.TargetDurationMinutes, 0.1, 720);
         foreach (var track in project.Tracks)
         {
             track.Items ??= [];
+            foreach (var item in track.Items)
+            {
+                item.FontFamily = string.IsNullOrWhiteSpace(item.FontFamily)
+                    ? "Segoe UI"
+                    : item.FontFamily.Trim();
+                item.ProgressColor = IsHexColor(item.ProgressColor)
+                    ? item.ProgressColor.ToUpperInvariant()
+                    : "#C8C0B2";
+                item.ProgressHeight = Math.Clamp(item.ProgressHeight, 2, 100);
+            }
         }
     }
+
+    private static bool IsHexColor(string? value) =>
+        value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
 }

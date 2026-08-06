@@ -1,30 +1,21 @@
-; Copy as CatClipComposer.ini beside the executable. The application also creates it when Options are saved.
+; Copy as CatClipComposer.ini beside the executable. The application also creates it when Preferences are saved.
 
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true
+RescanLibraryOnStartup=true
 
 [Library]
 MetadataFolder=
-PreviewSlideCount=4
+PreviewSlideCount=12
 
 [Output]
 Folder=
 ProjectFolder=
-TargetDurationMinutes=15
-Orientation=Landscape
-VideoEncoder=NativeMpeg4
 
 [Tools]
 FfmpegPath=ffmpeg.exe
-
-[Overlays]
-ProgressStyle=None
-ImagePath=
-Text=
-FontPath=
-TextSize=42
-Position=TopRight
+CustomFontFolder=fonts
 
 [Workspace]
 ContentBrowserDock=Left

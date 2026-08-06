@@ -10,11 +10,21 @@ public partial class OutputSettingsWindow : Window
 {
     private bool _initializing;
 
-    public OutputSettingsWindow(ProjectOutputSettings current)
+    public OutputSettingsWindow(
+        ProjectOutputSettings current,
+        string projectName,
+        double targetDurationMinutes,
+        DateTime createdUtc,
+        string? projectFilePath)
     {
         _initializing = true;
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
+        ProjectNameTextBox.Text = projectName;
+        TargetMinutesTextBox.Text = targetDurationMinutes.ToString("0.##", CultureInfo.InvariantCulture);
+        CreatedText.Text = createdUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+        ProjectFileText.Text = string.IsNullOrWhiteSpace(projectFilePath) ? "Not saved yet" : projectFilePath;
+        ProjectFileText.ToolTip = projectFilePath;
         PresetComboBox.ItemsSource = OutputPresetCatalog.Common;
         EncoderComboBox.ItemsSource = Enum.GetValues<VideoEncoderPreset>();
         EncoderComboBox.SelectedItem = current.VideoEncoder;
@@ -32,6 +42,10 @@ public partial class OutputSettingsWindow : Window
     }
 
     public ProjectOutputSettings? ResultSettings { get; private set; }
+
+    public string? ResultProjectName { get; private set; }
+
+    public double ResultTargetDurationMinutes { get; private set; }
 
     private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -55,13 +69,16 @@ public partial class OutputSettingsWindow : Window
     private void UpdateDescription()
     {
         PresetDescriptionText.Text = PresetComboBox.SelectedItem is OutputPreset preset
-            ? $"{preset.Description}. Native MPEG-4 is the redistributable-friendly default; Windows H.264 depends on FFmpeg/Windows support; libx264 is GPL opt-in."
+            ? $"{preset.Description}. Native MPEG-4 is the portable non-GPL default; Windows H.264 depends on system support; libx264 is GPL opt-in."
             : string.Empty;
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryParseInt(WidthTextBox.Text, 16, 7680, out var width) || width % 2 != 0 ||
+        if (string.IsNullOrWhiteSpace(ProjectNameTextBox.Text) ||
+            !double.TryParse(TargetMinutesTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture,
+                out var targetMinutes) || !double.IsFinite(targetMinutes) || targetMinutes is < 0.1 or > 720 ||
+            !TryParseInt(WidthTextBox.Text, 16, 7680, out var width) || width % 2 != 0 ||
             !TryParseInt(HeightTextBox.Text, 16, 7680, out var height) || height % 2 != 0 ||
             !double.TryParse(FrameRateTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var fps) ||
             !double.IsFinite(fps) || fps is < 1 or > 240 ||
@@ -70,12 +87,9 @@ public partial class OutputSettingsWindow : Window
             !TryParseInt(AudioBitrateTextBox.Text, 64, 512, out var audioBitrate) ||
             EncoderComboBox.SelectedItem is not VideoEncoderPreset encoder)
         {
-            MessageBox.Show(
-                this,
-                "Use even dimensions from 16–7680, frame rate 1–240, quality 1–100, video bitrate 500–150000, and audio bitrate 64–512.",
-                "Invalid output settings",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            MessageBox.Show(this,
+                "Enter a project name, target from 0.1–720 minutes, even dimensions from 16–7680, frame rate 1–240, quality 1–100, video bitrate 500–150000, and audio bitrate 64–512.",
+                "Invalid project settings", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -90,6 +104,8 @@ public partial class OutputSettingsWindow : Window
             VideoBitrateKbps = videoBitrate,
             AudioBitrateKbps = audioBitrate
         };
+        ResultProjectName = ProjectNameTextBox.Text.Trim();
+        ResultTargetDurationMinutes = targetMinutes;
         DialogResult = true;
     }
 
