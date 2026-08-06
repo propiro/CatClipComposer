@@ -36,7 +36,7 @@ FFmpeg is not bundled by this repository. The user configures external `ffmpeg.e
 
 FFmpeg is LGPL 2.1-or-later by default. Enabling optional GPL components makes the corresponding build GPL. Builds configured with `--enable-nonfree` are not redistributable. Consult the configuration printed by `ffmpeg -version` and follow the obligations of the exact binary distribution.
 
-The current MP4 renderer uses `libx264`; FFmpeg identifies that library as a GPL component, so a GPL-enabled FFmpeg build is required for export.
+The default MP4 renderer uses FFmpeg's native `mpeg4` encoder and does not require a GPL component. A Windows Media Foundation `h264_mf` preset is also available. `libx264` is exposed only as an explicitly labeled GPL opt-in; selecting it requires a GPL-enabled FFmpeg build and the user/distributor is responsible for the corresponding obligations.
 
 - Official legal and compliance information: <https://ffmpeg.org/legal.html>
 - FFmpeg license details: <https://ffmpeg.org/doxygen/trunk/md_LICENSE.html>

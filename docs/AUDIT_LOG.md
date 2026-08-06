@@ -2,6 +2,29 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-009 — Default encoder license closure
+
+Scope: `LIC-001` and `AUD-LIC-001`.
+
+Implementation findings:
+
+- `NativeMpeg4` is the application and INI default and emits `-c:v mpeg4`; FFmpeg documents this as its native MPEG-4 Part 2 encoder without requiring the GPL libxvid wrapper.
+- `WindowsMediaFoundationH264` emits `-c:v h264_mf` with Media Foundation quality/archive options and uses the safer `nv12` pixel format documented by FFmpeg.
+- `Libx264Gpl` is never implicit and is labeled as GPL in enum, UI, INI, README, stack inventory, and third-party notices.
+- No preset uses `--enable-nonfree` components.
+
+Verification:
+
+- Installed FFmpeg encoder inventory exposed native `mpeg4` and `h264_mf`.
+- A smoke input was generated with native `mpeg4` rather than libx264.
+- Default render completed and FFprobe returned video codec `mpeg4`.
+- Media Foundation render completed and FFprobe returned video codec `h264`.
+- Release build passed with zero warnings/errors.
+
+Limit: the locally installed FFmpeg distribution itself was configured with GPL components. Cat Clip Composer did not invoke them in the two verified presets. Every commercial release must separately inspect the exact external FFmpeg build with `ffmpeg -version`; this standing release check does not reopen the application-code finding.
+
+Result: `LIC-001` and `AUD-LIC-001` closed.
+
 ## AUDIT-2026-08-06-008 — FFmpeg module responsibility closure
 
 Scope: `MOD-002`.

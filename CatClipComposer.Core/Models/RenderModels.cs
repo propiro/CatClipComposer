@@ -23,6 +23,7 @@ public sealed record RenderRequest(
     string? OverlayFontPath = null,
     int OverlayTextSize = 42,
     OverlayPosition OverlayPosition = OverlayPosition.TopRight,
+    VideoEncoderPreset VideoEncoder = VideoEncoderPreset.NativeMpeg4,
     int FramesPerSecond = 30);
 
 public sealed record RenderProgress(

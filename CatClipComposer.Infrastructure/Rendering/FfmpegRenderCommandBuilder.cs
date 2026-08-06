@@ -45,10 +45,10 @@ internal sealed class FfmpegRenderCommandBuilder
                 overlayTextPath,
                 hasImageOverlay),
             "-map", "[outv]",
-            "-map", "[outa]",
-            "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "20",
+            "-map", "[outa]");
+        AddVideoEncoder(startInfo, request.VideoEncoder);
+        AddArguments(
+            startInfo,
             "-c:a", "aac",
             "-b:a", "192k",
             "-movflags", "+faststart",
@@ -56,6 +56,33 @@ internal sealed class FfmpegRenderCommandBuilder
             "-nostats",
             temporaryOutputPath);
         return startInfo;
+    }
+
+    private static void AddVideoEncoder(ProcessStartInfo startInfo, VideoEncoderPreset preset)
+    {
+        switch (preset)
+        {
+            case VideoEncoderPreset.NativeMpeg4:
+                AddArguments(startInfo, "-c:v", "mpeg4", "-q:v", "3", "-bf", "2");
+                break;
+            case VideoEncoderPreset.WindowsMediaFoundationH264:
+                AddArguments(
+                    startInfo,
+                    "-c:v", "h264_mf",
+                    "-rate_control", "quality",
+                    "-quality", "80",
+                    "-scenario", "archive");
+                break;
+            case VideoEncoderPreset.Libx264Gpl:
+                AddArguments(
+                    startInfo,
+                    "-c:v", "libx264",
+                    "-preset", "medium",
+                    "-crf", "20");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unsupported video encoder preset.");
+        }
     }
 
     private static void AddInputs(ProcessStartInfo startInfo, RenderRequest request)

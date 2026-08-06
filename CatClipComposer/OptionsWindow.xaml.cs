@@ -25,6 +25,8 @@ public partial class OptionsWindow : Window
             CultureInfo.CurrentCulture);
         OrientationComboBox.ItemsSource = Enum.GetValues<OutputOrientation>();
         OrientationComboBox.SelectedItem = _workingSettings.Orientation;
+        VideoEncoderComboBox.ItemsSource = EncoderChoices;
+        VideoEncoderComboBox.SelectedItem = EncoderChoices.First(choice => choice.Value == _workingSettings.VideoEncoder);
         ProgressStyleComboBox.ItemsSource = Enum.GetValues<VideoProgressStyle>();
         ProgressStyleComboBox.SelectedItem = _workingSettings.ProgressStyle;
         OverlayPositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
@@ -182,6 +184,9 @@ public partial class OptionsWindow : Window
         _workingSettings.Orientation = OrientationComboBox.SelectedItem is OutputOrientation orientation
             ? orientation
             : OutputOrientation.Landscape;
+        _workingSettings.VideoEncoder = VideoEncoderComboBox.SelectedItem is EncoderChoice encoder
+            ? encoder.Value
+            : VideoEncoderPreset.NativeMpeg4;
         _workingSettings.ProgressStyle = ProgressStyleComboBox.SelectedItem is VideoProgressStyle progressStyle
             ? progressStyle
             : VideoProgressStyle.None;
@@ -197,5 +202,17 @@ public partial class OptionsWindow : Window
 
         ResultSettings = _workingSettings.Copy();
         DialogResult = true;
+    }
+
+    private static IReadOnlyList<EncoderChoice> EncoderChoices { get; } =
+    [
+        new(VideoEncoderPreset.NativeMpeg4, "FFmpeg native MPEG-4 — non-GPL default"),
+        new(VideoEncoderPreset.WindowsMediaFoundationH264, "Windows Media Foundation H.264 — non-GPL"),
+        new(VideoEncoderPreset.Libx264Gpl, "libx264 H.264 — GPL opt-in")
+    ];
+
+    private sealed record EncoderChoice(VideoEncoderPreset Value, string Label)
+    {
+        public override string ToString() => Label;
     }
 }

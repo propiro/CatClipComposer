@@ -25,7 +25,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Render an optional PNG/JPG watermark, text overlay, system font or custom TTF/OTF font, and choose the overlay position.
 - Render no progress bar, one bar for the complete compilation, or a separate bar for every timeline segment.
-- Normalize mixed resolutions and aspect ratios to 1920×1080 landscape or 1080×1920 portrait, 30 fps, H.264 video, and AAC audio.
+- Normalize mixed resolutions and aspect ratios to 1920×1080 landscape or 1080×1920 portrait, 30 fps, configurable MPEG-4/H.264 video, and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and jump to an existing output or original source file in File Explorer.
@@ -35,8 +35,9 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Windows 10 or later
 - .NET 8 SDK for development, or the .NET 8 Desktop Runtime for a framework-dependent deployment
 - `ffmpeg.exe` and `ffprobe.exe` from the same FFmpeg build
-- A GPL-enabled FFmpeg build containing `libx264` for the current H.264 export preset
 - An FFmpeg build with the `drawtext` filter for text overlays
+
+The non-GPL default uses FFmpeg's native `mpeg4` encoder. On Windows, `h264_mf` provides the YouTube-preferred H.264 format without requiring a GPL FFmpeg component when that encoder is available. `libx264` remains an explicitly labeled GPL opt-in and is not required for normal operation.
 
 FFmpeg can be placed on `PATH`, or `ffmpeg.exe` can be selected in the application’s Options window. When an explicit executable is selected, `ffprobe.exe` is expected beside it.
 
@@ -88,12 +89,12 @@ CatClipComposer.Infrastructure/  SQLite, settings, FFprobe, FFmpeg thumbnails an
 
 All current runtime components are free to use, but “free” does not mean “without a license or obligations.” See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before distributing the application.
 
-In particular, FFmpeg is LGPL 2.1-or-later by default, but optional GPL components change the resulting FFmpeg build to GPL. The current exporter requests `libx264`, so it expects a GPL-enabled build. Cat Clip Composer launches FFmpeg as a separate executable and does not currently redistribute it.
+In particular, FFmpeg is LGPL 2.1-or-later by default, but optional GPL components change the resulting FFmpeg build to GPL. Cat Clip Composer defaults to FFmpeg's native MPEG-4 Part 2 encoder, also offers the Windows Media Foundation H.264 wrapper, and exposes `libx264` only as a clearly labeled GPL opt-in. Cat Clip Composer launches FFmpeg as a separate executable and does not currently redistribute it.
 
 ## Next refinements
 
 - Save and reopen named timeline projects.
 - Add multiple overlays with individual start/end times instead of one compilation-wide image and text layer.
 - Add FFmpeg-generated contact-sheet/slideshow preview when Windows cannot decode a source format.
-- Add configurable software/hardware encoder presets and an LGPL-only export option.
+- Add capability detection and additional non-GPL hardware encoder presets.
 - Add trimming and per-segment volume controls without turning the application into a general-purpose editor.

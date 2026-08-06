@@ -41,6 +41,11 @@ internal static class ApplicationSettingsIniMapper
             "Output",
             "Orientation",
             settings.Orientation);
+        settings.VideoEncoder = ReadEnum(
+            ini,
+            "Output",
+            "VideoEncoder",
+            settings.VideoEncoder);
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
         settings.ProgressStyle = ReadEnum(
             ini,
@@ -83,6 +88,7 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"TargetDurationMinutes={settings.TargetDurationMinutes:0.##}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Orientation={settings.Orientation}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"VideoEncoder={settings.VideoEncoder}");
         builder.AppendLine();
         builder.AppendLine("[Tools]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"FfmpegPath={settings.FfmpegPath}");

@@ -34,7 +34,9 @@ LGPL external tools or dynamically linked libraries may be acceptable after a di
 | SQLitePCLRaw | 2.1.12 | Native SQLite interop/bundle | Apache-2.0 | Accepted; explicitly pinned past vulnerable native SQLite versions. |
 | System.Text.Json | .NET 8 | Structured CLI output and internal serialization where needed | MIT as a .NET library package | Accepted. |
 | FFmpeg / FFprobe | User supplied | Probe, thumbnails, filters, encoding | LGPL-2.1-or-later by default; optional GPL parts change build status | External only; default features must work with LGPL build. |
-| libx264 | Current renderer requirement | H.264 encoder | GPL when enabled in FFmpeg | **Not acceptable as a required default. Open audit `LIC-001`.** |
+| FFmpeg native `mpeg4` | Selected FFmpeg build | Default MPEG-4 Part 2 encoder | Native FFmpeg encoder, available without external GPL library | Accepted non-GPL compatibility default. YouTube accepts MPEG4 uploads but recommends H.264. |
+| FFmpeg `h264_mf` | Selected Windows FFmpeg build | Preferred H.264 encoder | Media Foundation wrapper documented by FFmpeg; no `--enable-gpl` dependency | Accepted optional non-GPL Windows preset; availability is build-dependent. |
+| libx264 | Selected FFmpeg build | Optional H.264 encoder | GPL when enabled in FFmpeg | Allowed only as an explicit `Libx264Gpl` user opt-in; never required/default. |
 
 ## Dependency rules
 
@@ -51,3 +53,10 @@ The repository does not include FFmpeg binaries. Users configure `ffmpeg.exe`; `
 - LGPL-compatible builds without `--enable-gpl` or `--enable-nonfree`;
 - GPL builds, which may be used personally as an explicit opt-in but are not required;
 - nonfree builds, which are not an accepted redistributable dependency.
+
+FFmpeg documents its native `mpeg4` encoder as usable without the GPL `libxvid` wrapper and documents `h264_mf` as a Media Foundation encoder. YouTube lists MPEG4 as a supported upload format and recommends MP4/H.264/AAC for optimal uploads. These sources establish the default/optional preset boundary; a distributor must still audit the exact configured FFmpeg binary.
+
+- FFmpeg native MPEG-4 and encoder documentation: <https://ffmpeg.org/ffmpeg-all.html>
+- FFmpeg Media Foundation encoder documentation: <https://ffmpeg.org/ffmpeg-codecs.html#MediaFoundation>
+- YouTube supported formats: <https://support.google.com/youtube/troubleshooter/2888402>
+- YouTube recommended encoding: <https://support.google.com/youtube/answer/1722171>

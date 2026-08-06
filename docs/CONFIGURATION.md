@@ -31,6 +31,7 @@ Folder1=D:\Incoming clips
 Folder=C:\Videos\Compositions
 TargetDurationMinutes=15
 Orientation=Landscape
+VideoEncoder=NativeMpeg4
 
 [Tools]
 FfmpegPath=C:\Tools\ffmpeg\bin\ffmpeg.exe
@@ -47,8 +48,11 @@ Position=TopRight
 Valid enum values:
 
 - `Orientation`: `Landscape`, `Portrait`
+- `VideoEncoder`: `NativeMpeg4`, `WindowsMediaFoundationH264`, `Libx264Gpl`
 - `ProgressStyle`: `None`, `WholeCompilation`, `EachClip`
 - `Position`: `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Center`
+
+`NativeMpeg4` is the non-GPL compatibility default. `WindowsMediaFoundationH264` uses FFmpeg's Media Foundation wrapper and is the preferred non-GPL YouTube preset when supported by the selected Windows FFmpeg build. `Libx264Gpl` is an optional GPL-dependent preset and is never selected implicitly.
 
 Source folders use zero-based `FolderN` keys and are loaded in numeric order. Duplicate paths are removed case-insensitively.
 

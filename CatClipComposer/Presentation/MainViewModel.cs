@@ -198,7 +198,8 @@ public sealed class MainViewModel : ObservableObject
                     _settings.OverlayText,
                     _settings.OverlayFontPath,
                     _settings.OverlayTextSize,
-                    _settings.OverlayPosition),
+                    _settings.OverlayPosition,
+                    _settings.VideoEncoder),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);

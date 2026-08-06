@@ -22,6 +22,13 @@ public enum OverlayPosition
     Center
 }
 
+public enum VideoEncoderPreset
+{
+    NativeMpeg4,
+    WindowsMediaFoundationH264,
+    Libx264Gpl
+}
+
 public sealed class ApplicationSettings
 {
     public List<string> SourceFolders { get; set; } = [];
@@ -33,6 +40,8 @@ public sealed class ApplicationSettings
     public double TargetDurationMinutes { get; set; } = 15;
 
     public OutputOrientation Orientation { get; set; } = OutputOrientation.Landscape;
+
+    public VideoEncoderPreset VideoEncoder { get; set; } = VideoEncoderPreset.NativeMpeg4;
 
     public bool IncludeSubfolders { get; set; } = true;
 
@@ -57,6 +66,7 @@ public sealed class ApplicationSettings
         FfmpegPath = FfmpegPath,
         TargetDurationMinutes = TargetDurationMinutes,
         Orientation = Orientation,
+        VideoEncoder = VideoEncoder,
         IncludeSubfolders = IncludeSubfolders,
         ShowFileNames = ShowFileNames,
         ProgressStyle = ProgressStyle,

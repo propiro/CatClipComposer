@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Non-GPL default encoder policy
+
+- Added persisted encoder presets with an explicit license boundary.
+- Made FFmpeg's native `mpeg4` encoder the default compatibility preset.
+- Added Windows Media Foundation `h264_mf` as the preferred non-GPL H.264 option.
+- Retained `libx264` only as a UI/INI-labeled `Libx264Gpl` opt-in.
+- Adjusted renderer pixel format and arguments per encoder rather than sharing incompatible options.
+- Generated input without libx264, rendered with both non-GPL presets, and used FFprobe to verify `mpeg4` and `h264` output codecs.
+- Closed: `LIC-001`, `AUD-LIC-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — FFmpeg rendering module split
 
 - Replaced the multi-purpose FFmpeg renderer with a small render coordinator.

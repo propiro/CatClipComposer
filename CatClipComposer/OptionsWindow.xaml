@@ -90,6 +90,14 @@
                     </StackPanel>
                 </Grid>
 
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Video encoder" />
+                <ComboBox x:Name="VideoEncoderComboBox" Margin="0,8,0,0" />
+                <TextBlock Margin="0,5,0,18"
+                           FontSize="11"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           TextWrapping="Wrap"
+                           Text="Native MPEG-4 is the non-GPL compatibility default. Windows Media Foundation provides preferred H.264 when supported. libx264 is a GPL-only opt-in." />
+
                 <CheckBox x:Name="ShowFileNamesCheckBox"
                           Margin="0,0,0,22"
                           Content="Show file names on catalog cards" />

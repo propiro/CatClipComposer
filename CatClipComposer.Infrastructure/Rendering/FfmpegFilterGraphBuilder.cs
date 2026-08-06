@@ -52,7 +52,7 @@ internal static class FfmpegFilterGraphBuilder
             graph.Append(CultureInfo.InvariantCulture,
                 $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=black,");
             graph.Append(CultureInfo.InvariantCulture,
-                $"setsar=1,fps={request.FramesPerSecond},format=yuv420p,");
+                $"setsar=1,fps={request.FramesPerSecond},format={GetPixelFormat(request.VideoEncoder)},");
             graph.Append(CultureInfo.InvariantCulture,
                 $"trim=duration={seconds},setpts=PTS-STARTPTS[{videoOutputLabel}];");
 
@@ -181,6 +181,9 @@ internal static class FfmpegFilterGraphBuilder
 
     private static string FormatSeconds(TimeSpan duration) =>
         duration.TotalSeconds.ToString("0.######", CultureInfo.InvariantCulture);
+
+    private static string GetPixelFormat(VideoEncoderPreset preset) =>
+        preset == VideoEncoderPreset.WindowsMediaFoundationH264 ? "nv12" : "yuv420p";
 
     private static string EscapeFilterValue(string value) => value
         .Replace("\\", "/", StringComparison.Ordinal)

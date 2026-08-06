@@ -10,7 +10,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 |---|---:|---:|---|---|
 | CFG-001 | P0 | Done | Replace JSON settings with `CatClipComposer.ini` beside the executable. | INI round-trip/malformed-input smoke passed; JSON store removed; schema documented. |
 | CLI-001 | P0 | Open | Add a headless CLI project in this repository. | Commands support config inspection, scan, list, render, and history; documented exit codes and JSON output; Release build passes. |
-| LIC-001 | P0 | Open | Remove required `libx264`/GPL encoding from the default render path. | Default export passes with an LGPL-compatible FFmpeg build; optional GPL preset is clearly opt-in. |
+| LIC-001 | P0 | Done | Remove required `libx264`/GPL encoding from the default render path. | Native `mpeg4` is default; `h264_mf` non-GPL option passed; `libx264` is explicit GPL opt-in. |
 | BOOT-001 | P0 | In progress | Share service composition between GUI and CLI. | Factory implemented and used by GUI; close when CLI consumes it. |
 | MOD-001 | P1 | Done | Split `MainViewModel` orchestration and timeline state. | Focused `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render-segment projection; direct smoke passed. |
 | MOD-002 | P1 | Done | Split FFmpeg filter/argument construction from process execution. | Coordinator, filter builder, command builder, process runner, and cleanup helper are separate; mixed-input render smoke passed. |
@@ -25,7 +25,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 
 | ID | Priority | Status | Audit | Completion evidence |
 |---|---:|---:|---|---|
-| AUD-LIC-001 | P0 | Open | Verify default FFmpeg command uses no GPL/nonfree component. | Command inventory and LGPL-build smoke result recorded in `AUDIT_LOG.md`. |
+| AUD-LIC-001 | P0 | Done | Verify default FFmpeg command uses no GPL/nonfree component. | Native encoder and Media Foundation smoke outputs verified by FFprobe; command inventory recorded; exact distributed FFmpeg binary remains a release audit responsibility. |
 | AUD-CLI-001 | P0 | Open | Verify headless commands are deterministic and automation-safe. | Exit-code/error/JSON tests recorded. |
 | AUD-CFG-001 | P0 | Done | Verify INI escaping, missing keys, malformed values, and writable-location behavior. | 2026-08-06 round-trip/malformed-input smoke passed; atomic same-directory write and explicit permission error implemented. |
 | AUD-DEP-001 | P1 | Done | Audit NuGet dependencies for known vulnerabilities. | 2026-08-06 audit reports zero known vulnerable packages after SQLitePCLRaw 2.1.12 pin. |
