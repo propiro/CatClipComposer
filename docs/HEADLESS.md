@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-08-06
 
-`CatClipComposer.Cli` exposes catalog, project, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI/project schemas, FFmpeg renderer, and export-history transaction as the desktop application.
+`CatClipComposer.Cli` exposes catalog, metadata, project, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI/project schemas, FFmpeg renderer, and export-history transaction as the desktop application.
 
 ## Build and invoke
 
@@ -24,7 +24,7 @@ Options may appear before or after the command. Option names and commands are ca
 | Option | Meaning |
 |---|---|
 | `--config <file>` | Override the INI path. The default is `CatClipComposer.ini` beside the CLI executable. |
-| `--data <folder>` | Override the data folder containing `catalog.db` and `thumbnails`. The default is `%LOCALAPPDATA%\CatClipComposer`. |
+| `--data <folder>` | Override the data folder containing `catalog.db`, `thumbnails`, `previews`, and recovery. The default comes from the INI metadata folder. |
 | `--json` | Write one JSON result document to stdout and suppress progress output. Errors are also JSON on stdout. |
 | `--help` | Show help without creating a database or data directory. Combine with `--json` for structured help and exit-code metadata. |
 
@@ -45,7 +45,7 @@ CatClipComposer.Cli.exe config --json --config "D:\Portable\CatClipComposer.ini"
 
 ### `scan`
 
-Scans the source folders in the selected INI, probes videos, generates thumbnails, updates metadata, and marks disappeared catalog files unavailable. At least one source folder must be configured.
+Scans the source folders in the selected INI, probes videos, generates static thumbnails and configurable contact sheets, updates metadata, and marks disappeared catalog files unavailable. At least one source folder must be configured.
 
 ```powershell
 CatClipComposer.Cli.exe scan
@@ -63,7 +63,17 @@ CatClipComposer.Cli.exe list
 CatClipComposer.Cli.exe list --all --json
 ```
 
-The JSON item fields include ID, file name/path, duration, dimensions, audio and availability flags, usage count, last-use time, and last output path.
+The JSON item fields include ID, file name/path, duration, dimensions, audio and availability flags, tags, both preview paths, usage count, last-use time, and last output path.
+
+### `tag` and `usage`
+
+`tag` replaces normalized semicolon/comma-separated tags for a catalog ID; `--clear-tags` removes them. `usage` returns only completed exports containing that clip, including project name/path, output, date, and occurrences.
+
+```powershell
+CatClipComposer.Cli.exe tag --clip 42 --tags "orange cat; indoor"
+CatClipComposer.Cli.exe tag --clip 42 --clear-tags
+CatClipComposer.Cli.exe usage --clip 42 --json
+```
 
 ### `render`
 
@@ -76,6 +86,8 @@ Renders an ordered composition and records the completed export and source usage
 | `--screen "<seconds>\|<image-path>"` | Add a still screen of positive duration. In PowerShell, quote the value because `\|` is a shell operator. |
 | `--orientation <value>` | Optional `landscape` or `portrait`; otherwise use the INI. |
 | `--encoder <value>` | Optional `native-mpeg4`, `windows-h264`, or `libx264-gpl`; otherwise use the INI. |
+| `--project-file <file>` | Validate and associate a saved project with successful-export history. |
+| `--project-name <name>` | Associate a name when no project file supplies one. |
 | `--overwrite` | Explicitly permit replacement when the output already exists. |
 
 At least one `--clip` or `--screen` is required. The INI controls progress-bar style, overlay image/text/font/position, and FFmpeg path.

@@ -14,6 +14,12 @@ public interface IMediaCatalog
 
     Task SetAvailabilityAsync(long id, bool isAvailable, CancellationToken cancellationToken = default);
 
+    Task UpdateTagsAsync(long id, string tags, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<MediaUsageEntry>> GetUsageAsync(
+        long mediaFileId,
+        CancellationToken cancellationToken = default);
+
     Task RecordExportAsync(
         string outputPath,
         TimeSpan duration,

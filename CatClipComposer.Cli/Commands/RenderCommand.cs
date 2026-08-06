@@ -12,7 +12,7 @@ internal static class RenderCommand
     {
         invocation.EnsureOnlyOptions(
             "config", "data", "json", "help", "output", "orientation", "encoder",
-            "clip", "screen", "overwrite");
+            "clip", "screen", "overwrite", "project-file", "project-name");
         var outputOption = invocation.GetSingleValue("output");
         if (string.IsNullOrWhiteSpace(outputOption))
         {
@@ -44,6 +44,23 @@ internal static class RenderCommand
             : new InlineProgress<RenderProgress>(update =>
                 context.Error.WriteLine(
                     $"Render {update.Percent,6:0.0}%  {update.ProcessedDuration:hh\\:mm\\:ss}  {update.Message}"));
+        var projectName = invocation.GetSingleValue("project-name");
+        string? projectFilePath = null;
+        var projectFileOption = invocation.GetSingleValue("project-file");
+        if (!string.IsNullOrWhiteSpace(projectFileOption))
+        {
+            projectFilePath = ResolvePath(projectFileOption, "project-file");
+            if (!File.Exists(projectFilePath))
+            {
+                throw new CliUsageException($"Project file does not exist: {projectFilePath}");
+            }
+
+            var project = await context.Services.ProjectStore.LoadAsync(
+                projectFilePath,
+                context.CancellationToken);
+            projectName ??= project.Name;
+        }
+
         var request = new RenderRequest(
             segments,
             outputPath,
@@ -54,7 +71,9 @@ internal static class RenderCommand
             context.Settings.OverlayFontPath,
             context.Settings.OverlayTextSize,
             context.Settings.OverlayPosition,
-            encoder);
+            encoder,
+            ProjectName: projectName,
+            ProjectFilePath: projectFilePath);
         var result = await context.Services.CompositionExporter.ExportAsync(
             request,
             context.Settings.FfmpegPath,

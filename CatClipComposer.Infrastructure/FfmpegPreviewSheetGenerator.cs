@@ -5,33 +5,43 @@ using CatClipComposer.Core.Services;
 
 namespace CatClipComposer.Infrastructure;
 
-public sealed class FfmpegThumbnailGenerator(AppPaths paths) : IThumbnailGenerator
+public sealed class FfmpegPreviewSheetGenerator(AppPaths paths) : IPreviewSheetGenerator
 {
     public async Task<string?> CreateAsync(
         string filePath,
         TimeSpan duration,
         DateTime lastWriteUtc,
+        int slideCount,
         string ffmpegPath,
         CancellationToken cancellationToken = default)
     {
+        if (duration <= TimeSpan.Zero)
+        {
+            return null;
+        }
+
         paths.EnsureCreated();
+        slideCount = Math.Clamp(slideCount, 1, 12);
         var cacheKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            $"{filePath.ToUpperInvariant()}|{lastWriteUtc.Ticks}")));
-        var outputPath = Path.Combine(paths.ThumbnailFolder, $"{cacheKey}.jpg");
+            $"{filePath.ToUpperInvariant()}|{lastWriteUtc.Ticks}|{slideCount}")));
+        var outputPath = Path.Combine(paths.PreviewFolder, $"{cacheKey}.jpg");
         if (File.Exists(outputPath))
         {
             return outputPath;
         }
 
-        var seekSeconds = Math.Clamp(duration.TotalSeconds * 0.15, 0, 5);
+        var sampleRate = slideCount / Math.Max(duration.TotalSeconds, 0.001);
+        var filter = string.Create(
+            CultureInfo.InvariantCulture,
+            $"fps={sampleRate:0.########},scale=160:90:force_original_aspect_ratio=decrease," +
+            $"pad=160:90:(ow-iw)/2:(oh-ih)/2:color=black,tile={slideCount}x1");
         var created = await FfmpegPreviewImageWriter.RunAsync(
             ffmpegPath,
             [
                 "-hide_banner", "-loglevel", "error",
-                "-ss", seekSeconds.ToString("0.###", CultureInfo.InvariantCulture),
                 "-i", filePath,
                 "-frames:v", "1",
-                "-vf", "scale=320:-2",
+                "-vf", filter,
                 "-q:v", "3",
                 "-y", outputPath
             ],

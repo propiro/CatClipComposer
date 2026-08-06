@@ -3,12 +3,12 @@ namespace CatClipComposer.Cli.CommandLine;
 internal static class CliParser
 {
     private static readonly HashSet<string> FlagOptions = new(
-        ["help", "json", "all", "overwrite", "create"],
+        ["help", "json", "all", "overwrite", "create", "clear-tags"],
         StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> ValueOptions = new(
         ["config", "data", "output", "orientation", "encoder", "clip", "screen",
-            "project-file", "project-name"],
+            "project-file", "project-name", "tags"],
         StringComparer.OrdinalIgnoreCase);
 
     public static CliInvocation Parse(IReadOnlyList<string> arguments)

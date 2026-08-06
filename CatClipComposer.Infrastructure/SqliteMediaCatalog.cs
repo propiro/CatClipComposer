@@ -57,10 +57,11 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
                 INSERT INTO media_files (
                     full_path, file_name, extension, duration_ticks, width, height, has_audio,
                     file_size, last_write_utc, thumbnail_path, discovered_utc, last_scanned_utc,
-                    is_available)
+                    is_available, preview_sheet_path, tags)
                 VALUES (
                     $fullPath, $fileName, $extension, $durationTicks, $width, $height, $hasAudio,
-                    $fileSize, $lastWriteUtc, $thumbnailPath, $discoveredUtc, $lastScannedUtc, 1)
+                    $fileSize, $lastWriteUtc, $thumbnailPath, $discoveredUtc, $lastScannedUtc, 1,
+                    $previewSheetPath, $tags)
                 ON CONFLICT(full_path) DO UPDATE SET
                     file_name = excluded.file_name,
                     extension = excluded.extension,
@@ -71,6 +72,7 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
                     file_size = excluded.file_size,
                     last_write_utc = excluded.last_write_utc,
                     thumbnail_path = excluded.thumbnail_path,
+                    preview_sheet_path = excluded.preview_sheet_path,
                     last_scanned_utc = excluded.last_scanned_utc,
                     is_available = 1;
                 """;
@@ -106,6 +108,61 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
         command.Parameters.AddWithValue("$available", isAvailable ? 1 : 0);
         command.Parameters.AddWithValue("$id", id);
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task UpdateTagsAsync(
+        long id,
+        string tags,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedTags = string.Join(
+            "; ",
+            tags.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+        await using var connection = _connectionFactory.Create();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE media_files SET tags = $tags WHERE id = $id;";
+        command.Parameters.AddWithValue("$tags", normalizedTags);
+        command.Parameters.AddWithValue("$id", id);
+        if (await command.ExecuteNonQueryAsync(cancellationToken) == 0)
+        {
+            throw new InvalidOperationException($"Catalog clip {id} was not found.");
+        }
+    }
+
+    public async Task<IReadOnlyList<MediaUsageEntry>> GetUsageAsync(
+        long mediaFileId,
+        CancellationToken cancellationToken = default)
+    {
+        var entries = new List<MediaUsageEntry>();
+        await using var connection = _connectionFactory.Create();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT jobs.id, jobs.project_name, jobs.project_file_path, jobs.output_path,
+                   jobs.created_utc, COUNT(*)
+            FROM render_job_items AS items
+            INNER JOIN render_jobs AS jobs ON jobs.id = items.render_job_id
+            WHERE items.media_file_id = $mediaFileId
+            GROUP BY jobs.id, jobs.project_name, jobs.project_file_path,
+                     jobs.output_path, jobs.created_utc
+            ORDER BY jobs.created_utc DESC, jobs.id DESC;
+            """;
+        command.Parameters.AddWithValue("$mediaFileId", mediaFileId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            entries.Add(new MediaUsageEntry(
+                reader.GetInt64(0),
+                reader.IsDBNull(1) ? null : reader.GetString(1),
+                reader.IsDBNull(2) ? null : reader.GetString(2),
+                reader.GetString(3),
+                SqliteUtc.Parse(reader.GetString(4)),
+                reader.GetInt32(5)));
+        }
+
+        return entries;
     }
 
     public async Task RecordExportAsync(

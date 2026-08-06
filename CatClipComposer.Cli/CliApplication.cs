@@ -64,6 +64,8 @@ internal sealed class CliApplication(
                 "scan" => await ScanCommand.ExecuteAsync(invocation, context),
                 "list" => await ListCommand.ExecuteAsync(invocation, context),
                 "history" => await HistoryCommand.ExecuteAsync(invocation, context),
+                "tag" => await TagCommand.ExecuteAsync(invocation, context),
+                "usage" => await UsageCommand.ExecuteAsync(invocation, context),
                 "project" => await ProjectCommand.ExecuteAsync(invocation, context),
                 "render" => await RenderCommand.ExecuteAsync(invocation, context),
                 _ => throw new CliUsageException(
@@ -174,7 +176,7 @@ internal sealed class CliApplication(
             {
                 name = "Cat Clip Composer headless CLI",
                 usage = "CatClipComposer.Cli <command> [options]",
-                commands = new[] { "config", "scan", "list", "history", "project", "render" },
+                commands = new[] { "config", "scan", "list", "history", "tag", "usage", "project", "render" },
                 commonOptions = new[] { "--config <file>", "--data <folder>", "--json", "--help" },
                 exitCodes = new
                 {
@@ -200,6 +202,8 @@ internal sealed class CliApplication(
           scan                   Scan configured source folders into the catalog.
           list [--all]           List available catalog clips; --all includes missing clips.
           history                List completed exports and their ordered source clips.
+          tag                    Set or clear catalog tags for one clip.
+          usage                  List completed project/export uses for one clip.
           project                Create or inspect a versioned project document.
           render                 Render ordered catalog clips and still screens.
 
@@ -215,6 +219,8 @@ internal sealed class CliApplication(
           --screen "S|PATH"      Add a still image for S seconds; repeat in the desired order.
           --orientation <value>  landscape or portrait; defaults to INI.
           --encoder <value>      native-mpeg4, windows-h264, or libx264-gpl; defaults to INI.
+          --project-file <file>  Associate a saved project with the completed export.
+          --project-name <name>  Associate a project name with the completed export.
           --overwrite            Permit replacement of an existing output file.
 
         Project options:
@@ -222,6 +228,11 @@ internal sealed class CliApplication(
           --create               Create a new empty five-track project.
           --project-name <name>  Optional name used with --create.
           --overwrite            Permit replacement when creating a project.
+
+        Metadata options:
+          tag --clip <id> --tags "cat; funny"
+          tag --clip <id> --clear-tags
+          usage --clip <id>
 
         Segment order follows the order of --clip and --screen options on the command line.
         Progress and diagnostics use stderr; command results use stdout.

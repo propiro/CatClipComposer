@@ -47,4 +47,10 @@ public sealed class MediaCardViewModel : ObservableObject
     };
 
     public string? ThumbnailPath => Media.ThumbnailPath;
+
+    public string? PreviewSheetPath => Media.PreviewSheetPath;
+
+    public string TagsText => string.IsNullOrWhiteSpace(Media.Tags)
+        ? "No tags"
+        : Media.Tags;
 }

@@ -20,9 +20,9 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Configure one or more source folders, an output folder, FFmpeg, a target duration, and landscape or portrait output.
 - Scan MP4, WebM, AVI, MOV, MKV, and M4V files, including optional subfolder scanning.
 - Store clip metadata and export history in a durable SQLite database.
-- Generate and cache thumbnails with FFmpeg.
-- Search and browse selectable thumbnail cards with index, duration, dimensions, optional file name, and usage count.
-- Preview a selected clip through the Windows media stack. Files with unsupported Windows codecs can still be rendered by FFmpeg.
+- Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
+- Search names, paths, and editable tags in selectable, recycled catalog rows without opening every video.
+- Preview a selected clip through the Windows media stack, with the contact sheet as a codec-independent content preview.
 - Add clips more than once, reorder them, remove them, and compare the total against a configurable timeline axis.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Render an optional PNG/JPG watermark, text overlay, system font or custom TTF/OTF font, and choose the overlay position.
@@ -30,7 +30,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Normalize mixed resolutions and aspect ratios to 1920×1080 landscape or 1080×1920 portrait, 30 fps, configurable MPEG-4/H.264 video, and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
-- Browse export history and jump to an existing output or original source file in File Explorer.
+- Browse export history and per-clip completed-project use, including project name/path, date, and final output.
 - Create, save, reopen, and automatically recover versioned editable project timelines.
 - Run config inspection, scanning, listing, ordered rendering, and history queries headlessly with text or JSON output and stable exit codes.
 - Work in a compact monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
@@ -79,7 +79,9 @@ The executable directory must be writable when Options are saved. The catalog an
 ```text
 %LOCALAPPDATA%\CatClipComposer\
 ├── catalog.db
-└── thumbnails\
+├── thumbnails\
+├── previews\
+└── recovery\
 ```
 
 The SQLite schema contains media metadata, availability and usage fields, completed render jobs, and the ordered source clips used by each render.
@@ -103,6 +105,5 @@ In particular, FFmpeg is LGPL 2.1-or-later by default, but optional GPL componen
 
 - Save and reopen named timeline projects.
 - Add multiple overlays with individual start/end times instead of one compilation-wide image and text layer.
-- Add FFmpeg-generated contact-sheet/slideshow preview when Windows cannot decode a source format.
 - Add capability detection and additional non-GPL hardware encoder presets.
 - Add trimming and per-segment volume controls without turning the application into a general-purpose editor.

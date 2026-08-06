@@ -27,6 +27,8 @@ internal static class SqliteCatalogSchema
                 file_size INTEGER NOT NULL,
                 last_write_utc TEXT NOT NULL,
                 thumbnail_path TEXT NULL,
+                preview_sheet_path TEXT NULL,
+                tags TEXT NOT NULL DEFAULT '',
                 discovered_utc TEXT NOT NULL,
                 last_scanned_utc TEXT NOT NULL,
                 is_available INTEGER NOT NULL DEFAULT 1,
@@ -57,6 +59,18 @@ internal static class SqliteCatalogSchema
             );
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
+        await EnsureColumnAsync(
+            connection,
+            "media_files",
+            "preview_sheet_path",
+            "TEXT NULL",
+            cancellationToken);
+        await EnsureColumnAsync(
+            connection,
+            "media_files",
+            "tags",
+            "TEXT NOT NULL DEFAULT ''",
+            cancellationToken);
         await EnsureColumnAsync(
             connection,
             "render_jobs",

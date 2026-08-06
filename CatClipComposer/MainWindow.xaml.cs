@@ -312,6 +312,29 @@ public partial class MainWindow : Window
         DesktopShell.ShowFileInExplorer(outputPath);
     }
 
+    private async void ClipMetadata_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SelectedMedia is null)
+        {
+            return;
+        }
+
+        var dialog = new ClipMetadataWindow(_viewModel.SelectedMedia, _catalog) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.UpdateSelectedTagsAsync(dialog.Tags);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save clip tags.", exception);
+        }
+    }
+
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.IsBusy)

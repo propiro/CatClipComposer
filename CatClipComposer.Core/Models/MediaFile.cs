@@ -24,6 +24,10 @@ public sealed class MediaFile
 
     public string? ThumbnailPath { get; init; }
 
+    public string? PreviewSheetPath { get; init; }
+
+    public string Tags { get; init; } = string.Empty;
+
     public DateTime DiscoveredUtc { get; init; }
 
     public DateTime LastScannedUtc { get; init; }

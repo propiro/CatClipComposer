@@ -27,7 +27,12 @@ public static class ApplicationServicesFactory
 
         IMediaProbe mediaProbe = new FfprobeMediaProbe();
         IThumbnailGenerator thumbnailGenerator = new FfmpegThumbnailGenerator(paths);
-        IMediaScanner scanner = new MediaScanner(catalog, mediaProbe, thumbnailGenerator);
+        IPreviewSheetGenerator previewSheetGenerator = new FfmpegPreviewSheetGenerator(paths);
+        IMediaScanner scanner = new MediaScanner(
+            catalog,
+            mediaProbe,
+            thumbnailGenerator,
+            previewSheetGenerator);
         IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
         ICompositionExporter compositionExporter = new CompositionExportService(videoRenderer, catalog);
 

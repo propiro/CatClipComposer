@@ -6,7 +6,8 @@ namespace CatClipComposer.Infrastructure;
 public sealed class MediaScanner(
     IMediaCatalog catalog,
     IMediaProbe mediaProbe,
-    IThumbnailGenerator thumbnailGenerator) : IMediaScanner
+    IThumbnailGenerator thumbnailGenerator,
+    IPreviewSheetGenerator previewSheetGenerator) : IMediaScanner
 {
     private static readonly HashSet<string> SupportedExtensions = new(
         [".mp4", ".webm", ".avi", ".mov", ".mkv", ".m4v"],
@@ -50,6 +51,7 @@ public sealed class MediaScanner(
                 existingByPath.TryGetValue(filePath, out var existing);
                 VideoMetadata metadata;
                 string? thumbnailPath;
+                string? previewSheetPath;
 
                 if (existing is not null &&
                     existing.FileSize == info.Length &&
@@ -77,6 +79,14 @@ public sealed class MediaScanner(
                         cancellationToken);
                 }
 
+                previewSheetPath = await previewSheetGenerator.CreateAsync(
+                    filePath,
+                    metadata.Duration,
+                    info.LastWriteTimeUtc,
+                    settings.PreviewSlideCount,
+                    settings.FfmpegPath,
+                    cancellationToken);
+
                 var now = DateTime.UtcNow;
                 await catalog.UpsertAsync(new MediaFile
                 {
@@ -91,6 +101,8 @@ public sealed class MediaScanner(
                     FileSize = info.Length,
                     LastWriteUtc = info.LastWriteTimeUtc,
                     ThumbnailPath = thumbnailPath,
+                    PreviewSheetPath = previewSheetPath,
+                    Tags = existing?.Tags ?? string.Empty,
                     DiscoveredUtc = existing?.DiscoveredUtc ?? now,
                     LastScannedUtc = now,
                     IsAvailable = true,

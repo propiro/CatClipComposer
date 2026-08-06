@@ -203,7 +203,9 @@
                                             <TextBlock Margin="0,2,0,0"
                                                        FontSize="10"
                                                        Foreground="{StaticResource FaintTextBrush}"
-                                                       Text="{Binding UsageText}" />
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding TagsText}"
+                                                       Text="{Binding TagsText}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -246,12 +248,25 @@
                             Background="{StaticResource PreviewBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="1">
-                        <MediaElement x:Name="PreviewPlayer"
-                                      LoadedBehavior="Manual"
-                                      UnloadedBehavior="Stop"
-                                      ScrubbingEnabled="True"
-                                      Stretch="Uniform"
-                                      MediaFailed="PreviewPlayer_MediaFailed" />
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="48" />
+                            </Grid.RowDefinitions>
+                            <MediaElement x:Name="PreviewPlayer"
+                                          LoadedBehavior="Manual"
+                                          UnloadedBehavior="Stop"
+                                          ScrubbingEnabled="True"
+                                          Stretch="Uniform"
+                                          MediaFailed="PreviewPlayer_MediaFailed" />
+                            <Border Grid.Row="1"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="0,1,0,0"
+                                    Background="{StaticResource InputBrush}">
+                                <Image Source="{Binding SelectedMedia.PreviewSheetPath}"
+                                       Stretch="Uniform" />
+                            </Border>
+                        </Grid>
                     </Border>
                     <Grid Grid.Row="2" Margin="6,0,6,6">
                         <Grid.RowDefinitions>
@@ -283,6 +298,7 @@
                             <Button Margin="4,0,0,0" Click="PreviewPause_Click" Content="Pause" />
                             <Button Margin="4,0,0,0" Click="OpenSource_Click" Content="Show file" />
                             <Button Margin="4,0,0,0" Click="OpenLastOutput_Click" Content="Last export" />
+                            <Button Margin="4,0,0,0" Click="ClipMetadata_Click" Content="Metadata" />
                         </WrapPanel>
                     </Grid>
                 </Grid>

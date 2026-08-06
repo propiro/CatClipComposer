@@ -33,7 +33,10 @@ internal static class ListCommand
                     item.IsAvailable,
                     item.UseCount,
                     item.LastUsedUtc,
-                    item.LastOutputPath
+                    item.LastOutputPath,
+                    item.Tags,
+                    item.ThumbnailPath,
+                    item.PreviewSheetPath
                 })
             });
             return CliExitCodes.Success;
@@ -47,6 +50,10 @@ internal static class ListCommand
                 $"{item.Id,6}  {DurationFormatter.Format(item.Duration),8}  " +
                 $"{item.Width}x{item.Height}  used {item.UseCount,3}  {item.FileName}{availability}");
             await context.Output.WriteLineAsync($"        {item.FullPath}");
+            if (!string.IsNullOrWhiteSpace(item.Tags))
+            {
+                await context.Output.WriteLineAsync($"        tags: {item.Tags}");
+            }
         }
 
         return CliExitCodes.Success;

@@ -37,8 +37,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 1. An executable loads `CatClipComposer.ini` through `ISettingsStore`.
 2. `IMediaScanner` enumerates configured folders and accepted extensions.
 3. `IMediaProbe` invokes FFprobe and parses duration, dimensions, and audio stream presence.
-4. `IThumbnailGenerator` invokes FFmpeg and writes a cache image.
-5. `IMediaCatalog` upserts metadata into SQLite and marks removed files unavailable.
+4. Focused thumbnail/contact-sheet generators invoke FFmpeg and write keyed JPEG cache files.
+5. `IMediaCatalog` upserts paths and technical/search metadata into SQLite while preserving user tags.
+6. Project-use rows are queried from successful render jobs; merely adding a clip to a project never counts as use.
 
 ### Composition and render
 
@@ -71,12 +72,13 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
 | `FfmpegRenderCommandBuilder` | Build argument-safe FFmpeg process configuration | Focused command responsibility. |
 | `FfmpegProcessRunner` | Execute FFmpeg, cancel, collect errors, and report progress | Focused process responsibility; `MOD-002` closed. |
-| `SqliteMediaCatalog` | Media CRUD and history SQL operations behind `IMediaCatalog` | Schema initialization, connection creation, UTC conversion, media mapping, and history aggregation are delegated; `MOD-003` closed. |
+| `SqliteMediaCatalog` | Media/tag CRUD and successful-export/history SQL operations behind `IMediaCatalog` | Schema initialization, connection creation, UTC conversion, media mapping, and history aggregation are delegated; `MOD-003` closed. |
+| Preview generators | Produce one static thumbnail and one configurable evenly sampled contact sheet | A shared process runner removes duplicate process/cancellation behavior; files are content-keyed cache assets rather than database blobs. |
 | SQLite persistence helpers | One focused schema, connection, conversion, or row-projection responsibility each | Internal implementation details; no Core contract or schema change. |
 | WPF window code-behind | Window-specific events, validation prompts, and dialog flow | File Explorer launch and exception presentation are delegated to focused desktop helpers; `MOD-004` closed. |
 | WPF desktop helpers | Shell launch and consistent exception presentation | No catalog, rendering, settings, or window-workflow responsibility. |
 | `WorkspaceLayoutController` | Map four panels to four dock slots and swap occupied positions | WPF-only layout mechanics; durable slot values remain in shared application settings. |
-| Content browser | Search and recycled virtualized projection of cached thumbnail metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
+| Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
 | CLI command modules | Config, scan, list, render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
 | Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |

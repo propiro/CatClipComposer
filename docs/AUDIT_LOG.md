@@ -1,5 +1,20 @@
 # Audit log
 
+## AUDIT-2026-08-06-015 — Catalog metadata and preview cache
+
+Scope: `CATMETA-001`, `PREVIEW-001`, and successful-export usage semantics.
+
+Findings and verification:
+
+- SQLite remains appropriate for stable IDs, multiple changing roots, user-editable tags, availability, and normalized project/export joins; static/contact-sheet JPEGs remain ordinary replaceable cache files.
+- The schema migration is additive and preserves existing rows/tags during scanner upserts.
+- A generated six-second 640×360 MP4 scanned successfully with audio metadata, one static thumbnail, and an 800×90 five-frame contact sheet.
+- Tags normalized to `orange cat; indoor; favorite`, persisted, and are included in GUI filtering/headless output.
+- Per-clip usage returned zero before rendering; after a successful export it returned exactly one row with project name, `.ccproject` path, output path, UTC date, and occurrence count.
+- Release solution build passed with zero warnings/errors.
+
+Result: `CATMETA-001`, `PREVIEW-001`, and `AUD-CATMETA-001` closed.
+
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
 ## AUDIT-2026-08-06-016 — Project persistence and recovery closure

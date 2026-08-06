@@ -8,7 +8,8 @@ internal static class SqliteMediaMapper
     public const string SelectColumns = """
         id, full_path, file_name, extension, duration_ticks, width, height,
         has_audio, file_size, last_write_utc, thumbnail_path, discovered_utc,
-        last_scanned_utc, is_available, use_count, last_used_utc, last_output_path
+        last_scanned_utc, is_available, use_count, last_used_utc, last_output_path,
+        preview_sheet_path, tags
         """;
 
     public static void AddUpsertParameters(SqliteCommand command, MediaFile mediaFile)
@@ -23,6 +24,8 @@ internal static class SqliteMediaMapper
         command.Parameters.AddWithValue("$fileSize", mediaFile.FileSize);
         command.Parameters.AddWithValue("$lastWriteUtc", SqliteUtc.Format(mediaFile.LastWriteUtc));
         command.Parameters.AddWithValue("$thumbnailPath", (object?)mediaFile.ThumbnailPath ?? DBNull.Value);
+        command.Parameters.AddWithValue("$previewSheetPath", (object?)mediaFile.PreviewSheetPath ?? DBNull.Value);
+        command.Parameters.AddWithValue("$tags", mediaFile.Tags);
         command.Parameters.AddWithValue("$discoveredUtc", SqliteUtc.Format(mediaFile.DiscoveredUtc));
         command.Parameters.AddWithValue("$lastScannedUtc", SqliteUtc.Format(mediaFile.LastScannedUtc));
     }
@@ -45,6 +48,8 @@ internal static class SqliteMediaMapper
         IsAvailable = reader.GetInt64(13) != 0,
         UseCount = reader.GetInt32(14),
         LastUsedUtc = reader.IsDBNull(15) ? null : SqliteUtc.Parse(reader.GetString(15)),
-        LastOutputPath = reader.IsDBNull(16) ? null : reader.GetString(16)
+        LastOutputPath = reader.IsDBNull(16) ? null : reader.GetString(16),
+        PreviewSheetPath = reader.IsDBNull(17) ? null : reader.GetString(17),
+        Tags = reader.IsDBNull(18) ? string.Empty : reader.GetString(18)
     };
 }

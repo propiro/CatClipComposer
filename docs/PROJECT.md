@@ -31,7 +31,7 @@ The application should work for personal use and remain suitable for possible co
 | Workspace | Main timeline, preview, and layers/used-clips panels | Done | Four-slot resizable workspace with browser, preview, used clips/layers, and timeline. |
 | Workspace | Reposition/dock all main panels | Done | Each panel can swap into left, center, right, or bottom; layout persists in INI. |
 | Visual design | Compact monochrome editor theme | Done | Explicit dark surfaces/title bars, warm neutral palette, square controls, and reduced spacing. |
-| Browser | Video preview or content slideshow | Partial | Windows media preview exists; FFmpeg slideshow/contact sheet remains `PREVIEW-001`. |
+| Browser | Video preview or content slideshow | Done | Windows media playback plus a configurable cached FFmpeg contact sheet. |
 | Timeline | Configurable duration axis and total | Done | Progress against target duration is shown. |
 | Timeline | Add, duplicate, select, remove, and reorder clips | Done | Buttons and Delete-key removal supported. |
 | Screens | Splash, mid-video, and outro screens | Done | Still images can be inserted anywhere and reordered. |
@@ -46,7 +46,7 @@ The application should work for personal use and remain suitable for possible co
 | Licensing | Default path without required GPL components | Done | Native MPEG-4 default; Media Foundation H.264 option; libx264 explicitly GPL opt-in. |
 | Projects | Save and reopen named timelines | Done | Versioned `.ccproject` JSON with stable track/item IDs and atomic writes. |
 | Projects | Crash-recovery autosave | Done | Every timeline mutation writes atomic recovery under the configured metadata folder and startup restores it. |
-| Catalog | Tags, contact-sheet previews, and project-use metadata | Not done | `CATMETA-001`. |
+| Catalog | Tags, contact-sheet previews, and project-use metadata | Done | Searchable normalized tags, cached sheets, and successful-export project identity/history. |
 | Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Partial | Five-track project schema and fields persist; editing controls/render projection remain `LAYERS-001` and `FX-001`. |
 | Output | Resolution/aspect/codec/quality/frame-rate presets | Not done | `OUTPUT-001`. |
 | Deployment | One-folder deployment with external tools under `thirdparty` | Not done | `DEPLOY-001`; licensing audit required before bundling FFmpeg. |

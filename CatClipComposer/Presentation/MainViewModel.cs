@@ -321,6 +321,20 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Added still screen: {Path.GetFileName(imagePath)}";
     }
 
+    public async Task UpdateSelectedTagsAsync(
+        string tags,
+        CancellationToken cancellationToken = default)
+    {
+        if (SelectedMedia is null)
+        {
+            return;
+        }
+
+        await _catalog.UpdateTagsAsync(SelectedMedia.Media.Id, tags, cancellationToken);
+        await LoadCatalogAsync(cancellationToken);
+        StatusText = "Clip tags saved";
+    }
+
     public void MoveSelectedTimelineClip(int offset)
     {
         Timeline.MoveSelected(offset);
@@ -365,7 +379,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return media.FileName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-               media.FullPath.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+               media.FullPath.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+               media.Media.Tags.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
     }
 
     private async void Timeline_Changed(object? sender, EventArgs e)

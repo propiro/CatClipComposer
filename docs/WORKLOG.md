@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Catalog metadata and lightweight content previews
+
+- Kept SQLite as the searchable mutable catalog because multiple changing source roots, tags, availability, stable media IDs, and project/export joins are relational state; kept JPEG previews as replaceable files rather than database blobs.
+- Added an additive migration for normalized user tags and contact-sheet paths while preserving legacy catalog rows.
+- Added configurable evenly sampled FFmpeg contact sheets, shared preview-process handling, and the codec-independent preview strip in the GUI.
+- Added tag search/editing and per-clip completed-project usage with project name/path, date, output, and occurrence count.
+- Added headless `tag`/`usage`, richer `list` JSON, and optional render project identity.
+- Synthetic scan produced a static thumbnail and 800×90 five-slide sheet; tags survived normalization/rescan; usage was empty before export and populated only after a successful named-project render.
+- Closed: `CATMETA-001`, `PREVIEW-001`, `AUD-CATMETA-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Versioned project files and recovery
 
 - Added a versioned `.ccproject` schema with stable project/track/item IDs and Video, Overlay, Audio, Progress, and Effects tracks.
