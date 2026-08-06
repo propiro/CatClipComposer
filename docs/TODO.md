@@ -15,7 +15,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | MOD-001 | P1 | Done | Split `MainViewModel` orchestration and timeline state. | Focused `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render-segment projection; direct smoke passed. |
 | MOD-002 | P1 | Done | Split FFmpeg filter/argument construction from process execution. | Coordinator, filter builder, command builder, process runner, and cleanup helper are separate; mixed-input render smoke passed. |
 | MOD-003 | P2 | Done | Split SQLite schema creation and row mapping from catalog operations. | Focused internal schema, connection, UTC, media mapper, and history reader classes preserve the Core catalog interface and schema. |
-| MOD-004 | P2 | Open | Extract repeated WPF desktop interaction helpers. | Explorer launch and error presentation are not duplicated across windows. |
+| MOD-004 | P2 | Done | Extract repeated WPF desktop interaction helpers. | Focused helpers own Explorer launch and consistent exception presentation across application/windows. |
 | OVERLAY-001 | P2 | Open | Support multiple image/text overlays with individual start/end times. | Timeline or overlay editor controls timing and placement for multiple elements. |
 | PREVIEW-001 | P2 | Open | Add FFmpeg contact-sheet/slideshow fallback preview. | Unsupported Windows codecs still have a generated content preview. |
 | PROJECT-001 | P2 | Open | Save/reopen named timeline projects. | Ordered clips, still screens, and render settings round-trip without embedding media. |

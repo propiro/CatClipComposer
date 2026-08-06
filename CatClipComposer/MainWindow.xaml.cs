@@ -1,10 +1,10 @@
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
+using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
 using Microsoft.Win32;
 
@@ -39,7 +39,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowError("Could not load the media catalog.", exception);
+            DesktopDialogs.ShowError(this, "Could not load the media catalog.", exception);
         }
     }
 
@@ -57,7 +57,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowError("Could not save the options.", exception);
+            DesktopDialogs.ShowError(this, "Could not save the options.", exception);
         }
     }
 
@@ -108,7 +108,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowError("The catalog scan failed.", exception);
+            DesktopDialogs.ShowError(this, "The catalog scan failed.", exception);
         }
     }
 
@@ -146,7 +146,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        ShowInExplorer(_viewModel.SelectedMedia.FullPath);
+        DesktopShell.ShowFileInExplorer(_viewModel.SelectedMedia.FullPath);
     }
 
     private void AddSelected_Click(object sender, RoutedEventArgs e) =>
@@ -175,7 +175,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        ShowInExplorer(outputPath);
+        DesktopShell.ShowFileInExplorer(outputPath);
     }
 
     private async void Export_Click(object sender, RoutedEventArgs e)
@@ -222,7 +222,7 @@ public partial class MainWindow : Window
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
-                ShowInExplorer(result.OutputPath);
+                DesktopShell.ShowFileInExplorer(result.OutputPath);
             }
         }
         catch (OperationCanceledException)
@@ -230,7 +230,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            ShowError("The compilation could not be exported.", exception);
+            DesktopDialogs.ShowError(this, "The compilation could not be exported.", exception);
         }
     }
 
@@ -268,22 +268,4 @@ public partial class MainWindow : Window
         }
     }
 
-    private static void ShowInExplorer(string filePath)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            UseShellExecute = true
-        };
-        startInfo.ArgumentList.Add($"/select,{filePath}");
-        Process.Start(startInfo);
-    }
-
-    private void ShowError(string message, Exception exception) =>
-        MessageBox.Show(
-            this,
-            $"{message}{Environment.NewLine}{Environment.NewLine}{exception.Message}",
-            "Cat Clip Composer",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
 }

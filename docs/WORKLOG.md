@@ -2,6 +2,13 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — WPF desktop helper extraction
+
+- Replaced duplicate File Explorer launch code with one path-normalizing desktop shell helper.
+- Centralized startup and owned-window exception presentation without abstracting window-specific validation/dialog flow.
+- Closed: `MOD-004`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — SQLite persistence responsibility split
 
 - Reduced the catalog adapter to media/history operations behind `IMediaCatalog`.

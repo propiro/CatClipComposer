@@ -2,6 +2,20 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-013 — WPF desktop interaction closure
+
+Scope: `MOD-004`.
+
+Findings:
+
+- `DesktopShell` is the single File Explorer launch implementation and normalizes its selected file path.
+- `DesktopDialogs` consistently presents startup and owned-window exception details.
+- Window code-behind retains only window-specific event flow and contextual validation/information prompts.
+
+Verification: Release build and hidden GUI startup smoke passed.
+
+Result: `MOD-004` closed.
+
 ## AUDIT-2026-08-06-012 — SQLite responsibility closure
 
 Scope: `MOD-003`.

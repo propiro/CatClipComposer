@@ -1,4 +1,5 @@
 using System.Windows;
+using CatClipComposer.Desktop;
 using CatClipComposer.Infrastructure.Composition;
 
 namespace CatClipComposer;
@@ -25,11 +26,7 @@ public partial class App : Application
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
-                $"Cat Clip Composer could not start.{Environment.NewLine}{Environment.NewLine}{exception.Message}",
-                "Startup error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            DesktopDialogs.ShowError(null, "Cat Clip Composer could not start.", exception);
             Shutdown(1);
         }
     }

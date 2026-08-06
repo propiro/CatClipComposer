@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Core.Utilities;
+using CatClipComposer.Desktop;
 
 namespace CatClipComposer;
 
@@ -66,26 +66,15 @@ public partial class HistoryWindow : Window
             return;
         }
 
-        ShowInExplorer(card.Entry.OutputPath);
+        DesktopShell.ShowFileInExplorer(card.Entry.OutputPath);
     }
 
     private void HistoryClipListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (HistoryClipListBox.SelectedItem is ExportHistoryClip clip && File.Exists(clip.FullPath))
         {
-            ShowInExplorer(clip.FullPath);
+            DesktopShell.ShowFileInExplorer(clip.FullPath);
         }
-    }
-
-    private static void ShowInExplorer(string filePath)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            UseShellExecute = true
-        };
-        startInfo.ArgumentList.Add($"/select,{filePath}");
-        Process.Start(startInfo);
     }
 
     public sealed class ExportHistoryCard(ExportHistoryEntry entry)
