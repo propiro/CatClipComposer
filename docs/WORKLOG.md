@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — SQLite persistence responsibility split
+
+- Reduced the catalog adapter to media/history operations behind `IMediaCatalog`.
+- Extracted focused connection creation, schema initialization, invariant UTC conversion, media parameter/row mapping, and export-history aggregation.
+- Kept the existing schema and Core interface unchanged.
+- Corrected headless text history to display the already one-based stored projection order without adding a second offset.
+- Closed: `MOD-003`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Headless CLI
 
 - Added a separate console executable in the same solution and repository.

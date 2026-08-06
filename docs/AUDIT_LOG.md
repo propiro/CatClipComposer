@@ -2,6 +2,21 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-012 — SQLite responsibility closure
+
+Scope: `MOD-003`.
+
+Findings:
+
+- `SqliteMediaCatalog` retains only `IMediaCatalog` operation and transaction coordination.
+- Connection-string creation, schema initialization, invariant UTC conversion, media parameter/row mapping, and export-history aggregation have one focused internal class each.
+- The database schema, SQL semantics, and public Core interface did not change.
+- Export-history order is projected as one-based for both GUI and CLI; the CLI's redundant display offset was removed.
+
+Verification: Release build and direct schema/upsert/query/availability/export/history mapping smoke tests passed.
+
+Result: `MOD-003` closed.
+
 ## AUDIT-2026-08-06-011 — Headless automation closure
 
 Scope: `CLI-001`, `BOOT-001`, and `AUD-CLI-001`.

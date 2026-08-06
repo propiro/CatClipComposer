@@ -61,7 +61,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | `FfmpegFilterGraphBuilder` | Build normalization, concat, overlay, and progress filters | Pure construction responsibility. |
 | `FfmpegRenderCommandBuilder` | Build argument-safe FFmpeg process configuration | Focused command responsibility. |
 | `FfmpegProcessRunner` | Execute FFmpeg, cancel, collect errors, and report progress | Focused process responsibility; `MOD-002` closed. |
-| `SqliteMediaCatalog` | Schema, media CRUD, history writes/queries | Cohesive persistence adapter but large; split schema and row mapping (`MOD-003`). |
+| `SqliteMediaCatalog` | Media CRUD and history SQL operations behind `IMediaCatalog` | Schema initialization, connection creation, UTC conversion, media mapping, and history aggregation are delegated; `MOD-003` closed. |
+| SQLite persistence helpers | One focused schema, connection, conversion, or row-projection responsibility each | Internal implementation details; no Core contract or schema change. |
 | WPF window code-behind | Dialog and desktop interaction | Acceptable where limited to UI events; repeated Explorer/error helpers should be extracted (`MOD-004`). |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
 | CLI command modules | Config, scan, list, render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |

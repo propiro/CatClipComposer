@@ -1,62 +1,25 @@
 using System.Globalization;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
-using Microsoft.Data.Sqlite;
+using CatClipComposer.Infrastructure.Persistence;
 
 namespace CatClipComposer.Infrastructure;
 
-public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
+public sealed class SqliteMediaCatalog : IMediaCatalog
 {
+    private readonly AppPaths _paths;
+    private readonly SqliteConnectionFactory _connectionFactory;
+
+    public SqliteMediaCatalog(AppPaths paths)
+    {
+        _paths = paths;
+        _connectionFactory = new SqliteConnectionFactory(paths);
+    }
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        paths.EnsureCreated();
-        await using var connection = CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            PRAGMA journal_mode = WAL;
-            PRAGMA foreign_keys = ON;
-
-            CREATE TABLE IF NOT EXISTS media_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_path TEXT NOT NULL COLLATE NOCASE UNIQUE,
-                file_name TEXT NOT NULL,
-                extension TEXT NOT NULL,
-                duration_ticks INTEGER NOT NULL,
-                width INTEGER NOT NULL,
-                height INTEGER NOT NULL,
-                has_audio INTEGER NOT NULL DEFAULT 0,
-                file_size INTEGER NOT NULL,
-                last_write_utc TEXT NOT NULL,
-                thumbnail_path TEXT NULL,
-                discovered_utc TEXT NOT NULL,
-                last_scanned_utc TEXT NOT NULL,
-                is_available INTEGER NOT NULL DEFAULT 1,
-                use_count INTEGER NOT NULL DEFAULT 0,
-                last_used_utc TEXT NULL,
-                last_output_path TEXT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS ix_media_files_available_name
-            ON media_files(is_available, file_name);
-
-            CREATE TABLE IF NOT EXISTS render_jobs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                output_path TEXT NOT NULL,
-                duration_ticks INTEGER NOT NULL,
-                created_utc TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS render_job_items (
-                render_job_id INTEGER NOT NULL,
-                media_file_id INTEGER NOT NULL,
-                sort_order INTEGER NOT NULL,
-                PRIMARY KEY(render_job_id, sort_order),
-                FOREIGN KEY(render_job_id) REFERENCES render_jobs(id) ON DELETE CASCADE,
-                FOREIGN KEY(media_file_id) REFERENCES media_files(id)
-            );
-            """;
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        _paths.EnsureCreated();
+        await SqliteCatalogSchema.InitializeAsync(_connectionFactory, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MediaFile>> GetAllAsync(
@@ -64,13 +27,11 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
         CancellationToken cancellationToken = default)
     {
         var files = new List<MediaFile>();
-        await using var connection = CreateConnection();
+        await using var connection = _connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = $"""
-            SELECT id, full_path, file_name, extension, duration_ticks, width, height,
-                   has_audio, file_size, last_write_utc, thumbnail_path, discovered_utc,
-                   last_scanned_utc, is_available, use_count, last_used_utc, last_output_path
+            SELECT {SqliteMediaMapper.SelectColumns}
             FROM media_files
             {(includeUnavailable ? string.Empty : "WHERE is_available = 1")}
             ORDER BY file_name COLLATE NOCASE, full_path COLLATE NOCASE;
@@ -78,7 +39,7 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            files.Add(ReadMediaFile(reader));
+            files.Add(SqliteMediaMapper.Read(reader));
         }
 
         return files;
@@ -88,7 +49,7 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
         MediaFile mediaFile,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = CreateConnection();
+        await using var connection = _connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
         await using (var command = connection.CreateCommand())
         {
@@ -113,15 +74,13 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
                     last_scanned_utc = excluded.last_scanned_utc,
                     is_available = 1;
                 """;
-            AddMediaParameters(command, mediaFile);
+            SqliteMediaMapper.AddUpsertParameters(command, mediaFile);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
 
         await using var selectCommand = connection.CreateCommand();
-        selectCommand.CommandText = """
-            SELECT id, full_path, file_name, extension, duration_ticks, width, height,
-                   has_audio, file_size, last_write_utc, thumbnail_path, discovered_utc,
-                   last_scanned_utc, is_available, use_count, last_used_utc, last_output_path
+        selectCommand.CommandText = $"""
+            SELECT {SqliteMediaMapper.SelectColumns}
             FROM media_files
             WHERE full_path = $fullPath;
             """;
@@ -132,7 +91,7 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
             throw new InvalidOperationException("The media catalog did not return the saved file.");
         }
 
-        return ReadMediaFile(reader);
+        return SqliteMediaMapper.Read(reader);
     }
 
     public async Task SetAvailabilityAsync(
@@ -140,7 +99,7 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
         bool isAvailable,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = CreateConnection();
+        await using var connection = _connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = "UPDATE media_files SET is_available = $available WHERE id = $id;";
@@ -155,10 +114,10 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
         IReadOnlyList<long> mediaFileIds,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = CreateConnection();
+        await using var connection = _connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
         await using var transaction = connection.BeginTransaction();
-        var now = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        var now = SqliteUtc.Format(DateTime.UtcNow);
 
         await using var jobCommand = connection.CreateCommand();
         jobCommand.Transaction = transaction;
@@ -202,8 +161,7 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
     public async Task<IReadOnlyList<ExportHistoryEntry>> GetExportHistoryAsync(
         CancellationToken cancellationToken = default)
     {
-        var entries = new List<ExportHistoryEntry>();
-        await using var connection = CreateConnection();
+        await using var connection = _connectionFactory.Create();
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
@@ -215,106 +173,6 @@ public sealed class SqliteMediaCatalog(AppPaths paths) : IMediaCatalog
             ORDER BY jobs.created_utc DESC, jobs.id DESC, items.sort_order ASC;
             """;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        long? currentId = null;
-        string currentOutputPath = string.Empty;
-        TimeSpan currentDuration = TimeSpan.Zero;
-        DateTime currentCreatedUtc = default;
-        var clips = new List<ExportHistoryClip>();
-
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            var jobId = reader.GetInt64(0);
-            if (currentId.HasValue && currentId.Value != jobId)
-            {
-                entries.Add(new ExportHistoryEntry(
-                    currentId.Value,
-                    currentOutputPath,
-                    currentDuration,
-                    currentCreatedUtc,
-                    clips.ToList()));
-                clips.Clear();
-            }
-
-            if (currentId != jobId)
-            {
-                currentId = jobId;
-                currentOutputPath = reader.GetString(1);
-                currentDuration = TimeSpan.FromTicks(reader.GetInt64(2));
-                currentCreatedUtc = ParseUtc(reader.GetString(3));
-            }
-
-            if (!reader.IsDBNull(4))
-            {
-                clips.Add(new ExportHistoryClip(
-                    reader.GetInt32(4) + 1,
-                    reader.GetInt64(5),
-                    reader.GetString(6),
-                    reader.GetString(7)));
-            }
-        }
-
-        if (currentId.HasValue)
-        {
-            entries.Add(new ExportHistoryEntry(
-                currentId.Value,
-                currentOutputPath,
-                currentDuration,
-                currentCreatedUtc,
-                clips.ToList()));
-        }
-
-        return entries;
+        return await SqliteExportHistoryReader.ReadAllAsync(reader, cancellationToken);
     }
-
-    private SqliteConnection CreateConnection()
-    {
-        var builder = new SqliteConnectionStringBuilder
-        {
-            DataSource = paths.DatabasePath,
-            Mode = SqliteOpenMode.ReadWriteCreate,
-            Cache = SqliteCacheMode.Shared
-        };
-        return new SqliteConnection(builder.ToString());
-    }
-
-    private static void AddMediaParameters(SqliteCommand command, MediaFile mediaFile)
-    {
-        command.Parameters.AddWithValue("$fullPath", mediaFile.FullPath);
-        command.Parameters.AddWithValue("$fileName", mediaFile.FileName);
-        command.Parameters.AddWithValue("$extension", mediaFile.Extension);
-        command.Parameters.AddWithValue("$durationTicks", mediaFile.DurationTicks);
-        command.Parameters.AddWithValue("$width", mediaFile.Width);
-        command.Parameters.AddWithValue("$height", mediaFile.Height);
-        command.Parameters.AddWithValue("$hasAudio", mediaFile.HasAudio ? 1 : 0);
-        command.Parameters.AddWithValue("$fileSize", mediaFile.FileSize);
-        command.Parameters.AddWithValue("$lastWriteUtc", mediaFile.LastWriteUtc.ToString("O", CultureInfo.InvariantCulture));
-        command.Parameters.AddWithValue("$thumbnailPath", (object?)mediaFile.ThumbnailPath ?? DBNull.Value);
-        command.Parameters.AddWithValue("$discoveredUtc", mediaFile.DiscoveredUtc.ToString("O", CultureInfo.InvariantCulture));
-        command.Parameters.AddWithValue("$lastScannedUtc", mediaFile.LastScannedUtc.ToString("O", CultureInfo.InvariantCulture));
-    }
-
-    private static MediaFile ReadMediaFile(SqliteDataReader reader) => new()
-    {
-        Id = reader.GetInt64(0),
-        FullPath = reader.GetString(1),
-        FileName = reader.GetString(2),
-        Extension = reader.GetString(3),
-        DurationTicks = reader.GetInt64(4),
-        Width = reader.GetInt32(5),
-        Height = reader.GetInt32(6),
-        HasAudio = reader.GetInt64(7) != 0,
-        FileSize = reader.GetInt64(8),
-        LastWriteUtc = ParseUtc(reader.GetString(9)),
-        ThumbnailPath = reader.IsDBNull(10) ? null : reader.GetString(10),
-        DiscoveredUtc = ParseUtc(reader.GetString(11)),
-        LastScannedUtc = ParseUtc(reader.GetString(12)),
-        IsAvailable = reader.GetInt64(13) != 0,
-        UseCount = reader.GetInt32(14),
-        LastUsedUtc = reader.IsDBNull(15) ? null : ParseUtc(reader.GetString(15)),
-        LastOutputPath = reader.IsDBNull(16) ? null : reader.GetString(16)
-    };
-
-    private static DateTime ParseUtc(string value) =>
-        DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 }

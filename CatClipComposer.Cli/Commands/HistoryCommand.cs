@@ -43,7 +43,7 @@ internal static class HistoryCommand
             foreach (var clip in entry.Clips)
             {
                 await context.Output.WriteLineAsync(
-                    $"        {clip.Order + 1,3}. [{clip.MediaFileId}] {clip.FileName}");
+                    $"        {clip.Order,3}. [{clip.MediaFileId}] {clip.FileName}");
             }
         }
 

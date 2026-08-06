@@ -14,7 +14,7 @@ Statuses: `Open`, `In progress`, `Blocked`, `Done`, `Deferred`.
 | BOOT-001 | P0 | Done | Share service composition between GUI and CLI. | Both executables consume `ApplicationServicesFactory`; render/history transaction is shared through `ICompositionExporter`. |
 | MOD-001 | P1 | Done | Split `MainViewModel` orchestration and timeline state. | Focused `TimelineViewModel` owns editing, ordering, selection, summaries, axis values, and render-segment projection; direct smoke passed. |
 | MOD-002 | P1 | Done | Split FFmpeg filter/argument construction from process execution. | Coordinator, filter builder, command builder, process runner, and cleanup helper are separate; mixed-input render smoke passed. |
-| MOD-003 | P2 | Open | Split SQLite schema creation and row mapping from catalog operations. | Schema/mapping are focused internal classes without changing the Core catalog interface. |
+| MOD-003 | P2 | Done | Split SQLite schema creation and row mapping from catalog operations. | Focused internal schema, connection, UTC, media mapper, and history reader classes preserve the Core catalog interface and schema. |
 | MOD-004 | P2 | Open | Extract repeated WPF desktop interaction helpers. | Explorer launch and error presentation are not duplicated across windows. |
 | OVERLAY-001 | P2 | Open | Support multiple image/text overlays with individual start/end times. | Timeline or overlay editor controls timing and placement for multiple elements. |
 | PREVIEW-001 | P2 | Open | Add FFmpeg contact-sheet/slideshow fallback preview. | Unsupported Windows codecs still have a generated content preview. |
