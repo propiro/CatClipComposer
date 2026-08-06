@@ -103,25 +103,31 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
-                        <RowDefinition x:Name="BrowserBodyRow" Height="*" />
+                        <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <Border Background="{StaticResource ToolbarBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="0,0,0,1">
                         <Grid Margin="8,0,4,0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Style="{StaticResource PanelTitleStyle}" Text="CONTENT BROWSER" />
                             <Button x:Name="BrowserExpandButton"
-                                    Grid.Column="1"
-                                    Margin="0,0,2,0"
+                                    Grid.Column="0"
+                                    Width="24"
+                                    Margin="0,0,4,0"
+                                    Padding="0"
+                                    FontSize="14"
                                     Click="BrowserExpand_Click"
                                     Style="{StaticResource HeaderButtonStyle}"
-                                    ToolTip="Collapse or expand the browser"
-                                    Content="-" />
+                                    AutomationProperties.Name="Expand content browser"
+                                    ToolTip="Expand content browser to full workspace width"
+                                    Content="→" />
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource PanelTitleStyle}"
+                                       Text="CONTENT BROWSER" />
                             <Button Grid.Column="2"
                                     Tag="ContentBrowser"
                                     Click="PanelDock_Click"
@@ -129,7 +135,7 @@
                                     Content="Dock" />
                         </Grid>
                     </Border>
-                    <Grid x:Name="BrowserBody" Grid.Row="1">
+                    <Grid Grid.Row="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="38" />
                             <RowDefinition Height="*" />

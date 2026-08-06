@@ -27,12 +27,45 @@ internal sealed class WorkspaceLayoutController(
             [WorkspacePanelKind.Timeline] = timeline
         };
 
-    public void Apply(ApplicationSettings settings)
+    public void Apply(ApplicationSettings settings, bool browserExpanded = false)
     {
+        foreach (var panel in _panels.Values)
+        {
+            panel.Visibility = Visibility.Visible;
+            Panel.SetZIndex(panel, 0);
+        }
+
         ApplyPanel(WorkspacePanelKind.ContentBrowser, settings.ContentBrowserDock);
         ApplyPanel(WorkspacePanelKind.Preview, settings.PreviewDock);
         ApplyPanel(WorkspacePanelKind.Layers, settings.LayersDock);
         ApplyPanel(WorkspacePanelKind.Timeline, settings.TimelineDock);
+
+        if (browserExpanded)
+        {
+            ApplyBrowserFocusLayout();
+        }
+    }
+
+    private void ApplyBrowserFocusLayout()
+    {
+        var browser = _panels[WorkspacePanelKind.ContentBrowser];
+        var timeline = _panels[WorkspacePanelKind.Timeline];
+        _panels[WorkspacePanelKind.Preview].Visibility = Visibility.Collapsed;
+        _panels[WorkspacePanelKind.Layers].Visibility = Visibility.Collapsed;
+
+        Grid.SetRow(browser, 0);
+        Grid.SetColumn(browser, 0);
+        Grid.SetRowSpan(browser, 1);
+        Grid.SetColumnSpan(browser, 5);
+        browser.Margin = new Thickness(0);
+        Panel.SetZIndex(browser, 1);
+
+        Grid.SetRow(timeline, 2);
+        Grid.SetColumn(timeline, 0);
+        Grid.SetRowSpan(timeline, 1);
+        Grid.SetColumnSpan(timeline, 5);
+        timeline.Margin = new Thickness(0, 4, 0, 0);
+        Panel.SetZIndex(timeline, 1);
     }
 
     public static void MovePanel(

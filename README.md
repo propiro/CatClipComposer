@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.2**.
+Current application and component version: **0.1.3**.
 
 ## Documentation
 
@@ -39,7 +39,7 @@ Current application and component version: **0.1.2**.
 - Create, save, reopen, and automatically recover versioned editable project timelines.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
-- Browse large catalogs through a recycled virtualized list and drag thumbnail rows directly onto the project timeline.
+- Browse large catalogs through a recycled virtualized list, expand the browser across the workspace while keeping the timeline available, and drag thumbnail rows directly onto it.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables with audited tools in `thirdparty`.
 

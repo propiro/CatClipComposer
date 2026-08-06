@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     private readonly IMediaCatalog _catalog;
     private readonly WorkspaceLayoutController _workspaceLayout;
     private Point _catalogDragStart;
+    private bool _isBrowserExpanded;
 
     public MainWindow(
         ApplicationSettings settings,
@@ -73,7 +75,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.ApplySettingsAsync(dialog.ResultSettings);
-            _workspaceLayout.Apply(_viewModel.Settings);
+            _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
             if (!previousMetadataFolder.Equals(
                     _viewModel.Settings.MetadataFolder,
                     StringComparison.OrdinalIgnoreCase))
@@ -520,10 +522,15 @@ public partial class MainWindow : Window
 
     private void BrowserExpand_Click(object sender, RoutedEventArgs e)
     {
-        var isExpanded = BrowserBody.Visibility == Visibility.Visible;
-        BrowserBody.Visibility = isExpanded ? Visibility.Collapsed : Visibility.Visible;
-        BrowserBodyRow.Height = isExpanded ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        BrowserExpandButton.Content = isExpanded ? "+" : "-";
+        _isBrowserExpanded = !_isBrowserExpanded;
+        _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
+        BrowserExpandButton.Content = _isBrowserExpanded ? "←" : "→";
+        BrowserExpandButton.ToolTip = _isBrowserExpanded
+            ? "Restore compact content browser"
+            : "Expand content browser to full workspace width";
+        AutomationProperties.SetName(
+            BrowserExpandButton,
+            _isBrowserExpanded ? "Restore compact content browser" : "Expand content browser");
     }
 
     private void PanelDock_Click(object sender, RoutedEventArgs e)
@@ -566,7 +573,7 @@ public partial class MainWindow : Window
             var settings = _viewModel.Settings.Copy();
             WorkspaceLayoutController.MovePanel(settings, request.Panel, request.Slot);
             await _viewModel.ApplySettingsAsync(settings);
-            _workspaceLayout.Apply(_viewModel.Settings);
+            _workspaceLayout.Apply(_viewModel.Settings, _isBrowserExpanded);
         }
         catch (Exception exception)
         {

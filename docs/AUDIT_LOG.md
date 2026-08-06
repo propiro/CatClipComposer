@@ -1,5 +1,19 @@
 # Audit log
 
+## AUDIT-2026-08-06-021 — Full-width content browser focus
+
+Scope: requested left-side browser expansion control; `BROWSER-002` and `AUD-BROWSER-002`.
+
+Findings and verification:
+
+- The former browser header control only hid the panel body; it did not create more catalog space and removed the useful list instead.
+- A left-edge direction arrow now applies a temporary browser-focus layout across all five workspace columns while leaving the full-width timeline visible beneath it as the drag/drop target.
+- Preview and Layers/Used Clips are hidden only during focus. Toggling back reapplies the unchanged persisted dock assignments, so default and custom layouts restore without a settings mutation.
+- The arrow direction, tooltip, and UI Automation name reflect the current action. Recycling virtualization and existing catalog-to-timeline drag data remain unchanged.
+- Clean Release builds passed with zero warnings/errors. UI Automation invoked expand and restore in the built application; 1440x900 captures confirmed the full-width and restored layouts, timeline availability, and readable arrow.
+
+Result: `BROWSER-002` and `AUD-BROWSER-002` closed; application/component version advanced to 0.1.3.
+
 ## AUDIT-2026-08-06-020 — Visual Studio designer workspace
 
 Scope: reported empty/incomplete `MainWindow` XAML designer; `WORKSPACE-002` and `AUD-DESIGNER-001`.

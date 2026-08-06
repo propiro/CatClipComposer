@@ -79,8 +79,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | SQLite persistence helpers | One focused schema, connection, conversion, or row-projection responsibility each | Internal implementation details; no Core contract or schema change. |
 | WPF window code-behind | Window-specific events, validation prompts, and dialog flow | File Explorer launch and exception presentation are delegated to focused desktop helpers; `MOD-004` closed. |
 | WPF desktop helpers | Shell launch and consistent exception presentation | No catalog, rendering, settings, or window-workflow responsibility. |
-| `WorkspaceLayoutController` | Map four panels to four dock slots and swap occupied positions | WPF-only layout mechanics; durable slot values remain in shared application settings. |
-| Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
+| `WorkspaceLayoutController` | Map four panels to four dock slots, swap occupied positions, and apply temporary browser-focus layout | WPF-only layout mechanics; browser focus never overwrites durable slot values in shared application settings. |
+| Content browser | Search tags/names/paths and recycle virtualized rows of cached metadata | Does not decode source video eagerly; full-width focus retains the timeline drop target and drag data contains only the selected catalog view model. |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
 | CLI command modules | Config, scan, list, metadata, project render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
 | Portable publisher | Compose two single-file entry points plus INI/docs/thirdparty layout | Build-time script validates output safety and tool licensing flags; exact external-tool licensing remains an explicit release audit. |

@@ -2,6 +2,16 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Full-width content browser focus
+
+- Replaced the browser body hide/show control with a left-edge direction arrow that expands the content browser across the complete workspace width.
+- Kept the full-width timeline visible while browsing so virtualized catalog rows remain draggable directly onto the project.
+- Made browser focus temporary: collapsing restores every panel's persisted dock assignment, including custom layouts, without rewriting settings.
+- Added state-specific tooltips and UI Automation names, and advanced all application components to 0.1.3.
+- Verified with clean Release builds plus a 1440x900 live expand/restore capture driven through UI Automation.
+- Closed: `BROWSER-002` and `AUD-BROWSER-002`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Complete XAML designer workspace
 
 - Diagnosed the apparently empty Visual Studio designer as four XAML panels overlapping in the default grid cell until runtime docking code executed.

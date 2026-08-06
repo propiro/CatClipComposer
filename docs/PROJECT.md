@@ -28,6 +28,7 @@ The application should work for personal use and remain suitable for possible co
 | Catalog | Durable database that can be refreshed | Done | SQLite catalog with availability tracking. |
 | Browser | Selectable thumbnails with duration/index/optional names | Done | Cached FFmpeg thumbnails and search. |
 | Browser | Large-library-safe content browser and drag/drop | Done | Recycled virtualized rows load cached previews only when realized and drag clips into the timeline. |
+| Browser | Full-width browsing with a persistent timeline drop target | Done | A left-edge direction arrow temporarily expands the browser across the workspace; toggling it restores the saved dock layout. |
 | Workspace | Main timeline, preview, and layers/used-clips panels | Done | Four-slot resizable workspace with browser, preview, used clips/layers, and timeline. |
 | Workspace | Reposition/dock all main panels | Done | Each panel can swap into left, center, right, or bottom; layout persists in INI. |
 | Workspace | Complete Visual Studio designer layout | Done | Default dock coordinates live in XAML so all four panels render at design time; persisted runtime docking still overrides them. |
@@ -51,7 +52,7 @@ The application should work for personal use and remain suitable for possible co
 | Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Done | Add/edit/remove controls project through the shared render mapper into verified FFmpeg output. |
 | Output | Resolution/aspect/codec/quality/frame-rate presets | Done | Seven common presets plus validated custom values stored per project. |
 | Deployment | One-folder deployment with external tools under `thirdparty` | Done | Framework-dependent/self-contained single-file publisher requires an audited tool pair unless application-only packaging is explicit. |
-| Versioning | Shared application/component version visible to users | Done | Central 0.1.2 assembly/file metadata, main-window title/status display, and headless version output. |
+| Versioning | Shared application/component version visible to users | Done | Central 0.1.3 assembly/file metadata, main-window title/status display, and headless version output. |
 | Editing | Trim and per-clip volume | Partial | Per-clip volume is done; trimming remains deferred under `EDIT-001`. |
 
 ## Definition of an MVP release
