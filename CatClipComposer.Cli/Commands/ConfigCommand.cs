@@ -32,7 +32,14 @@ internal static class ConfigCommand
                 settings.OverlayText,
                 settings.OverlayFontPath,
                 settings.OverlayTextSize,
-                overlayPosition = settings.OverlayPosition.ToString()
+                overlayPosition = settings.OverlayPosition.ToString(),
+                workspace = new
+                {
+                    contentBrowserDock = settings.ContentBrowserDock.ToString(),
+                    previewDock = settings.PreviewDock.ToString(),
+                    layersDock = settings.LayersDock.ToString(),
+                    timelineDock = settings.TimelineDock.ToString()
+                }
             }
         };
 
@@ -57,6 +64,9 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Orientation: {settings.Orientation}");
         await context.Output.WriteLineAsync($"Encoder: {settings.VideoEncoder}");
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
+        await context.Output.WriteLineAsync(
+            $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
+            $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");
         return CliExitCodes.Success;
     }
 }

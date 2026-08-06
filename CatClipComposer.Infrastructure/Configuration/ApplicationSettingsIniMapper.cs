@@ -65,6 +65,26 @@ internal static class ApplicationSettingsIniMapper
             "Overlays",
             "Position",
             settings.OverlayPosition);
+        settings.ContentBrowserDock = ReadEnum(
+            ini,
+            "Workspace",
+            "ContentBrowserDock",
+            settings.ContentBrowserDock);
+        settings.PreviewDock = ReadEnum(
+            ini,
+            "Workspace",
+            "PreviewDock",
+            settings.PreviewDock);
+        settings.LayersDock = ReadEnum(
+            ini,
+            "Workspace",
+            "LayersDock",
+            settings.LayersDock);
+        settings.TimelineDock = ReadEnum(
+            ini,
+            "Workspace",
+            "TimelineDock",
+            settings.TimelineDock);
         return Normalize(settings);
     }
 
@@ -100,6 +120,12 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"FontPath={settings.OverlayFontPath}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"TextSize={settings.OverlayTextSize}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Position={settings.OverlayPosition}");
+        builder.AppendLine();
+        builder.AppendLine("[Workspace]");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"ContentBrowserDock={settings.ContentBrowserDock}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewDock={settings.PreviewDock}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"LayersDock={settings.LayersDock}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"TimelineDock={settings.TimelineDock}");
         return builder.ToString();
     }
 
@@ -126,7 +152,28 @@ internal static class ApplicationSettingsIniMapper
         settings.OverlayText = settings.OverlayText?.Trim() ?? string.Empty;
         settings.OverlayFontPath = settings.OverlayFontPath?.Trim() ?? string.Empty;
         settings.OverlayTextSize = Math.Clamp(settings.OverlayTextSize, 8, 200);
+        NormalizeWorkspace(settings);
         return settings;
+    }
+
+    private static void NormalizeWorkspace(ApplicationSettings settings)
+    {
+        var slots = new[]
+        {
+            settings.ContentBrowserDock,
+            settings.PreviewDock,
+            settings.LayersDock,
+            settings.TimelineDock
+        };
+        if (slots.Distinct().Count() == slots.Length)
+        {
+            return;
+        }
+
+        settings.ContentBrowserDock = WorkspaceDockSlot.Left;
+        settings.PreviewDock = WorkspaceDockSlot.Center;
+        settings.LayersDock = WorkspaceDockSlot.Right;
+        settings.TimelineDock = WorkspaceDockSlot.Bottom;
     }
 
     private static bool ReadBool(IniFile ini, string section, string key, bool fallback) =>

@@ -230,8 +230,13 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        Timeline.AddMedia(SelectedMedia.Media);
-        StatusText = $"Added {SelectedMedia.FileName} to timeline";
+        AddMediaToTimeline(SelectedMedia);
+    }
+
+    public void AddMediaToTimeline(MediaCardViewModel media)
+    {
+        Timeline.AddMedia(media.Media);
+        StatusText = $"Added {media.FileName} to timeline";
     }
 
     public void AddStillImageToTimeline(string imagePath, TimeSpan duration)

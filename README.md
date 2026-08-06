@@ -31,6 +31,8 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and jump to an existing output or original source file in File Explorer.
 - Run config inspection, scanning, listing, ordered rendering, and history queries headlessly with text or JSON output and stable exit codes.
+- Work in a compact monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
+- Browse large catalogs through a recycled virtualized list and drag thumbnail rows directly onto the project timeline.
 
 ## Requirements
 

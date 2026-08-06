@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using CatClipComposer.Core.Models;
+using CatClipComposer.Desktop;
 using Microsoft.Win32;
 
 namespace CatClipComposer;
@@ -14,6 +15,7 @@ public partial class OptionsWindow : Window
     public OptionsWindow(ApplicationSettings settings)
     {
         InitializeComponent();
+        DesktopWindowTheme.Apply(this);
         _workingSettings = settings.Copy();
         SourceFolders = new ObservableCollection<string>(_workingSettings.SourceFolders);
         DataContext = this;

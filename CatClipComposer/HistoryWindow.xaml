@@ -6,8 +6,9 @@
         Height="600"
         MinWidth="720"
         MinHeight="460"
+        Background="{StaticResource WindowBrush}"
         WindowStartupLocation="CenterOwner">
-    <Grid Margin="22">
+    <Grid Margin="16" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -33,7 +34,7 @@
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="5">
+                    CornerRadius="1">
                 <ListBox x:Name="HistoryListBox" ItemsSource="{Binding History}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
@@ -59,7 +60,7 @@
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="5">
+                    CornerRadius="1">
                 <Grid DataContext="{Binding SelectedItem, ElementName=HistoryListBox}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

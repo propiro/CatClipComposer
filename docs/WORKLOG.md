@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-06 — Compact dockable editor workspace
+
+- Replaced the green/blue-adjacent, spacious card treatment with a warm monochrome workstation palette, compact square controls, tight gutters, and dark Windows title-bar requests.
+- Explicitly painted every derived WPF window and root surface, removing the white client-area leak caused by relying on an implicit base `Window` style.
+- Rebuilt the main window as four resizable slots for content browser, preview, layers/used clips, and project timeline.
+- Added persisted panel swapping among left/center/right/bottom slots and an expandable browser body.
+- Replaced the non-virtualizing thumbnail wrap panel with recycled virtualized rows that bind only cached preview images for realized items.
+- Added content-browser drag/drop into the project timeline.
+- Closed: `UI-001`, `WORKSPACE-001`, `BROWSER-001`, `AUD-UX-001`.
+- Commit: recorded by the commit containing this entry.
+
 ## 2026-08-06 — Final architecture and documentation audit
 
 - Cross-checked repository modules and larger classes against the single-responsibility and GUI/CLI sharing rules.

@@ -1,11 +1,13 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
+using CatClipComposer.Workspace;
 using Microsoft.Win32;
 
 namespace CatClipComposer;
@@ -14,6 +16,8 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly IMediaCatalog _catalog;
+    private readonly WorkspaceLayoutController _workspaceLayout;
+    private Point _catalogDragStart;
 
     public MainWindow(
         ApplicationSettings settings,
@@ -23,8 +27,15 @@ public partial class MainWindow : Window
         ICompositionExporter compositionExporter)
     {
         InitializeComponent();
+        DesktopWindowTheme.Apply(this);
         _catalog = catalog;
         _viewModel = new MainViewModel(settings, settingsStore, catalog, scanner, compositionExporter);
+        _workspaceLayout = new WorkspaceLayoutController(
+            ContentBrowserPanel,
+            PreviewPanel,
+            LayersPanel,
+            TimelinePanel);
+        _workspaceLayout.Apply(settings);
         DataContext = _viewModel;
         Loaded += MainWindow_Loaded;
         Closed += (_, _) => _viewModel.CancelOperation();
@@ -54,6 +65,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.ApplySettingsAsync(dialog.ResultSettings);
+            _workspaceLayout.Apply(_viewModel.Settings);
         }
         catch (Exception exception)
         {
@@ -116,6 +128,28 @@ public partial class MainWindow : Window
 
     private void CatalogListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
         _viewModel.AddSelectedToTimeline();
+
+    private void CatalogListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        _catalogDragStart = e.GetPosition(CatalogListBox);
+
+    private void CatalogListBox_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed ||
+            _viewModel.SelectedMedia is null)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(CatalogListBox);
+        if (Math.Abs(position.X - _catalogDragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(position.Y - _catalogDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        var data = new DataObject(typeof(MediaCardViewModel), _viewModel.SelectedMedia);
+        DragDrop.DoDragDrop(CatalogListBox, data, DragDropEffects.Copy);
+    }
 
     private void CatalogListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -267,5 +301,83 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
     }
+
+    private void TimelineListBox_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(MediaCardViewModel))
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void TimelineListBox_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media)
+        {
+            _viewModel.AddMediaToTimeline(media);
+        }
+
+        e.Handled = true;
+    }
+
+    private void BrowserExpand_Click(object sender, RoutedEventArgs e)
+    {
+        var isExpanded = BrowserBody.Visibility == Visibility.Visible;
+        BrowserBody.Visibility = isExpanded ? Visibility.Collapsed : Visibility.Visible;
+        BrowserBodyRow.Height = isExpanded ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        BrowserExpandButton.Content = isExpanded ? "+" : "-";
+    }
+
+    private void PanelDock_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            !Enum.TryParse<WorkspacePanelKind>(button.Tag?.ToString(), out var panel))
+        {
+            return;
+        }
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = button,
+            Placement = PlacementMode.Bottom
+        };
+        foreach (var slot in Enum.GetValues<WorkspaceDockSlot>())
+        {
+            var item = new MenuItem
+            {
+                Header = $"Move to {slot.ToString().ToLowerInvariant()}",
+                Tag = new PanelDockRequest(panel, slot)
+            };
+            item.Click += MovePanelMenuItem_Click;
+            menu.Items.Add(item);
+        }
+
+        button.ContextMenu = menu;
+        menu.IsOpen = true;
+    }
+
+    private async void MovePanelMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PanelDockRequest request })
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = _viewModel.Settings.Copy();
+            WorkspaceLayoutController.MovePanel(settings, request.Panel, request.Slot);
+            await _viewModel.ApplySettingsAsync(settings);
+            _workspaceLayout.Apply(_viewModel.Settings);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save the workspace layout.", exception);
+        }
+    }
+
+    private sealed record PanelDockRequest(
+        WorkspacePanelKind Panel,
+        WorkspaceDockSlot Slot);
 
 }

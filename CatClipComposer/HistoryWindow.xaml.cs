@@ -16,6 +16,7 @@ public partial class HistoryWindow : Window
     public HistoryWindow(IMediaCatalog catalog)
     {
         InitializeComponent();
+        DesktopWindowTheme.Apply(this);
         _catalog = catalog;
         DataContext = this;
         Loaded += HistoryWindow_Loaded;

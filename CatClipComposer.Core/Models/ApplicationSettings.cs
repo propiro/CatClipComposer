@@ -29,6 +29,14 @@ public enum VideoEncoderPreset
     Libx264Gpl
 }
 
+public enum WorkspaceDockSlot
+{
+    Left,
+    Center,
+    Right,
+    Bottom
+}
+
 public sealed class ApplicationSettings
 {
     public List<string> SourceFolders { get; set; } = [];
@@ -59,6 +67,14 @@ public sealed class ApplicationSettings
 
     public OverlayPosition OverlayPosition { get; set; } = OverlayPosition.TopRight;
 
+    public WorkspaceDockSlot ContentBrowserDock { get; set; } = WorkspaceDockSlot.Left;
+
+    public WorkspaceDockSlot PreviewDock { get; set; } = WorkspaceDockSlot.Center;
+
+    public WorkspaceDockSlot LayersDock { get; set; } = WorkspaceDockSlot.Right;
+
+    public WorkspaceDockSlot TimelineDock { get; set; } = WorkspaceDockSlot.Bottom;
+
     public ApplicationSettings Copy() => new()
     {
         SourceFolders = [.. SourceFolders],
@@ -74,6 +90,10 @@ public sealed class ApplicationSettings
         OverlayText = OverlayText,
         OverlayFontPath = OverlayFontPath,
         OverlayTextSize = OverlayTextSize,
-        OverlayPosition = OverlayPosition
+        OverlayPosition = OverlayPosition,
+        ContentBrowserDock = ContentBrowserDock,
+        PreviewDock = PreviewDock,
+        LayersDock = LayersDock,
+        TimelineDock = TimelineDock
     };
 }

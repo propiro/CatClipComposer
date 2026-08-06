@@ -12,7 +12,7 @@ CatClipComposer.Infrastructure
     INI parsing/mapping/store, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
 
 CatClipComposer
-    WPF application, windows, presentation models, and desktop-specific interaction
+    WPF application, compact dock workspace, presentation models, and desktop-specific interaction
 
 CatClipComposer.Cli
     Headless command dispatch, text/JSON output, and process exit codes
@@ -65,6 +65,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 | SQLite persistence helpers | One focused schema, connection, conversion, or row-projection responsibility each | Internal implementation details; no Core contract or schema change. |
 | WPF window code-behind | Window-specific events, validation prompts, and dialog flow | File Explorer launch and exception presentation are delegated to focused desktop helpers; `MOD-004` closed. |
 | WPF desktop helpers | Shell launch and consistent exception presentation | No catalog, rendering, settings, or window-workflow responsibility. |
+| `WorkspaceLayoutController` | Map four panels to four dock slots and swap occupied positions | WPF-only layout mechanics; durable slot values remain in shared application settings. |
+| Content browser | Search and recycled virtualized projection of cached thumbnail metadata | Does not decode source video eagerly; drag data contains only the selected catalog view model. |
 | `CliApplication` | Parse global invocation, initialize shared services, dispatch, map failures to exit codes | Command behavior remains in focused command modules. |
 | CLI command modules | Config, scan, list, render, and history behavior | Share Core/Infrastructure workflows; text/JSON formatting stays in the CLI. |
 | Application startup | Focused `ApplicationServicesFactory` composition root | Consumed by both GUI and CLI; `BOOT-001` closed. |

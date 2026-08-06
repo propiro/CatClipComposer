@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using CatClipComposer.Desktop;
 using Microsoft.Win32;
 
 namespace CatClipComposer;
@@ -11,6 +12,7 @@ public partial class StillScreenWindow : Window
     public StillScreenWindow()
     {
         InitializeComponent();
+        DesktopWindowTheme.Apply(this);
     }
 
     public string? ImagePath { get; private set; }

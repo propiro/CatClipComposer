@@ -6,9 +6,10 @@
         Height="470"
         MinWidth="520"
         MinHeight="420"
+        Background="{StaticResource WindowBrush}"
         ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterOwner">
-    <Grid Margin="22">
+    <Grid Margin="16" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -37,7 +38,7 @@
                 Background="#090B10"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="4">
+                CornerRadius="1">
             <Image x:Name="ImagePreview" Stretch="Uniform" />
         </Border>
 

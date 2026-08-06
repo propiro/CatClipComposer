@@ -45,6 +45,12 @@ Text=Channel name\nSecond line
 FontPath=C:\Fonts\Example.ttf
 TextSize=42
 Position=TopRight
+
+[Workspace]
+ContentBrowserDock=Left
+PreviewDock=Center
+LayersDock=Right
+TimelineDock=Bottom
 ```
 
 Valid enum values:
@@ -53,10 +59,13 @@ Valid enum values:
 - `VideoEncoder`: `NativeMpeg4`, `WindowsMediaFoundationH264`, `Libx264Gpl`
 - `ProgressStyle`: `None`, `WholeCompilation`, `EachClip`
 - `Position`: `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Center`
+- Workspace dock values: `Left`, `Center`, `Right`, `Bottom`
 
 `NativeMpeg4` is the non-GPL compatibility default. `WindowsMediaFoundationH264` uses FFmpeg's Media Foundation wrapper and is the preferred non-GPL YouTube preset when supported by the selected Windows FFmpeg build. `Libx264Gpl` is an optional GPL-dependent preset and is never selected implicitly.
 
 Source folders use zero-based `FolderN` keys and are loaded in numeric order. Duplicate paths are removed case-insensitively.
+
+The four workspace dock values must be unique. Moving a panel into an occupied slot swaps the two panels and saves the new layout. Missing, malformed, or duplicate values recover to browser-left, preview-center, layers-right, and timeline-bottom.
 
 ## Escaping and recovery
 

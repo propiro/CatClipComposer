@@ -6,9 +6,10 @@
         Height="650"
         MinWidth="680"
         MinHeight="580"
+        Background="{StaticResource WindowBrush}"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip">
-    <Grid Margin="24">
+    <Grid Margin="16" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

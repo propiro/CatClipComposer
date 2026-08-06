@@ -27,6 +27,10 @@ The application should work for personal use and remain suitable for possible co
 | Catalog | Probe duration, dimensions, and audio presence | Done | External FFprobe adapter. |
 | Catalog | Durable database that can be refreshed | Done | SQLite catalog with availability tracking. |
 | Browser | Selectable thumbnails with duration/index/optional names | Done | Cached FFmpeg thumbnails and search. |
+| Browser | Large-library-safe content browser and drag/drop | Done | Recycled virtualized rows load cached previews only when realized and drag clips into the timeline. |
+| Workspace | Main timeline, preview, and layers/used-clips panels | Done | Four-slot resizable workspace with browser, preview, used clips/layers, and timeline. |
+| Workspace | Reposition/dock all main panels | Done | Each panel can swap into left, center, right, or bottom; layout persists in INI. |
+| Visual design | Compact monochrome editor theme | Done | Explicit dark surfaces/title bars, warm neutral palette, square controls, and reduced spacing. |
 | Browser | Video preview or content slideshow | Partial | Windows media preview exists; FFmpeg slideshow/contact sheet remains `PREVIEW-001`. |
 | Timeline | Configurable duration axis and total | Done | Progress against target duration is shown. |
 | Timeline | Add, duplicate, select, remove, and reorder clips | Done | Buttons and Delete-key removal supported. |
@@ -41,6 +45,11 @@ The application should work for personal use and remain suitable for possible co
 | Automation | Headless command-line mode | Done | Config, scan, list, render, and history commands with JSON and stable exit codes. |
 | Licensing | Default path without required GPL components | Done | Native MPEG-4 default; Media Foundation H.264 option; libx264 explicitly GPL opt-in. |
 | Projects | Save and reopen named timelines | Not done | `PROJECT-001`. |
+| Projects | Crash-recovery autosave | Not done | Included in expanded `PROJECT-001` scope. |
+| Catalog | Tags, contact-sheet previews, and project-use metadata | Not done | `CATMETA-001`. |
+| Layers/effects | Editable tracks for video, text/PNG, progress, audio, fades, and fit modes | Not done | `LAYERS-001` and `FX-001`. |
+| Output | Resolution/aspect/codec/quality/frame-rate presets | Not done | `OUTPUT-001`. |
+| Deployment | One-folder deployment with external tools under `thirdparty` | Not done | `DEPLOY-001`; licensing audit required before bundling FFmpeg. |
 | Editing | Trim and per-clip volume | Not done | Deferred narrow-editor enhancement `EDIT-001`. |
 
 ## Definition of an MVP release

@@ -2,6 +2,27 @@
 
 This is an append-only audit trail. Each audit records scope, findings, action IDs, and evidence. Closing an item requires a later closure entry; do not erase the original finding.
 
+## AUDIT-2026-08-06-015 — Workspace visual and scale audit
+
+Scope: `UI-001`, `WORKSPACE-001`, `BROWSER-001`, and `AUD-UX-001`.
+
+Findings:
+
+- The original white client area came from relying on an implicit `Window` style for derived window types. Every window and root surface now explicitly uses the dark window brush.
+- The replacement palette contains warm neutral gray/beige accents and no blue accent brush; button templates use one-pixel corners and reduced padding.
+- Browser, preview, layers/used-clips, and timeline are peers in one four-slot grid with user-resizable splitters.
+- Dock commands swap the requested panel with the occupied slot, guaranteeing exactly one panel per slot; normalized values persist in `[Workspace]`.
+- The catalog uses `VirtualizingStackPanel` recycling instead of `WrapPanel`, so source videos are never opened merely to populate the list and cached thumbnails bind only for realized rows.
+- Drag/drop transfers one selected catalog view model and adds its durable media record to the timeline.
+
+Verification:
+
+- Release build passed with zero warnings/errors.
+- A captured 1440x900 main-window image was visually inspected: all client surfaces are dark, density is reduced, corners are square, and all four panels are visible.
+- Configuration/CLI projection includes all four workspace slots.
+
+Result: `UI-001`, `WORKSPACE-001`, `BROWSER-001`, and `AUD-UX-001` closed.
+
 ## AUDIT-2026-08-06-014 — Architecture and documentation closure
 
 Scope: `AUD-ARCH-001` and `AUD-DOC-001` after all planned responsibility refactors.
