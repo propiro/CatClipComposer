@@ -290,4 +290,5 @@ This is an append-only record of material project work. Newest entries go first.
   video layers, ensuring concat receives identical square-pixel streams.
 - Rendered the three real sources through a copied catalog so testing did not alter real project-use history;
   FFprobe reported MPEG-4 1920x1080, SAR 1:1, AAC, and 70.804 seconds.
+- Released the correction as visible application/component version 0.1.8.
 - Commit: recorded by the commit containing this entry.

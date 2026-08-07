@@ -525,3 +525,4 @@ normalization remains useful for plugin input, while the final reset establishes
 
 Verification: a copied catalog rendered the exact reported clips (catalog IDs 10, 11, and 5) without touching
 the real history database. FFprobe reported MPEG-4 1920x1080, square-pixel SAR 1:1, AAC audio, and 70.804 seconds.
+The corrected portable package is versioned 0.1.8 so it is visibly distinguishable from the reported build.

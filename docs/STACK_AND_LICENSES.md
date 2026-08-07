@@ -76,7 +76,7 @@ that reports `--enable-gpl` or `--enable-nonfree`.
 
 ## Application versioning
 
-`Directory.Build.props` supplies version 0.1.7 to the WPF, CLI, Core, Infrastructure, and built-in plugin
+`Directory.Build.props` supplies version 0.1.8 to the WPF, CLI, Core, Infrastructure, and built-in plugin
 projects, including
 assembly, file, and informational metadata. User-visible strings resolve from Core assembly metadata so the
 main-window title/status bars and headless output cannot drift from the built components.

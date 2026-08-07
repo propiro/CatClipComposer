@@ -108,7 +108,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.7 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.8 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope
