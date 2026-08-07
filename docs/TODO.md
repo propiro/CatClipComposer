@@ -113,6 +113,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   encoder; a real mixed-source render decodes cleanly with constant frame timestamps; double-clicking a Video
   block opens its source in muted Clip Preview.
 
+### `PROJECT-PREVIEW-003` — Render only the selected project interval
+
+- Priority/status: P0 / Done
+- Acceptance: An active timeline range trims final composited video and mixed audio to that interval; output
+  timestamps restart at zero, WPF maps playback to global project time, and full preview remains unchanged.
+
 ### `TIMELINE-002` — Add an exact-frame playhead and visual track stack controls
 
 - Priority/status: P0 / Done
@@ -124,6 +130,30 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P0 / Done
 - Acceptance: Shift/Ctrl drag on the ruler paints a visible frame-snapped range, modifier-click extends from
   the current frame, normal clicks clear the range, and Project Preview playback stops at the selected end.
+
+### `TIMELINE-004` — Make range boundaries directly editable
+
+- Priority/status: P0 / Done
+- Acceptance: Start/end handles drag independently without crossing, Mark start/end use the current frame,
+  and changing a range invalidates a stale rendered preview.
+
+### `UX-PREVIEW-003` — Consolidate preview transport controls
+
+- Priority/status: P1 / Done
+- Acceptance: Clip and Project Preview each use one stateful play/pause button and an icon mute toggle; Project
+  Preview owns the centered accented render action, and Clip Preview offers timeline-double-click autoplay.
+
+### `UX-LAYERS-001` — Expose per-item transforms and effects from Used Clips
+
+- Priority/status: P1 / Done
+- Acceptance: Used Clips selection synchronizes with the timeline; its button, double-click, and context action
+  open fit/fill/stretch, fades, and volume; a plugin effect can inherit the selected item's start and duration.
+
+### `UX-SPLASH-002` — Pace fast startup logs without delaying real scans
+
+- Priority/status: P1 / Done
+- Acceptance: Fast startup-only lines appear 500–750 ms apart while configured startup rescans and manual
+  refresh diagnostics remain immediate; the five-second minimum remains intact.
 
 ### `UX-SAFETY-001` — Protect unsaved projects and finish application handoff polish
 

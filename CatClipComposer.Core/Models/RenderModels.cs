@@ -75,7 +75,9 @@ public sealed record RenderRequest(
     string BackgroundColor = "#101010",
     IReadOnlyList<RenderOverlay>? TimedOverlays = null,
     IReadOnlyList<RenderAudioLayer>? AudioLayers = null,
-    IReadOnlyList<RenderPluginEffect>? PluginEffects = null);
+    IReadOnlyList<RenderPluginEffect>? PluginEffects = null,
+    TimeSpan? OutputRangeStart = null,
+    TimeSpan? OutputRangeDuration = null);
 
 public sealed record RenderProgress(
     double Percent,

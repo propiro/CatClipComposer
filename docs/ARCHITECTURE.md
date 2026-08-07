@@ -62,6 +62,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 8. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
 9. Project Preview sends the same layered plan directly to `IVideoRenderer` in metadata storage, deliberately
    bypassing `ICompositionExporter` so previewing never changes completed-project usage history.
+10. An optional preview range trims the final composited video and final mixed audio together, then resets both
+    timestamps to zero. The WPF transport retains the project-time offset so seeking and frame stepping still
+    move the global timeline playhead correctly.
 
 ### Plugin discovery and effect rendering
 

@@ -60,14 +60,6 @@
                                Foreground="{StaticResource MutedTextBrush}"
                                Text="{Binding ProjectName}" />
                 </StackPanel>
-                <Button Grid.Column="2"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Padding="18,5"
-                        Click="ProjectPreview_Click"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Content="PREVIEW"
-                        ToolTip="Render the layered project to a temporary preview without exporting" />
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Margin="0,0,4,0" Click="History_Click" Content="History" />
                     <Button Margin="0,0,4,0" Click="Options_Click" Content="Preferences" />
@@ -334,12 +326,14 @@
                                                Foreground="{StaticResource MutedTextBrush}" Text="0:00" />
                                 </Grid>
                                 <WrapPanel Grid.Row="4" Margin="0,5,0,0">
-                                    <Button Click="PreviewPlay_Click" Content="Play" />
-                                    <Button Margin="4,0,0,0" Click="PreviewPause_Click" Content="Pause" />
+                                    <Button x:Name="PreviewPlayPauseButton" Click="PreviewPlayPause_Click"
+                                            Content="▶" ToolTip="Play clip preview" />
                                     <Button x:Name="PreviewMuteButton" Margin="4,0,0,0" Click="PreviewMute_Click"
-                                            Content="Unmute" ToolTip="Preview starts muted" />
+                                            FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
                                     <Slider x:Name="PreviewVolumeSlider" Width="72" Margin="6,0,0,0" Minimum="0" Maximum="1" Value="0.5"
                                             VerticalAlignment="Center" ValueChanged="PreviewVolumeSlider_ValueChanged" />
+                                    <CheckBox x:Name="AutoplayClipsCheckBox" Margin="9,0,0,0" VerticalAlignment="Center"
+                                              Content="Autoplay clips" ToolTip="Automatically play timeline videos opened by double-click" />
                                     <Button Margin="4,0,0,0" Click="OpenSource_Click" Content="Show file" />
                                     <Button Margin="4,0,0,0" Click="ClipMetadata_Click" Content="Metadata" />
                                 </WrapPanel>
@@ -368,17 +362,28 @@
                                     <TextBlock x:Name="ProjectPreviewDurationText" Grid.Column="2" Width="58" TextAlignment="Right"
                                                VerticalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="0:00" />
                                 </Grid>
-                                <WrapPanel Grid.Row="2" Margin="0,6,0,0">
-                                    <Button Click="ProjectPreviewPreviousFrame_Click" Content="Previous frame" />
-                                    <Button Margin="4,0,0,0" Click="ProjectPreviewPlay_Click" Content="Play" />
-                                    <Button Margin="4,0,0,0" Click="ProjectPreviewPause_Click" Content="Pause" />
-                                    <Button Margin="4,0,0,0" Click="ProjectPreviewNextFrame_Click" Content="Next frame" />
-                                    <Button x:Name="ProjectPreviewMuteButton" Margin="4,0,0,0" Click="ProjectPreviewMute_Click"
-                                            Content="Unmute" ToolTip="Project preview starts muted" />
-                                    <TextBlock x:Name="ProjectPreviewStatusText" Margin="8,0,0,0" VerticalAlignment="Center"
+                                <Grid Grid.Row="2" Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <WrapPanel VerticalAlignment="Center">
+                                        <Button Click="ProjectPreviewPreviousFrame_Click" Content="Previous frame" />
+                                        <Button x:Name="ProjectPreviewPlayPauseButton" Margin="4,0,0,0"
+                                                Click="ProjectPreviewPlayPause_Click" Content="▶" ToolTip="Play project preview" />
+                                        <Button Margin="4,0,0,0" Click="ProjectPreviewNextFrame_Click" Content="Next frame" />
+                                        <Button x:Name="ProjectPreviewMuteButton" Margin="4,0,0,0" Click="ProjectPreviewMute_Click"
+                                                FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
+                                    </WrapPanel>
+                                    <Button Grid.Column="1" Padding="18,5" Click="ProjectPreview_Click"
+                                            Style="{StaticResource PrimaryButtonStyle}" Content="RENDER PREVIEW"
+                                            ToolTip="Render the whole composition, or only the selected timeline range" />
+                                    <TextBlock x:Name="ProjectPreviewStatusText" Grid.Column="2" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
                                                FontSize="10" Foreground="{StaticResource MutedTextBrush}"
-                                               Text="Click PREVIEW to render the current composition." />
-                                </WrapPanel>
+                                               Text="Render the current composition." />
+                                </Grid>
                             </Grid>
                         </TabItem>
                     </TabControl>
@@ -481,14 +486,16 @@
                                                 </StackPanel>
                                             </Border>
                                         </Expander.Header>
-                                        <ListBox ItemsSource="{Binding Items}" SelectionChanged="ProjectLayerList_SelectionChanged">
+                                        <ListBox ItemsSource="{Binding Items}" SelectionChanged="ProjectLayerList_SelectionChanged"
+                                                 MouseDoubleClick="ProjectLayerList_MouseDoubleClick">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Padding="7,4" Background="{Binding Color}"
                                                             BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
                                                         <Border.ContextMenu>
                                                             <ContextMenu>
-                                                                <MenuItem CommandParameter="{Binding}" Click="EditLayerContext_Click" Header="Edit item…" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="EditLayerContext_Click" Header="Edit transform / effects…" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="AddClipEffectContext_Click" Header="Add effect for this item…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="ColorCode_Click" Header="Set item color…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="RemoveLayerContext_Click" Header="Remove item" />
                                                             </ContextMenu>
@@ -511,13 +518,14 @@
                         <Button Click="TrackMoveUp_Click" Content="Track up" />
                         <Button Margin="4,0,0,0" Click="TrackMoveDown_Click" Content="Track down" />
                         <Button Margin="4,0,0,0" Click="RemoveTrack_Click" Content="- Track" />
-                        <Button Margin="4,0,0,0" Click="AddPluginEffect_Click" Content="+ Effect" />
+                        <Button Margin="4,0,0,0" Click="AddPluginEffect_Click" Content="+ Effect"
+                                ToolTip="Use the selected clip/item start and duration when available" />
                         <Button Tag="Text" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Text" />
                         <Button Tag="Image" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ PNG" />
                         <Button Tag="Audio" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Music" />
                         <Button Tag="Progress" Margin="4,0,0,0" Click="AddLayer_Click" Content="+ Progress" />
                         <Button Margin="4,0,0,0" Click="EditLayer_Click" Content="Edit" />
-                        <Button Margin="4,0,0,0" Click="ClipEffects_Click" Content="Clip FX" />
+                        <Button Margin="4,0,0,0" Click="ClipEffects_Click" Content="Transform / FX" />
                         <Button Margin="4,0,0,0" Click="RemoveLayer_Click" Content="Remove" />
                     </WrapPanel>
                 </Grid>
@@ -584,6 +592,8 @@
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Button Click="TimelineRulerMode_Click" Content="{Binding Timeline.RulerModeButtonText}" />
@@ -597,7 +607,11 @@
                                    FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Track height" />
                         <Slider Grid.Column="5" Minimum="28" Maximum="110"
                                 Value="{Binding Timeline.TrackHeight, Mode=TwoWay}" />
-                        <ProgressBar Grid.Column="6" Height="7" Margin="12,0,0,0" VerticalAlignment="Center"
+                        <Button Grid.Column="6" Margin="8,0,0,0" Click="MarkRangeStart_Click"
+                                Content="Mark start" ToolTip="Set the selection start at the current frame" />
+                        <Button Grid.Column="7" Margin="4,0,0,0" Click="MarkRangeEnd_Click"
+                                Content="Mark end" ToolTip="Set the selection end at the current frame" />
+                        <ProgressBar Grid.Column="8" Height="7" Margin="12,0,0,0" VerticalAlignment="Center"
                                      Maximum="100" Value="{Binding Timeline.Progress, Mode=OneWay}" />
                     </Grid>
 
@@ -767,6 +781,22 @@
                                           <TextBlock Canvas.Left="{Binding Timeline.PlayheadLeft}" Margin="7,2,0,0"
                                                      FontSize="9" Foreground="{StaticResource AccentBrush}"
                                                      Text="{Binding Timeline.PlayheadText}" />
+                                      </Canvas>
+                                      <Canvas Panel.ZIndex="4">
+                                          <Thumb Canvas.Left="{Binding Timeline.RangeLeft}" Margin="-3,0,0,0"
+                                                 Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"
+                                                 Tag="Start" Style="{StaticResource TimelineRangeThumbStyle}"
+                                                 Visibility="{Binding Timeline.HasRangeSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 DragStarted="TimelineRangeHandle_DragStarted"
+                                                 DragDelta="TimelineRangeHandle_DragDelta"
+                                                 DragCompleted="TimelineRangeHandle_DragCompleted" />
+                                          <Thumb Canvas.Left="{Binding Timeline.RangeEndLeft}" Margin="-3,0,0,0"
+                                                 Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"
+                                                 Tag="End" Style="{StaticResource TimelineRangeThumbStyle}"
+                                                 Visibility="{Binding Timeline.HasRangeSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 DragStarted="TimelineRangeHandle_DragStarted"
+                                                 DragDelta="TimelineRangeHandle_DragDelta"
+                                                 DragCompleted="TimelineRangeHandle_DragCompleted" />
                                       </Canvas>
                                     </Grid>
                                 </ScrollViewer>

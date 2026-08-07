@@ -21,7 +21,9 @@ public partial class PluginEffectEditorWindow : Window
         TimeSpan projectDuration,
         TimelineSnapMode snapMode,
         double framesPerSecond,
-        ProjectTimelineItem? existing = null)
+        ProjectTimelineItem? existing = null,
+        TimeSpan? initialStart = null,
+        TimeSpan? initialDuration = null)
     {
         _track = track;
         _snapMode = snapMode;
@@ -40,14 +42,20 @@ public partial class PluginEffectEditorWindow : Window
         PluginComboBox.SelectedItem = existing is null
             ? compatible.FirstOrDefault()
             : compatible.FirstOrDefault(plugin => plugin.Descriptor.Id.Equals(existing.PluginId, StringComparison.OrdinalIgnoreCase));
-        StartTextBox.Text = (existing?.Start.TotalSeconds ?? 0).ToString("0.######", CultureInfo.InvariantCulture);
+        StartTextBox.Text = (existing?.Start.TotalSeconds ?? initialStart?.TotalSeconds ?? 0)
+            .ToString("0.######", CultureInfo.InvariantCulture);
         DurationTextBox.Text = (existing?.Duration.TotalSeconds ??
+                                initialDuration?.TotalSeconds ??
                                 (track.Kind == ProjectTrackKind.Background ? Math.Max(1, projectDuration.TotalSeconds) : 5))
             .ToString("0.######", CultureInfo.InvariantCulture);
         if (existing is not null)
         {
             TitleText.Text = "Edit plugin effect";
             ApplyButton.Content = "Apply changes";
+        }
+        else if (initialStart.HasValue && initialDuration.HasValue)
+        {
+            TitleText.Text = "Add effect for selected clip";
         }
     }
 

@@ -30,11 +30,20 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly DispatcherTimer _projectPreviewTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private bool _previewSeekDragging;
+    private bool _clipPreviewPlaying;
+    private bool _clipPreviewAutoplayPending;
     private bool _projectPreviewSeekDragging;
+    private bool _projectPreviewPlaying;
+    private TimeSpan _projectPreviewTimelineOffset;
+    private TimeSpan _projectPreviewTimelineEnd;
     private bool _timelinePlayheadDragging;
     private bool _timelineRangeSelecting;
     private TimeSpan _timelineRangeAnchor;
     private TimeSpan _timelineRangeClickAnchor;
+    private TimeSpan _rangeHandleStartAnchor;
+    private TimeSpan _rangeHandleEndAnchor;
+    private double _rangeHandleDragPixels;
+    private bool _rangeHandleMovesStart;
     private bool _allowClose;
     private bool _closeSaveInProgress;
 
@@ -419,36 +428,43 @@ public partial class MainWindow : Window
         LoadClipPreview(_viewModel.SelectedMedia?.FullPath);
     }
 
-    private void LoadClipPreview(string? sourcePath)
+    private void LoadClipPreview(string? sourcePath, bool autoplay = false)
     {
         PreviewPlayer.Stop();
         _previewTimer.Stop();
+        SetClipPlaybackState(false);
+        _clipPreviewAutoplayPending = autoplay;
         PreviewPlayer.IsMuted = true;
-        PreviewMuteButton.Content = "Unmute";
+        UpdateMuteButton(PreviewMuteButton, PreviewPlayer.IsMuted);
         PreviewSeekSlider.Value = 0;
         PreviewPositionText.Text = "0:00";
         PreviewDurationText.Text = "0:00";
+        PreviewPlayer.Source = null;
         PreviewPlayer.Source = string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath)
             ? null
             : new Uri(sourcePath, UriKind.Absolute);
     }
 
-    private void PreviewPlay_Click(object sender, RoutedEventArgs e)
+    private void PreviewPlayPause_Click(object sender, RoutedEventArgs e)
     {
-        PreviewPlayer.Play();
-        _previewTimer.Start();
-    }
-
-    private void PreviewPause_Click(object sender, RoutedEventArgs e)
-    {
-        PreviewPlayer.Pause();
-        _previewTimer.Stop();
+        if (_clipPreviewPlaying)
+        {
+            PreviewPlayer.Pause();
+            _previewTimer.Stop();
+            SetClipPlaybackState(false);
+        }
+        else if (PreviewPlayer.Source is not null)
+        {
+            PreviewPlayer.Play();
+            _previewTimer.Start();
+            SetClipPlaybackState(true);
+        }
     }
 
     private void PreviewMute_Click(object sender, RoutedEventArgs e)
     {
         PreviewPlayer.IsMuted = !PreviewPlayer.IsMuted;
-        PreviewMuteButton.Content = PreviewPlayer.IsMuted ? "Unmute" : "Mute";
+        UpdateMuteButton(PreviewMuteButton, PreviewPlayer.IsMuted);
     }
 
     private void PreviewVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -466,11 +482,19 @@ public partial class MainWindow : Window
             : TimeSpan.Zero;
         PreviewSeekSlider.Maximum = Math.Max(0.001, duration.TotalSeconds);
         PreviewDurationText.Text = FormatPreviewTime(duration);
+        if (_clipPreviewAutoplayPending)
+        {
+            _clipPreviewAutoplayPending = false;
+            PreviewPlayer.Play();
+            _previewTimer.Start();
+            SetClipPlaybackState(true);
+        }
     }
 
     private void PreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)
     {
         _previewTimer.Stop();
+        SetClipPlaybackState(false);
         PreviewPlayer.Position = TimeSpan.Zero;
         UpdatePreviewPosition();
     }
@@ -505,8 +529,23 @@ public partial class MainWindow : Window
     private static string FormatPreviewTime(TimeSpan value) =>
         value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
 
+    private void SetClipPlaybackState(bool playing)
+    {
+        _clipPreviewPlaying = playing;
+        PreviewPlayPauseButton.Content = playing ? "⏸" : "▶";
+        PreviewPlayPauseButton.ToolTip = playing ? "Pause clip preview" : "Play clip preview";
+    }
+
+    private static void UpdateMuteButton(Button button, bool isMuted)
+    {
+        button.Content = isMuted ? "🔇" : "🔊";
+        button.ToolTip = isMuted ? "Muted — click for sound" : "Sound on — click to mute";
+    }
+
     private void PreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
     {
+        _previewTimer.Stop();
+        SetClipPlaybackState(false);
         MessageBox.Show(
             this,
             "Windows could not preview this codec. The file can still be cataloged and processed by FFmpeg.",
@@ -527,21 +566,29 @@ public partial class MainWindow : Window
             ProjectPreviewStatusText.Text = "Rendering layered project preview…";
             PreviewTabs.SelectedItem = ProjectPreviewTab;
             ProjectPreviewPlayer.Stop();
+            _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
             ProjectPreviewPlayer.Source = null;
-            var result = await _viewModel.RenderProjectPreviewAsync();
-            if (_viewModel.Timeline.HasRangeSelection &&
-                (_viewModel.Timeline.Playhead < _viewModel.Timeline.RangeStart ||
-                 _viewModel.Timeline.Playhead >= _viewModel.Timeline.RangeEnd))
-            {
-                _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeStart);
-            }
+            var rangeStart = _viewModel.Timeline.HasRangeSelection
+                ? _viewModel.Timeline.RangeStart
+                : (TimeSpan?)null;
+            var rangeEnd = _viewModel.Timeline.HasRangeSelection
+                ? _viewModel.Timeline.RangeEnd
+                : (TimeSpan?)null;
+            var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd);
+            _projectPreviewTimelineOffset = rangeStart ?? TimeSpan.Zero;
+            _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + result.Duration;
+            _viewModel.Timeline.SetPlayhead(_projectPreviewTimelineOffset);
 
             ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
             ProjectPreviewPlayer.IsMuted = true;
-            ProjectPreviewMuteButton.Content = "Unmute";
-            ProjectPreviewStatusText.Text = "Preview ready — muted by default";
+            UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
+            ProjectPreviewStatusText.Text = rangeStart.HasValue
+                ? $"Selected range rendered: {_viewModel.Timeline.RangeText}"
+                : "Full project preview ready";
             ProjectPreviewPlayer.Play();
             _projectPreviewTimer.Start();
+            SetProjectPlaybackState(true);
         }
         catch (OperationCanceledException)
         {
@@ -559,18 +606,23 @@ public partial class MainWindow : Window
             ? ProjectPreviewPlayer.NaturalDuration.TimeSpan
             : TimeSpan.Zero;
         ProjectPreviewSeekSlider.Maximum = Math.Max(0.001, duration.TotalSeconds);
-        ProjectPreviewDurationText.Text = FormatPreviewTime(duration);
-        SeekProjectPreview(_viewModel.Timeline.Playhead);
+        _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
+        ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
+        SeekProjectPreview(_projectPreviewTimelineOffset);
     }
 
     private void ProjectPreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)
     {
         _projectPreviewTimer.Stop();
-        SeekProjectPreview(TimeSpan.Zero);
+        SetProjectPlaybackState(false);
+        SeekProjectPreview(_projectPreviewTimelineOffset);
+        ProjectPreviewStatusText.Text = "Preview complete";
     }
 
     private void ProjectPreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
     {
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
         ProjectPreviewStatusText.Text = "Windows could not play the rendered preview codec.";
         MessageBox.Show(
             this,
@@ -580,23 +632,32 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
     }
 
-    private void ProjectPreviewPlay_Click(object sender, RoutedEventArgs e)
+    private void ProjectPreviewPlayPause_Click(object sender, RoutedEventArgs e)
     {
-        PrepareRangePlayback();
-        ProjectPreviewPlayer.Play();
-        _projectPreviewTimer.Start();
-    }
+        if (_projectPreviewPlaying)
+        {
+            ProjectPreviewPlayer.Pause();
+            _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
+        }
+        else if (ProjectPreviewPlayer.Source is not null)
+        {
+            var frame = TimeSpan.FromSeconds(1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond));
+            if (_viewModel.Timeline.Playhead >= _projectPreviewTimelineEnd - frame)
+            {
+                SeekProjectPreview(_projectPreviewTimelineOffset);
+            }
 
-    private void ProjectPreviewPause_Click(object sender, RoutedEventArgs e)
-    {
-        ProjectPreviewPlayer.Pause();
-        _projectPreviewTimer.Stop();
+            ProjectPreviewPlayer.Play();
+            _projectPreviewTimer.Start();
+            SetProjectPlaybackState(true);
+        }
     }
 
     private void ProjectPreviewMute_Click(object sender, RoutedEventArgs e)
     {
         ProjectPreviewPlayer.IsMuted = !ProjectPreviewPlayer.IsMuted;
-        ProjectPreviewMuteButton.Content = ProjectPreviewPlayer.IsMuted ? "Unmute" : "Mute";
+        UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
     }
 
     private void ProjectPreviewPreviousFrame_Click(object sender, RoutedEventArgs e) => StepProjectPreviewFrame(-1);
@@ -607,17 +668,8 @@ public partial class MainWindow : Window
     {
         ProjectPreviewPlayer.Pause();
         _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
         _viewModel.Timeline.StepFrame(direction);
-        if (_viewModel.Timeline.HasRangeSelection)
-        {
-            var clamped = _viewModel.Timeline.Playhead < _viewModel.Timeline.RangeStart
-                ? _viewModel.Timeline.RangeStart
-                : _viewModel.Timeline.Playhead > _viewModel.Timeline.RangeEnd
-                    ? _viewModel.Timeline.RangeEnd
-                    : _viewModel.Timeline.Playhead;
-            _viewModel.Timeline.SetPlayhead(clamped);
-        }
-
         SeekProjectPreview(_viewModel.Timeline.Playhead);
     }
 
@@ -629,37 +681,13 @@ public partial class MainWindow : Window
         }
 
         var position = ProjectPreviewPlayer.Position;
-        if (_viewModel.Timeline.HasRangeSelection && position >= _viewModel.Timeline.RangeEnd)
-        {
-            ProjectPreviewPlayer.Pause();
-            _projectPreviewTimer.Stop();
-            SeekProjectPreview(_viewModel.Timeline.RangeEnd);
-            ProjectPreviewStatusText.Text = "Selected range complete";
-            return;
-        }
-
+        var timelinePosition = _projectPreviewTimelineOffset + position;
         ProjectPreviewSeekSlider.Value = Math.Clamp(
             position.TotalSeconds,
             ProjectPreviewSeekSlider.Minimum,
             ProjectPreviewSeekSlider.Maximum);
-        ProjectPreviewPositionText.Text = FormatPreviewTime(position);
-        _viewModel.Timeline.SetPlayhead(position);
-    }
-
-    private void PrepareRangePlayback()
-    {
-        if (!_viewModel.Timeline.HasRangeSelection)
-        {
-            return;
-        }
-
-        var playhead = _viewModel.Timeline.Playhead;
-        if (playhead < _viewModel.Timeline.RangeStart || playhead >= _viewModel.Timeline.RangeEnd)
-        {
-            SeekProjectPreview(_viewModel.Timeline.RangeStart);
-        }
-
-        ProjectPreviewStatusText.Text = $"Playing selected range: {_viewModel.Timeline.RangeText}";
+        ProjectPreviewPositionText.Text = FormatPreviewTime(timelinePosition);
+        _viewModel.Timeline.SetPlayhead(timelinePosition);
     }
 
     private void ProjectPreviewSeekSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
@@ -668,17 +696,27 @@ public partial class MainWindow : Window
     private void ProjectPreviewSeekSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _projectPreviewSeekDragging = false;
-        SeekProjectPreview(TimeSpan.FromSeconds(ProjectPreviewSeekSlider.Value));
+        SeekProjectPreview(
+            _projectPreviewTimelineOffset + TimeSpan.FromSeconds(ProjectPreviewSeekSlider.Value));
     }
 
     private void SeekProjectPreview(TimeSpan position)
     {
         var maximum = TimeSpan.FromSeconds(ProjectPreviewSeekSlider.Maximum);
-        var clamped = position < TimeSpan.Zero ? TimeSpan.Zero : position > maximum ? maximum : position;
-        ProjectPreviewPlayer.Position = clamped;
-        ProjectPreviewSeekSlider.Value = clamped.TotalSeconds;
-        ProjectPreviewPositionText.Text = FormatPreviewTime(clamped);
-        _viewModel.Timeline.SetPlayhead(clamped);
+        var local = position - _projectPreviewTimelineOffset;
+        var clampedLocal = local < TimeSpan.Zero ? TimeSpan.Zero : local > maximum ? maximum : local;
+        var timelinePosition = _projectPreviewTimelineOffset + clampedLocal;
+        ProjectPreviewPlayer.Position = clampedLocal;
+        ProjectPreviewSeekSlider.Value = clampedLocal.TotalSeconds;
+        ProjectPreviewPositionText.Text = FormatPreviewTime(timelinePosition);
+        _viewModel.Timeline.SetPlayhead(timelinePosition);
+    }
+
+    private void SetProjectPlaybackState(bool playing)
+    {
+        _projectPreviewPlaying = playing;
+        ProjectPreviewPlayPauseButton.Content = playing ? "⏸" : "▶";
+        ProjectPreviewPlayPauseButton.ToolTip = playing ? "Pause project preview" : "Play project preview";
     }
 
     private void OpenSource_Click(object sender, RoutedEventArgs e)
@@ -791,6 +829,20 @@ public partial class MainWindow : Window
         if (sender is ListBox { SelectedItem: ProjectLayerRowViewModel row })
         {
             _viewModel.SelectedProjectLayer = row;
+            if (row.Item is not null)
+            {
+                _viewModel.SelectTimelineItem(row.Item.Id);
+            }
+        }
+    }
+
+    private void ProjectLayerList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject) is not null &&
+            sender is ListBox { SelectedItem: ProjectLayerRowViewModel { Item: not null } })
+        {
+            EditLayer_Click(sender, e);
+            e.Handled = true;
         }
     }
 
@@ -822,6 +874,12 @@ public partial class MainWindow : Window
     {
         SelectLayerCommandTarget(sender);
         _viewModel.RemoveSelectedLayerItem();
+    }
+
+    private void AddClipEffectContext_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        AddPluginEffect_Click(sender, e);
     }
 
     private void ColorCode_Click(object sender, RoutedEventArgs e)
@@ -862,6 +920,7 @@ public partial class MainWindow : Window
 
     private void AddPluginEffect_Click(object sender, RoutedEventArgs e)
     {
+        var selectedItem = _viewModel.SelectedProjectLayer?.Item;
         var track = _viewModel.SelectedProjectLayer?.Track;
         if (track is null || track.Kind is not (ProjectTrackKind.Background or ProjectTrackKind.Effects))
         {
@@ -880,7 +939,9 @@ public partial class MainWindow : Window
             track,
             _viewModel.Timeline.Duration,
             _viewModel.Timeline.SnapMode,
-            _viewModel.Timeline.FramesPerSecond)
+            _viewModel.Timeline.FramesPerSecond,
+            initialStart: selectedItem?.Start,
+            initialDuration: selectedItem?.Duration)
         {
             Owner = this
         };
@@ -905,18 +966,46 @@ public partial class MainWindow : Window
 
     private void ClipEffects_Click(object sender, RoutedEventArgs e)
     {
+        var row = _viewModel.SelectedProjectLayer;
+        if (row?.Item is { Kind: ProjectItemKind.Video or ProjectItemKind.StillImage } item)
+        {
+            if (_viewModel.Timeline.Select(item.Id) && _viewModel.Timeline.SelectedClip is not null)
+            {
+                EditTimelineClipTransform(_viewModel.Timeline.SelectedClip);
+            }
+            else
+            {
+                var layerDialog = new ClipEffectsWindow(item) { Owner = this };
+                if (layerDialog.ShowDialog() == true)
+                {
+                    _viewModel.UpdateSelectedLayerClipEffects(
+                        layerDialog.FitMode,
+                        layerDialog.FadeInSeconds,
+                        layerDialog.FadeOutSeconds,
+                        layerDialog.Volume);
+                }
+            }
+
+            return;
+        }
+
         if (_viewModel.Timeline.SelectedClip is null)
         {
             MessageBox.Show(
                 this,
-                "Select a video or still screen on the main timeline first.",
+                "Select a video or still screen in Used Clips or on the main timeline first.",
                 "No selected clip",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
         }
 
-        var dialog = new ClipEffectsWindow(_viewModel.Timeline.SelectedClip) { Owner = this };
+        EditTimelineClipTransform(_viewModel.Timeline.SelectedClip);
+    }
+
+    private void EditTimelineClipTransform(TimelineClipViewModel clip)
+    {
+        var dialog = new ClipEffectsWindow(clip) { Owner = this };
         if (dialog.ShowDialog() == true)
         {
             _viewModel.UpdateSelectedClipEffects(
@@ -937,22 +1026,7 @@ public partial class MainWindow : Window
 
         if (row.Track.Kind == ProjectTrackKind.Video)
         {
-            if (_viewModel.Timeline.Select(row.Item.Id))
-            {
-                ClipEffects_Click(sender, e);
-                return;
-            }
-
-            var layerClipDialog = new ClipEffectsWindow(row.Item) { Owner = this };
-            if (layerClipDialog.ShowDialog() == true)
-            {
-                _viewModel.UpdateSelectedLayerClipEffects(
-                    layerClipDialog.FitMode,
-                    layerClipDialog.FadeInSeconds,
-                    layerClipDialog.FadeOutSeconds,
-                    layerClipDialog.Volume);
-            }
-
+            ClipEffects_Click(sender, e);
             return;
         }
 
@@ -1105,6 +1179,43 @@ public partial class MainWindow : Window
     private void TimelineSnapMode_Click(object sender, RoutedEventArgs e) =>
         _viewModel.CycleTimelineSnapMode();
 
+    private void MarkRangeStart_Click(object sender, RoutedEventArgs e)
+    {
+        var playhead = _viewModel.Timeline.Playhead;
+        var increment = Math.Max(
+            1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond),
+            _viewModel.Timeline.SnapIncrement);
+        var maximum = Math.Max(
+            _viewModel.Timeline.TargetDuration.TotalSeconds,
+            _viewModel.Timeline.Duration.TotalSeconds);
+        var end = _viewModel.Timeline.HasRangeSelection && _viewModel.Timeline.RangeEnd > playhead
+            ? _viewModel.Timeline.RangeEnd
+            : TimeSpan.FromSeconds(Math.Min(maximum, playhead.TotalSeconds + increment));
+        var start = end > playhead
+            ? playhead
+            : TimeSpan.FromSeconds(Math.Max(0, end.TotalSeconds - increment));
+        _viewModel.Timeline.SetRangeSelection(start, end);
+        _viewModel.Timeline.SetPlayhead(start);
+        InvalidateProjectPreviewForRangeChange();
+    }
+
+    private void MarkRangeEnd_Click(object sender, RoutedEventArgs e)
+    {
+        var playhead = _viewModel.Timeline.Playhead;
+        var increment = Math.Max(
+            1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond),
+            _viewModel.Timeline.SnapIncrement);
+        var start = _viewModel.Timeline.HasRangeSelection && _viewModel.Timeline.RangeStart < playhead
+            ? _viewModel.Timeline.RangeStart
+            : TimeSpan.FromSeconds(Math.Max(0, playhead.TotalSeconds - increment));
+        var end = playhead > start
+            ? playhead
+            : start + TimeSpan.FromSeconds(increment);
+        _viewModel.Timeline.SetRangeSelection(start, end);
+        _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeEnd);
+        InvalidateProjectPreviewForRangeChange();
+    }
+
     private void TimelineRuler_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Border ruler)
@@ -1117,7 +1228,12 @@ public partial class MainWindow : Window
                                   Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         _timelineRangeClickAnchor = _viewModel.Timeline.Playhead;
         _timelineRangeAnchor = GetRulerPosition(ruler, e);
+        var hadRangeSelection = _viewModel.Timeline.HasRangeSelection;
         _viewModel.Timeline.ClearRangeSelection();
+        if (hadRangeSelection || _timelineRangeSelecting)
+        {
+            InvalidateProjectPreviewForRangeChange();
+        }
         ruler.CaptureMouse();
         SetPlayheadFromRuler(ruler, e, false);
         e.Handled = true;
@@ -1144,6 +1260,7 @@ public partial class MainWindow : Window
                 _viewModel.Timeline.SetRangeSelection(
                     moved ? _timelineRangeAnchor : _timelineRangeClickAnchor,
                     position);
+                InvalidateProjectPreviewForRangeChange();
             }
 
             SetPlayheadFromRuler(ruler, e, false);
@@ -1166,6 +1283,7 @@ public partial class MainWindow : Window
         if (updateRange)
         {
             _viewModel.Timeline.SetRangeSelection(_timelineRangeAnchor, position);
+            InvalidateProjectPreviewForRangeChange();
         }
 
         _viewModel.Timeline.SetPlayhead(position);
@@ -1173,8 +1291,82 @@ public partial class MainWindow : Window
         {
             ProjectPreviewPlayer.Pause();
             _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
             SeekProjectPreview(_viewModel.Timeline.Playhead);
         }
+    }
+
+    private void TimelineRangeHandle_DragStarted(object sender, DragStartedEventArgs e)
+    {
+        if (sender is not Thumb thumb || !_viewModel.Timeline.HasRangeSelection)
+        {
+            return;
+        }
+
+        _rangeHandleMovesStart = string.Equals(thumb.Tag as string, "Start", StringComparison.Ordinal);
+        _rangeHandleStartAnchor = _viewModel.Timeline.RangeStart;
+        _rangeHandleEndAnchor = _viewModel.Timeline.RangeEnd;
+        _rangeHandleDragPixels = 0;
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+    }
+
+    private void TimelineRangeHandle_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        _rangeHandleDragPixels += e.HorizontalChange;
+        var deltaSeconds = _rangeHandleDragPixels / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond);
+        var frameSeconds = 1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond);
+        if (_rangeHandleMovesStart)
+        {
+            var maximumStart = _rangeHandleEndAnchor.TotalSeconds - frameSeconds;
+            var candidate = Math.Clamp(
+                _rangeHandleStartAnchor.TotalSeconds + deltaSeconds,
+                0,
+                Math.Max(0, maximumStart));
+            _viewModel.Timeline.SetRangeSelection(TimeSpan.FromSeconds(candidate), _rangeHandleEndAnchor);
+            _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeStart);
+        }
+        else
+        {
+            var maximum = Math.Max(
+                _viewModel.Timeline.TargetDuration.TotalSeconds,
+                _viewModel.Timeline.Duration.TotalSeconds);
+            var minimumEnd = _rangeHandleStartAnchor.TotalSeconds + frameSeconds;
+            var candidate = Math.Clamp(
+                _rangeHandleEndAnchor.TotalSeconds + deltaSeconds,
+                Math.Min(maximum, minimumEnd),
+                maximum);
+            _viewModel.Timeline.SetRangeSelection(_rangeHandleStartAnchor, TimeSpan.FromSeconds(candidate));
+            _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeEnd);
+        }
+
+        InvalidateProjectPreviewForRangeChange();
+    }
+
+    private void TimelineRangeHandle_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        ProjectPreviewStatusText.Text = $"Range selected: {_viewModel.Timeline.RangeText}. Render preview to update.";
+    }
+
+    private void InvalidateProjectPreviewForRangeChange()
+    {
+        ProjectPreviewPlayer.Stop();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        ProjectPreviewPlayer.Source = null;
+        _projectPreviewTimelineOffset = TimeSpan.Zero;
+        _projectPreviewTimelineEnd = TimeSpan.Zero;
+        ProjectPreviewSeekSlider.Value = 0;
+        ProjectPreviewPositionText.Text = _viewModel.Timeline.HasRangeSelection
+            ? FormatPreviewTime(_viewModel.Timeline.RangeStart)
+            : "0:00";
+        ProjectPreviewDurationText.Text = _viewModel.Timeline.HasRangeSelection
+            ? FormatPreviewTime(_viewModel.Timeline.RangeEnd)
+            : "0:00";
+        ProjectPreviewStatusText.Text = _viewModel.Timeline.HasRangeSelection
+            ? $"Range selected: {_viewModel.Timeline.RangeText}. Render preview to update."
+            : "Range cleared. Render preview to update.";
     }
 
     private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e) =>
@@ -1196,7 +1388,7 @@ public partial class MainWindow : Window
             {
                 _viewModel.SelectCatalogMedia(item.SourcePath);
                 PreviewTabs.SelectedItem = ClipPreviewTab;
-                LoadClipPreview(item.SourcePath);
+                LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
                 _timelineDragItem = null;
                 e.Handled = true;
             }

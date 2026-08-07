@@ -11,6 +11,8 @@ public partial class SplashWindow : Window
     public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(5);
 
     private readonly Stopwatch _displayTimer = Stopwatch.StartNew();
+    private Task _reportQueue = Task.CompletedTask;
+    private DateTime? _lastReportUtc;
 
     public SplashWindow(bool canCancel = false)
     {
@@ -32,6 +34,36 @@ public partial class SplashWindow : Window
         {
             await Task.Delay(remaining);
         }
+    }
+
+    public void QueueReport(StartupProgress update, bool paceFastMessages)
+    {
+        if (!paceFastMessages)
+        {
+            Report(update);
+            return;
+        }
+
+        _reportQueue = ReportPacedAsync(_reportQueue, update);
+    }
+
+    public Task WaitForPendingReportsAsync() => _reportQueue;
+
+    private async Task ReportPacedAsync(Task precedingReport, StartupProgress update)
+    {
+        await precedingReport;
+        if (_lastReportUtc.HasValue)
+        {
+            var targetGap = TimeSpan.FromMilliseconds(Random.Shared.Next(500, 751));
+            var remaining = targetGap - (DateTime.UtcNow - _lastReportUtc.Value);
+            if (remaining > TimeSpan.Zero)
+            {
+                await Task.Delay(remaining);
+            }
+        }
+
+        Report(update);
+        _lastReportUtc = DateTime.UtcNow;
     }
 
     public void Report(StartupProgress update)

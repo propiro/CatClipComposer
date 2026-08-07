@@ -23,7 +23,8 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         var operationId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
         var temporaryOutputPath = CreateTemporaryOutputPath(request.OutputPath, operationId);
         IReadOnlyDictionary<int, string> timedTextPaths = new Dictionary<int, string>();
-        var totalDuration = TimeSpan.FromTicks(request.Segments.Sum(segment => segment.Duration.Ticks));
+        var totalDuration = request.OutputRangeDuration ??
+                            TimeSpan.FromTicks(request.Segments.Sum(segment => segment.Duration.Ticks));
         var (fallbackWidth, fallbackHeight) = request.Orientation == OutputOrientation.Portrait
             ? (1080, 1920)
             : (1920, 1080);
@@ -95,6 +96,17 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         {
             throw new InvalidOperationException(
                 $"A timeline source is missing or has no duration: {invalidSegment.SourcePath}");
+        }
+
+        var compositionDuration = TimeSpan.FromTicks(request.Segments.Sum(segment => segment.Duration.Ticks));
+        if (request.OutputRangeStart.HasValue != request.OutputRangeDuration.HasValue ||
+            request.OutputRangeStart < TimeSpan.Zero ||
+            request.OutputRangeDuration <= TimeSpan.Zero ||
+            request.OutputRangeStart + request.OutputRangeDuration > compositionDuration)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                "An output range requires a non-negative start and positive duration inside the composition.");
         }
 
         if (request.FramesPerSecond is < 1 or > 240 || !double.IsFinite(request.FramesPerSecond))

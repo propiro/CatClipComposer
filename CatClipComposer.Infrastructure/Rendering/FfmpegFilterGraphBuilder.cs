@@ -99,8 +99,22 @@ internal static class FfmpegFilterGraphBuilder
             ref stage,
             PluginRenderStage.Overlay);
 
-        graph.Append(CultureInfo.InvariantCulture, $"[{currentLabel}]null[outv];");
-        AddMixedAudio(graph, request, nextInputIndex);
+        if (request.OutputRangeStart.HasValue && request.OutputRangeDuration.HasValue)
+        {
+            var start = FormatSeconds(request.OutputRangeStart.Value);
+            var duration = FormatSeconds(request.OutputRangeDuration.Value);
+            graph.Append(CultureInfo.InvariantCulture,
+                $"[{currentLabel}]trim=start={start}:duration={duration},setpts=PTS-STARTPTS[outv];");
+            AddMixedAudio(graph, request, nextInputIndex, "mixeda");
+            graph.Append(CultureInfo.InvariantCulture,
+                $";[mixeda]atrim=start={start}:duration={duration},asetpts=PTS-STARTPTS[outa]");
+        }
+        else
+        {
+            graph.Append(CultureInfo.InvariantCulture, $"[{currentLabel}]null[outv];");
+            AddMixedAudio(graph, request, nextInputIndex, "outa");
+        }
+
         return graph.ToString();
     }
 
@@ -411,12 +425,13 @@ internal static class FfmpegFilterGraphBuilder
     private static void AddMixedAudio(
         StringBuilder graph,
         RenderRequest request,
-        int firstAudioInputIndex)
+        int firstAudioInputIndex,
+        string outputLabel)
     {
         var layers = request.AudioLayers ?? [];
         if (layers.Count == 0)
         {
-            graph.Append("[joineda]anull[outa]");
+            graph.Append(CultureInfo.InvariantCulture, $"[joineda]anull[{outputLabel}]");
             return;
         }
 
@@ -446,7 +461,7 @@ internal static class FfmpegFilterGraphBuilder
         }
 
         graph.Append(CultureInfo.InvariantCulture,
-            $"amix=inputs={layers.Count + 1}:duration=first:dropout_transition=2:normalize=0[outa]");
+            $"amix=inputs={layers.Count + 1}:duration=first:dropout_transition=2:normalize=0[{outputLabel}]");
     }
 
     private static string CreateEnable(TimeSpan? start, TimeSpan? duration) =>

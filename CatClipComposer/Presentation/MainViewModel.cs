@@ -393,7 +393,9 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public async Task<RenderResult> RenderProjectPreviewAsync()
+    public async Task<RenderResult> RenderProjectPreviewAsync(
+        TimeSpan? rangeStart = null,
+        TimeSpan? rangeEnd = null)
     {
         if (IsBusy)
         {
@@ -405,6 +407,27 @@ public sealed class MainViewModel : ObservableObject
         if (renderPlan.Segments.Count == 0)
         {
             throw new InvalidOperationException("Add at least one clip to a video timeline before previewing the project.");
+        }
+
+        var compositionDuration = TimeSpan.FromTicks(renderPlan.Segments.Sum(segment => segment.Duration.Ticks));
+        TimeSpan? outputRangeStart = null;
+        TimeSpan? outputRangeDuration = null;
+        if (rangeStart.HasValue || rangeEnd.HasValue)
+        {
+            if (!rangeStart.HasValue || !rangeEnd.HasValue)
+            {
+                throw new ArgumentException("A preview range requires both start and end times.");
+            }
+
+            var start = rangeStart.Value < TimeSpan.Zero ? TimeSpan.Zero : rangeStart.Value;
+            var end = rangeEnd.Value > compositionDuration ? compositionDuration : rangeEnd.Value;
+            if (end <= start)
+            {
+                throw new InvalidOperationException("The selected range does not contain rendered project content.");
+            }
+
+            outputRangeStart = start;
+            outputRangeDuration = end - start;
         }
 
         var previewFolder = Path.Combine(_settings.MetadataFolder, "project-previews");
@@ -430,7 +453,9 @@ public sealed class MainViewModel : ObservableObject
                     renderPlan,
                     outputPath,
                     orientation,
-                    VideoEncoderPreset.WindowsMediaFoundationH264),
+                    VideoEncoderPreset.WindowsMediaFoundationH264,
+                    outputRangeStart,
+                    outputRangeDuration),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -888,8 +913,9 @@ public sealed class MainViewModel : ObservableObject
             if (!Timeline.Select(itemId))
             {
                 Timeline.SelectedClip = null;
-                SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
             }
+
+            SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
         }
         finally
         {
@@ -1265,7 +1291,9 @@ public sealed class MainViewModel : ObservableObject
         ProjectRenderPlan renderPlan,
         string outputPath,
         OutputOrientation orientation,
-        VideoEncoderPreset? videoEncoderOverride = null) => new(
+        VideoEncoderPreset? videoEncoderOverride = null,
+        TimeSpan? outputRangeStart = null,
+        TimeSpan? outputRangeDuration = null) => new(
         renderPlan.Segments,
         outputPath,
         orientation,
@@ -1281,7 +1309,9 @@ public sealed class MainViewModel : ObservableObject
         BackgroundColor: _project.BackgroundColor,
         TimedOverlays: renderPlan.TimedOverlays,
         AudioLayers: renderPlan.AudioLayers,
-        PluginEffects: renderPlan.PluginEffects);
+        PluginEffects: renderPlan.PluginEffects,
+        OutputRangeStart: outputRangeStart,
+        OutputRangeDuration: outputRangeDuration);
 
     private static void EnsureProjectTracks(EditorProject project)
     {

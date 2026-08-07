@@ -316,3 +316,18 @@ This is an append-only record of material project work. Newest entries go first.
   and remained alive beyond the five-second splash.
 - Released the startup correction as visible application/component version 0.1.10.
 - Commit: recorded by the commit containing this entry.
+
+## 2026-08-07 — Range-only preview and editor transport pass
+
+- Moved the render action into the center-bottom of Project Preview and retained a stronger accent than its
+  transport controls.
+- Consolidated both preview transports into stateful play/pause and speaker/muted-speaker buttons; added an
+  Autoplay clips checkbox for timeline Video-block double-clicks.
+- Added optional final video/audio range trimming to the shared renderer. WPF keeps the original timeline
+  offset while the temporary file uses zero-based timestamps.
+- Added draggable range boundary handles plus Mark start/end actions and stale-preview invalidation.
+- Made Used Clips selection synchronize to timeline blocks, exposed Transform / FX by button, double-click,
+  and context action, and prefilled new plugin effects from the selected item's start/duration.
+- Paced only fast startup log lines by 500–750 ms; configured startup rescans and manual refreshes remain live.
+- Released the work as visible application/component version 0.1.11.
+- Commit: recorded by the commit containing this entry.

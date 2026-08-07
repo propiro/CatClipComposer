@@ -565,3 +565,27 @@ Verification: all 34 keys referenced across 15 XAML files resolve, the Release s
 warnings/errors, and a hidden startup smoke remained alive after the splash with a nonzero main-window handle.
 The smoke loaded an existing dirty recovery project, so its hidden close request correctly waited on the
 unsaved-project dialog; the isolated test process was then terminated. Dependencies did not change.
+
+## AUDIT-2026-08-07-009 — Range-only render and editor interaction audit
+
+Scope: requested splash pacing, preview transport/layout, selected-range rendering/editing, autoplay, and
+Used Clips transform/effect access.
+
+Findings and remediation:
+
+- Playback-only range stopping still rendered the entire composition and could not map a trimmed file back to
+  project time. `RenderRequest` now carries an optional bounded output range; the filter graph trims final video
+  and mixed audio together and resets timestamps, while WPF owns the global timeline offset.
+- Range state exposed geometry but not editable boundaries. Two themed thumbs now clamp independently to at
+  least one frame, and Mark start/end derive a valid interval from the playhead.
+- Used Clips selection did not always synchronize the primary timeline clip, and the Clip FX button could act
+  on stale selection. Selection now synchronizes by item ID; transform/effect entry points operate on the
+  selected row and plugin-effect timing inherits its interval.
+- Startup reports were emitted in a burst before the five-second hold. A paced queue fills only sub-500–750 ms
+  gaps on fast startup; known configured rescans bypass it entirely.
+
+Verification: Release solution builds passed with zero warnings/errors. A real three-source range crossing a
+concat boundary rendered exactly 10.000 seconds of H.264/AAC from project time 45–55 seconds, both streams
+started at zero, used constant 30 fps with no B-frames, decoded cleanly, and sampled coherently. A two-second
+full render also passed. Hidden UI Automation observed paced fast-startup log transitions and the updated XAML
+resource audit passed. Dependencies did not change, so a vulnerability audit was not required.

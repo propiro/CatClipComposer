@@ -102,6 +102,8 @@ public sealed class TimelineViewModel : ObservableObject
 
     public double RangeLeft => _rangeStart.TotalSeconds * PixelsPerSecond;
 
+    public double RangeEndLeft => _rangeEnd.TotalSeconds * PixelsPerSecond;
+
     public double RangeWidth => Math.Max(0, (_rangeEnd - _rangeStart).TotalSeconds * PixelsPerSecond);
 
     public string RangeText => HasRangeSelection
@@ -573,6 +575,7 @@ public sealed class TimelineViewModel : ObservableObject
         OnPropertyChanged(nameof(RangeStart));
         OnPropertyChanged(nameof(RangeEnd));
         OnPropertyChanged(nameof(RangeLeft));
+        OnPropertyChanged(nameof(RangeEndLeft));
         OnPropertyChanged(nameof(RangeWidth));
         OnPropertyChanged(nameof(RangeText));
     }
