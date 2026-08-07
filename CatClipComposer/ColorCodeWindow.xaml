@@ -1,0 +1,33 @@
+<Window x:Class="CatClipComposer.ColorCodeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Color code"
+        Width="390" Height="245" MinWidth="350" MinHeight="220"
+        ResizeMode="CanResize" WindowStartupLocation="CenterOwner">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock FontWeight="SemiBold" Text="Choose a track or clip color" />
+        <UniformGrid Grid.Row="1" Margin="0,10,0,8" Columns="6">
+            <Button Tag="#514A40" Height="30" Margin="2" Background="#514A40" Click="Preset_Click" ToolTip="Brown" />
+            <Button Tag="#564646" Height="30" Margin="2" Background="#564646" Click="Preset_Click" ToolTip="Red" />
+            <Button Tag="#4F4936" Height="30" Margin="2" Background="#4F4936" Click="Preset_Click" ToolTip="Ochre" />
+            <Button Tag="#3F4D40" Height="30" Margin="2" Background="#3F4D40" Click="Preset_Click" ToolTip="Green" />
+            <Button Tag="#49454F" Height="30" Margin="2" Background="#49454F" Click="Preset_Click" ToolTip="Violet" />
+            <Button Tag="#3E3E3C" Height="30" Margin="2" Background="#3E3E3C" Click="Preset_Click" ToolTip="Gray" />
+        </UniformGrid>
+        <TextBlock Grid.Row="2" Margin="0,3,0,4" Foreground="{StaticResource MutedTextBrush}"
+                   Text="Custom color (#RRGGBB), or leave blank for the default:" />
+        <TextBox x:Name="ColorTextBox" Grid.Row="3" VerticalAlignment="Top" />
+        <StackPanel Grid.Row="4" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button Click="Clear_Click" Content="Use default" />
+            <Button Margin="6,0,0,0" IsDefault="True" Click="Apply_Click" Content="Apply" />
+            <Button Margin="6,0,0,0" IsCancel="True" Content="Cancel" />
+        </StackPanel>
+    </Grid>
+</Window>

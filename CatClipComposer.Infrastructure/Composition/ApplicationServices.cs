@@ -9,5 +9,6 @@ public sealed record ApplicationServices(
     IProjectStore ProjectStore,
     IMediaCatalog Catalog,
     IMediaScanner Scanner,
+    IVideoRenderer VideoRenderer,
     ICompositionExporter CompositionExporter,
     IPluginCatalog Plugins);

@@ -37,6 +37,7 @@ public partial class App : Application
                 services.ProjectStore,
                 services.Catalog,
                 services.Scanner,
+                services.VideoRenderer,
                 services.CompositionExporter,
                 services.Plugins);
             MainWindow = mainWindow;

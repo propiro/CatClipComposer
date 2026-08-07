@@ -140,9 +140,11 @@ public sealed class JsonProjectStore : IProjectStore
         var legacyBlurItems = new List<ProjectTimelineItem>();
         foreach (var track in project.Tracks)
         {
+            track.Color = NormalizeOptionalColor(track.Color);
             track.Items ??= [];
             foreach (var item in track.Items)
             {
+                item.Color = NormalizeOptionalColor(item.Color);
                 item.FontFamily = string.IsNullOrWhiteSpace(item.FontFamily)
                     ? "Segoe UI"
                     : item.FontFamily.Trim();
@@ -198,4 +200,7 @@ public sealed class JsonProjectStore : IProjectStore
 
     private static bool IsHexColor(string? value) =>
         value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
+
+    private static string NormalizeOptionalColor(string? value) =>
+        IsHexColor(value) ? value!.ToUpperInvariant() : string.Empty;
 }

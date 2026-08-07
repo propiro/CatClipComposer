@@ -13,6 +13,7 @@ public sealed class TimelineLaneViewModel
     {
         TrackId = track.Id;
         TrackKind = track.Kind;
+        TrackColor = string.IsNullOrWhiteSpace(track.Color) ? "#1A1A18" : track.Color;
         Name = track.Name.ToUpperInvariant();
         ShortName = track.Kind switch
         {
@@ -29,6 +30,8 @@ public sealed class TimelineLaneViewModel
     public ProjectTrackKind TrackKind { get; }
 
     public Guid TrackId { get; }
+
+    public string TrackColor { get; }
 
     public string Name { get; }
 
@@ -60,14 +63,18 @@ public sealed class TimelineLaneItemViewModel
         IsSelected = isSelected;
         TrackId = track.Id;
         ShowClipActions = IsVideo && isSelected;
-        Background = track.Kind switch
-        {
-            ProjectTrackKind.Video => "#332F29",
-            ProjectTrackKind.Overlay => "#342F32",
-            ProjectTrackKind.Audio => "#2D332D",
-            ProjectTrackKind.Progress => "#39352A",
-            _ => "#302F2C"
-        };
+        Background = !string.IsNullOrWhiteSpace(item.Color)
+            ? item.Color
+            : !string.IsNullOrWhiteSpace(track.Color)
+                ? track.Color
+                : track.Kind switch
+                {
+                    ProjectTrackKind.Video => "#332F29",
+                    ProjectTrackKind.Overlay => "#342F32",
+                    ProjectTrackKind.Audio => "#2D332D",
+                    ProjectTrackKind.Progress => "#39352A",
+                    _ => "#302F2C"
+                };
     }
 
     public Guid Id { get; }

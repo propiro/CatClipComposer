@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.6**.
+Current application and component version: **0.1.7**.
 
 ## Documentation
 
@@ -25,8 +25,10 @@ Current application and component version: **0.1.6**.
 - Scan MP4, WebM, AVI, MOV, MKV, and M4V files, including optional subfolder scanning.
 - Store clip metadata and export history in a durable SQLite database.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
-- Search names, paths, and editable tags in selectable, recycled catalog rows without opening every video.
-- Preview a selected clip through the Windows media stack with muted-by-default transport, seek, mute, and volume controls, plus a codec-independent contact sheet.
+- Search names, paths, and editable tags in a multi-select recycled thumbnail grid without opening every video;
+  single or mass tag edits are available from its context menu.
+- Preview a selected library clip in Clip Preview, or use the top PREVIEW action to render all enabled
+  project layers into a temporary Project Preview with seeking and frame stepping; neither action records an export.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
@@ -40,8 +42,8 @@ Current application and component version: **0.1.6**.
 - Create, save, reopen, and automatically recover versioned `.nya` project timelines.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
-- Add and remove named timelines, edit six default timeline types, Ctrl-select and drag blocks, snap to
-  ruler intervals or neighboring block edges, and fit the timeline horizontally or vertically.
+- Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
+  composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, and fit controls are available.
 - Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
   keeping the timeline available, and drag thumbnail cards onto a chosen Video timeline.
 - Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly
@@ -49,7 +51,7 @@ Current application and component version: **0.1.6**.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
   with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
-- See a Mr Cat startup/rescan splash with progress and diagnostic output while library work is running.
+- See a Mr Cat startup/rescan splash for at least five seconds with progress and diagnostic output while library work is running.
 
 ## Requirements
 

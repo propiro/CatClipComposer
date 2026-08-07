@@ -39,8 +39,11 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
     {
         var owner = ItemsControl.GetItemsOwner(this);
         var itemCount = owner?.Items.Count ?? 0;
+        var availableViewportWidth = Math.Max(
+            ActualWidth,
+            Math.Max(ScrollOwner?.ViewportWidth ?? 0, (VisualTreeHelper.GetParent(this) as FrameworkElement)?.ActualWidth ?? 0));
         var viewportWidth = double.IsInfinity(availableSize.Width)
-            ? Math.Max(ItemWidth, ActualWidth)
+            ? Math.Max(ItemWidth, availableViewportWidth)
             : availableSize.Width;
         var viewportHeight = double.IsInfinity(availableSize.Height)
             ? ItemHeight

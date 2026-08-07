@@ -489,3 +489,24 @@ Initial finding: `SQLitePCLRaw.lib.e_sqlite3 2.1.6` was reported with high-sever
 Remediation: explicitly pinned `SQLitePCLRaw.bundle_e_sqlite3 2.1.12`, rebuilt, reran the application startup smoke test, and reran the audit.
 
 Result: zero known vulnerable packages from configured sources. `AUD-DEP-001` closed.
+
+## AUDIT-2026-08-07-005 — Preview, timeline stack, and close-safety audit
+
+Scope: latest browser, timeline, composition preview, persistence, theming, and shutdown requests.
+
+Findings:
+
+- The reported 0.1.5 window came from `publish\CatClipComposer`, while the preceding 0.1.6 package had been
+  placed in a differently named sibling folder. The publisher already defaults to the documented path; this
+  release explicitly replaces and verifies that exact folder.
+- Preview renders must not count as accepted projects. The new path calls `IVideoRenderer` rather than
+  `ICompositionExporter`, retaining identical project mapping while avoiding catalog history mutation.
+- The editor displays tracks top-to-bottom. The renderer now chooses the lowest visible Video track as its
+  base and applies visual tracks in reverse list order, giving the top row final compositing priority.
+- Dirty state is independent from recovery autosave. Normal save clears it; mutations set it; closing uses a
+  default-Yes three-way prompt and cannot continue after a failed or cancelled save.
+- Schema 4 only adds optional validated `#RRGGBB` color strings and remains an additive project migration.
+
+Verification: Release build, CLI/version and project-schema smokes, portable-publisher guards, exact output
+layout/version inspection, and `git diff --check` are recorded with the release commit. Dependencies did not
+change, so a new package vulnerability audit was not required.

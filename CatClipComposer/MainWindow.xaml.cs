@@ -1,4 +1,5 @@
 using System.IO;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -27,9 +28,15 @@ public partial class MainWindow : Window
     private WorkspacePanelKind? _expandedPanel;
     private WorkspacePanelKind _focusedPanel = WorkspacePanelKind.ContentBrowser;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    private readonly DispatcherTimer _projectPreviewTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private bool _previewSeekDragging;
+    private bool _projectPreviewSeekDragging;
+    private bool _timelinePlayheadDragging;
+    private bool _allowClose;
+    private bool _closeSaveInProgress;
 
     private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds);
+    private sealed record MediaDragData(IReadOnlyList<MediaCardViewModel> MediaFiles);
 
     public MainWindow(
         ApplicationSettings settings,
@@ -37,6 +44,7 @@ public partial class MainWindow : Window
         IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
+        IVideoRenderer videoRenderer,
         ICompositionExporter compositionExporter,
         IPluginCatalog plugins)
     {
@@ -49,6 +57,7 @@ public partial class MainWindow : Window
             projectStore,
             catalog,
             scanner,
+            videoRenderer,
             compositionExporter,
             plugins);
         _workspaceLayout = new WorkspaceLayoutController(
@@ -59,9 +68,11 @@ public partial class MainWindow : Window
         _workspaceLayout.Apply(settings);
         DataContext = _viewModel;
         _previewTimer.Tick += PreviewTimer_Tick;
+        _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
         Closed += (_, _) =>
         {
             _previewTimer.Stop();
+            _projectPreviewTimer.Stop();
             _viewModel.CancelOperation();
         };
     }
@@ -158,6 +169,11 @@ public partial class MainWindow : Window
 
     private async void SaveProject_Click(object sender, RoutedEventArgs e)
     {
+        await SaveProjectWithDialogAsync();
+    }
+
+    private async Task<bool> SaveProjectWithDialogAsync()
+    {
         var projectPath = _viewModel.ProjectFilePath;
         if (string.IsNullOrWhiteSpace(projectPath))
         {
@@ -174,7 +190,7 @@ public partial class MainWindow : Window
             };
             if (dialog.ShowDialog(this) != true)
             {
-                return;
+                return false;
             }
 
             projectPath = dialog.FileName;
@@ -183,10 +199,59 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.SaveProjectAsync(projectPath);
+            return true;
         }
         catch (Exception exception)
         {
             DesktopDialogs.ShowError(this, "Could not save the project.", exception);
+            return false;
+        }
+    }
+
+    private async void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (_allowClose || !_viewModel.IsDirty)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        if (_closeSaveInProgress)
+        {
+            return;
+        }
+
+        var choice = MessageBox.Show(
+            this,
+            "Save changes to the current project before closing?",
+            "Unsaved project changes",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Warning,
+            MessageBoxResult.Yes);
+        if (choice == MessageBoxResult.Cancel)
+        {
+            return;
+        }
+
+        if (choice == MessageBoxResult.No)
+        {
+            _allowClose = true;
+            Close();
+            return;
+        }
+
+        _closeSaveInProgress = true;
+        try
+        {
+            if (await SaveProjectWithDialogAsync())
+            {
+                _allowClose = true;
+                Close();
+            }
+        }
+        finally
+        {
+            _closeSaveInProgress = false;
         }
     }
 
@@ -305,15 +370,14 @@ public partial class MainWindow : Window
     private void CancelScan_Click(object sender, RoutedEventArgs e) => _viewModel.CancelOperation();
 
     private void CatalogListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
-        _viewModel.AddSelectedToTimeline();
+        AddSelectedCatalogItems();
 
     private void CatalogListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
         _catalogDragStart = e.GetPosition(CatalogListBox);
 
     private void CatalogListBox_PreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton != MouseButtonState.Pressed ||
-            _viewModel.SelectedMedia is null)
+        if (e.LeftButton != MouseButtonState.Pressed || CatalogListBox.SelectedItems.Count == 0)
         {
             return;
         }
@@ -325,12 +389,30 @@ public partial class MainWindow : Window
             return;
         }
 
-        var data = new DataObject(typeof(MediaCardViewModel), _viewModel.SelectedMedia);
+        var selected = CatalogListBox.SelectedItems.Cast<MediaCardViewModel>().ToList();
+        var data = new DataObject(typeof(MediaDragData), new MediaDragData(selected));
         DragDrop.DoDragDrop(CatalogListBox, data, DragDropEffects.Copy);
+    }
+
+    private void CatalogListBox_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var item = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
+        if (item is not null && !item.IsSelected)
+        {
+            CatalogListBox.SelectedItems.Clear();
+            item.IsSelected = true;
+        }
     }
 
     private void CatalogListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (CatalogListBox.SelectedItems.Count > 0)
+        {
+            _viewModel.SelectedMedia = CatalogListBox.SelectedItems
+                .Cast<MediaCardViewModel>()
+                .Last();
+        }
+
         PreviewPlayer.Stop();
         PreviewPlayer.IsMuted = true;
         PreviewMuteButton.Content = "Unmute";
@@ -424,6 +506,129 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
     }
 
+    private async void ProjectPreview_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            ProjectPreviewStatusText.Text = "Rendering layered project preview…";
+            PreviewTabs.SelectedItem = ProjectPreviewTab;
+            ProjectPreviewPlayer.Stop();
+            ProjectPreviewPlayer.Source = null;
+            var result = await _viewModel.RenderProjectPreviewAsync();
+            ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
+            ProjectPreviewPlayer.IsMuted = true;
+            ProjectPreviewMuteButton.Content = "Unmute";
+            ProjectPreviewStatusText.Text = "Preview ready — muted by default";
+            ProjectPreviewPlayer.Play();
+            _projectPreviewTimer.Start();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            ProjectPreviewStatusText.Text = "Preview could not be rendered.";
+            DesktopDialogs.ShowError(this, "The project preview could not be rendered.", exception);
+        }
+    }
+
+    private void ProjectPreviewPlayer_MediaOpened(object sender, RoutedEventArgs e)
+    {
+        var duration = ProjectPreviewPlayer.NaturalDuration.HasTimeSpan
+            ? ProjectPreviewPlayer.NaturalDuration.TimeSpan
+            : TimeSpan.Zero;
+        ProjectPreviewSeekSlider.Maximum = Math.Max(0.001, duration.TotalSeconds);
+        ProjectPreviewDurationText.Text = FormatPreviewTime(duration);
+        SeekProjectPreview(_viewModel.Timeline.Playhead);
+    }
+
+    private void ProjectPreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)
+    {
+        _projectPreviewTimer.Stop();
+        SeekProjectPreview(TimeSpan.Zero);
+    }
+
+    private void ProjectPreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
+    {
+        ProjectPreviewStatusText.Text = "Windows could not play the rendered preview codec.";
+        MessageBox.Show(
+            this,
+            "The preview rendered, but Windows could not play its codec.",
+            "Project preview unavailable",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void ProjectPreviewPlay_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectPreviewPlayer.Play();
+        _projectPreviewTimer.Start();
+    }
+
+    private void ProjectPreviewPause_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+    }
+
+    private void ProjectPreviewMute_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectPreviewPlayer.IsMuted = !ProjectPreviewPlayer.IsMuted;
+        ProjectPreviewMuteButton.Content = ProjectPreviewPlayer.IsMuted ? "Unmute" : "Mute";
+    }
+
+    private void ProjectPreviewPreviousFrame_Click(object sender, RoutedEventArgs e) => StepProjectPreviewFrame(-1);
+
+    private void ProjectPreviewNextFrame_Click(object sender, RoutedEventArgs e) => StepProjectPreviewFrame(1);
+
+    private void StepProjectPreviewFrame(int direction)
+    {
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+        _viewModel.Timeline.StepFrame(direction);
+        SeekProjectPreview(_viewModel.Timeline.Playhead);
+    }
+
+    private void ProjectPreviewTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_projectPreviewSeekDragging)
+        {
+            return;
+        }
+
+        var position = ProjectPreviewPlayer.Position;
+        ProjectPreviewSeekSlider.Value = Math.Clamp(
+            position.TotalSeconds,
+            ProjectPreviewSeekSlider.Minimum,
+            ProjectPreviewSeekSlider.Maximum);
+        ProjectPreviewPositionText.Text = FormatPreviewTime(position);
+        _viewModel.Timeline.SetPlayhead(position);
+    }
+
+    private void ProjectPreviewSeekSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        _projectPreviewSeekDragging = true;
+
+    private void ProjectPreviewSeekSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _projectPreviewSeekDragging = false;
+        SeekProjectPreview(TimeSpan.FromSeconds(ProjectPreviewSeekSlider.Value));
+    }
+
+    private void SeekProjectPreview(TimeSpan position)
+    {
+        var maximum = TimeSpan.FromSeconds(ProjectPreviewSeekSlider.Maximum);
+        var clamped = position < TimeSpan.Zero ? TimeSpan.Zero : position > maximum ? maximum : position;
+        ProjectPreviewPlayer.Position = clamped;
+        ProjectPreviewSeekSlider.Value = clamped.TotalSeconds;
+        ProjectPreviewPositionText.Text = FormatPreviewTime(clamped);
+        _viewModel.Timeline.SetPlayhead(clamped);
+    }
+
     private void OpenSource_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SelectedMedia is null)
@@ -436,6 +641,47 @@ public partial class MainWindow : Window
 
     private void AddSelected_Click(object sender, RoutedEventArgs e) =>
         _viewModel.AddSelectedToTimeline();
+
+    private void AddSelectedCatalogItems_Click(object sender, RoutedEventArgs e) => AddSelectedCatalogItems();
+
+    private void AddSelectedCatalogItems()
+    {
+        var selected = CatalogListBox.SelectedItems.Cast<MediaCardViewModel>().ToList();
+        if (selected.Count == 0 && _viewModel.SelectedMedia is not null)
+        {
+            selected.Add(_viewModel.SelectedMedia);
+        }
+
+        _viewModel.AddMediaToTimeline(selected);
+    }
+
+    private async void EditSelectedTags_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = CatalogListBox.SelectedItems.Cast<MediaCardViewModel>().ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var distinctTags = selected.Select(media => media.Media.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var dialog = new BulkTagsWindow(selected.Count, distinctTags.Count == 1 ? distinctTags[0] : string.Empty)
+        {
+            Owner = this
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.UpdateTagsAsync(selected, dialog.Tags);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save clip tags.", exception);
+        }
+    }
 
     private void AddStillScreen_Click(object sender, RoutedEventArgs e)
     {
@@ -478,6 +724,88 @@ public partial class MainWindow : Window
         {
             _viewModel.AddTrack(dialog.ResultKind, dialog.ResultName);
         }
+    }
+
+    private void LayerHeader_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border { Tag: ProjectLayerRowViewModel row })
+        {
+            _viewModel.SelectedProjectLayer = row;
+        }
+    }
+
+    private void ProjectLayerList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ListBox { SelectedItem: ProjectLayerRowViewModel row })
+        {
+            _viewModel.SelectedProjectLayer = row;
+        }
+    }
+
+    private void TrackMoveUp_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        _viewModel.MoveSelectedTrack(-1);
+    }
+
+    private void TrackMoveDown_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        _viewModel.MoveSelectedTrack(1);
+    }
+
+    private void RemoveTrackContext_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        RemoveTrack_Click(sender, e);
+    }
+
+    private void EditLayerContext_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        EditLayer_Click(sender, e);
+    }
+
+    private void RemoveLayerContext_Click(object sender, RoutedEventArgs e)
+    {
+        SelectLayerCommandTarget(sender);
+        _viewModel.RemoveSelectedLayerItem();
+    }
+
+    private void ColorCode_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender) ?? _viewModel.SelectedProjectLayer;
+        if (row is null)
+        {
+            return;
+        }
+
+        var currentColor = row.Item?.Color ?? row.Track.Color;
+        var dialog = new ColorCodeWindow(currentColor) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        if (row.Item is null)
+        {
+            _viewModel.SetTrackColor(row.Track.Id, dialog.ResultColor);
+        }
+        else
+        {
+            _viewModel.SetItemColor(row.Item.Id, dialog.ResultColor);
+        }
+    }
+
+    private ProjectLayerRowViewModel? SelectLayerCommandTarget(object sender)
+    {
+        if (sender is MenuItem { CommandParameter: ProjectLayerRowViewModel row })
+        {
+            _viewModel.SelectedProjectLayer = row;
+            return row;
+        }
+
+        return _viewModel.SelectedProjectLayer;
     }
 
     private void AddPluginEffect_Click(object sender, RoutedEventArgs e)
@@ -725,6 +1053,52 @@ public partial class MainWindow : Window
     private void TimelineSnapMode_Click(object sender, RoutedEventArgs e) =>
         _viewModel.CycleTimelineSnapMode();
 
+    private void TimelineRuler_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border ruler)
+        {
+            return;
+        }
+
+        _timelinePlayheadDragging = true;
+        ruler.CaptureMouse();
+        SetPlayheadFromRuler(ruler, e);
+        e.Handled = true;
+    }
+
+    private void TimelineRuler_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_timelinePlayheadDragging && e.LeftButton == MouseButtonState.Pressed && sender is Border ruler)
+        {
+            SetPlayheadFromRuler(ruler, e);
+            e.Handled = true;
+        }
+    }
+
+    private void TimelineRuler_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border ruler && _timelinePlayheadDragging)
+        {
+            SetPlayheadFromRuler(ruler, e);
+            ruler.ReleaseMouseCapture();
+            _timelinePlayheadDragging = false;
+            e.Handled = true;
+        }
+    }
+
+    private void SetPlayheadFromRuler(Border ruler, MouseEventArgs e)
+    {
+        var x = Math.Clamp(e.GetPosition(ruler).X, 0, ruler.ActualWidth);
+        var position = TimeSpan.FromSeconds(x / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
+        _viewModel.Timeline.SetPlayhead(position);
+        if (ProjectPreviewPlayer.Source is not null)
+        {
+            ProjectPreviewPlayer.Pause();
+            _projectPreviewTimer.Stop();
+            SeekProjectPreview(_viewModel.Timeline.Playhead);
+        }
+    }
+
     private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e) =>
         _viewModel.FitTimelineHorizontally(Math.Max(100, TimelineDropSurface.ActualWidth - 76));
 
@@ -766,13 +1140,91 @@ public partial class MainWindow : Window
         DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move);
     }
 
+    private void TimelineTrackMoveUp_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTimelineTrack(sender);
+        _viewModel.MoveSelectedTrack(-1);
+    }
+
+    private void TimelineTrackMoveDown_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTimelineTrack(sender);
+        _viewModel.MoveSelectedTrack(1);
+    }
+
+    private void TimelineTrackColor_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTimelineTrack(sender);
+        ColorCode_Click(sender, e);
+    }
+
+    private void SelectTimelineTrack(object sender)
+    {
+        if (sender is not MenuItem { CommandParameter: TimelineLaneViewModel lane })
+        {
+            return;
+        }
+
+        _viewModel.SelectedProjectLayer = _viewModel.ProjectLayers
+            .FirstOrDefault(row => row.IsTrackHeader && row.Track.Id == lane.TrackId);
+    }
+
+    private void TimelineItemEdit_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is null)
+        {
+            return;
+        }
+
+        _viewModel.SelectedProjectLayer = _viewModel.ProjectLayers.FirstOrDefault(row => row.Item?.Id == item.Id);
+        EditLayer_Click(sender, e);
+    }
+
+    private void TimelineItemColor_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is null)
+        {
+            return;
+        }
+
+        var row = _viewModel.ProjectLayers.FirstOrDefault(candidate => candidate.Item?.Id == item.Id);
+        if (row is null)
+        {
+            return;
+        }
+
+        _viewModel.SelectedProjectLayer = row;
+        ColorCode_Click(sender, e);
+    }
+
+    private void TimelineItemRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectTimelineItem(sender) is not null)
+        {
+            _viewModel.RemoveSelectedTimelineItems();
+        }
+    }
+
+    private TimelineLaneItemViewModel? SelectTimelineItem(object sender)
+    {
+        if (sender is not MenuItem { CommandParameter: TimelineLaneItemViewModel item })
+        {
+            return null;
+        }
+
+        _viewModel.SelectTimelineItem(item.Id);
+        return item;
+    }
+
     private void TimelineLane_DragOver(object sender, DragEventArgs e)
     {
         if (sender is not Border { DataContext: TimelineLaneViewModel lane })
         {
             e.Effects = DragDropEffects.None;
         }
-        else if (e.Data.GetDataPresent(typeof(MediaCardViewModel)))
+        else if (e.Data.GetDataPresent(typeof(MediaDragData)) || e.Data.GetDataPresent(typeof(MediaCardViewModel)))
         {
             e.Effects = lane.TrackKind == ProjectTrackKind.Video
                 ? DragDropEffects.Copy
@@ -798,8 +1250,17 @@ public partial class MainWindow : Window
         var start = TimeSpan.FromSeconds(Math.Max(
             0,
             e.GetPosition(laneBorder).X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
-        if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media &&
+        if (e.Data.GetData(typeof(MediaDragData)) is MediaDragData mediaData &&
             lane.TrackKind == ProjectTrackKind.Video)
+        {
+            foreach (var media in mediaData.MediaFiles)
+            {
+                _viewModel.AddMediaToTrack(media, lane.TrackId, start);
+                start += media.Media.Duration;
+            }
+        }
+        else if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media &&
+                 lane.TrackKind == ProjectTrackKind.Video)
         {
             _viewModel.AddMediaToTrack(media, lane.TrackId, start);
         }
@@ -838,7 +1299,7 @@ public partial class MainWindow : Window
 
     private void TimelineListBox_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(typeof(MediaCardViewModel))
+        e.Effects = e.Data.GetDataPresent(typeof(MediaDragData)) || e.Data.GetDataPresent(typeof(MediaCardViewModel))
             ? DragDropEffects.Copy
             : DragDropEffects.None;
         e.Handled = true;
@@ -846,7 +1307,11 @@ public partial class MainWindow : Window
 
     private void TimelineListBox_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media)
+        if (e.Data.GetData(typeof(MediaDragData)) is MediaDragData mediaData)
+        {
+            _viewModel.AddMediaToTimeline(mediaData.MediaFiles);
+        }
+        else if (e.Data.GetData(typeof(MediaCardViewModel)) is MediaCardViewModel media)
         {
             _viewModel.AddMediaToTimeline(media);
         }
@@ -875,11 +1340,47 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_focusedPanel is WorkspacePanelKind.ContentBrowser or WorkspacePanelKind.Layers or WorkspacePanelKind.Timeline)
+        var panel = ResolveFocusedPanel(Keyboard.FocusedElement as DependencyObject) ?? _focusedPanel;
+        if (panel is WorkspacePanelKind.ContentBrowser or WorkspacePanelKind.Layers or WorkspacePanelKind.Timeline)
         {
-            TogglePanelExpansion(_focusedPanel);
+            TogglePanelExpansion(panel);
             e.Handled = true;
         }
+    }
+
+    private WorkspacePanelKind? ResolveFocusedPanel(DependencyObject? element)
+    {
+        if (IsDescendantOf(element, ContentBrowserPanel))
+        {
+            return WorkspacePanelKind.ContentBrowser;
+        }
+
+        if (IsDescendantOf(element, LayersPanel))
+        {
+            return WorkspacePanelKind.Layers;
+        }
+
+        if (IsDescendantOf(element, TimelinePanel))
+        {
+            return WorkspacePanelKind.Timeline;
+        }
+
+        return null;
+    }
+
+    private static bool IsDescendantOf(DependencyObject? element, DependencyObject ancestor)
+    {
+        while (element is not null)
+        {
+            if (ReferenceEquals(element, ancestor))
+            {
+                return true;
+            }
+
+            element = GetParent(element);
+        }
+
+        return false;
     }
 
     private void TogglePanelExpansion(WorkspacePanelKind panel)
@@ -905,17 +1406,37 @@ public partial class MainWindow : Window
                 return true;
             }
 
-            try
-            {
-                element = VisualTreeHelper.GetParent(element);
-            }
-            catch (InvalidOperationException)
-            {
-                element = LogicalTreeHelper.GetParent(element);
-            }
+            element = GetParent(element);
         }
 
         return false;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? element) where T : DependencyObject
+    {
+        while (element is not null)
+        {
+            if (element is T match)
+            {
+                return match;
+            }
+
+            element = GetParent(element);
+        }
+
+        return null;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject element)
+    {
+        try
+        {
+            return VisualTreeHelper.GetParent(element) ?? LogicalTreeHelper.GetParent(element);
+        }
+        catch (InvalidOperationException)
+        {
+            return LogicalTreeHelper.GetParent(element);
+        }
     }
 
     private void PanelDock_Click(object sender, RoutedEventArgs e)

@@ -45,6 +45,7 @@ public static class ApplicationServicesFactory
             projectStore,
             catalog,
             scanner,
+            videoRenderer,
             compositionExporter,
             plugins);
     }

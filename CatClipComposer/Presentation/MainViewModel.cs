@@ -15,6 +15,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IProjectStore _projectStore;
     private readonly IMediaCatalog _catalog;
     private readonly IMediaScanner _scanner;
+    private readonly IVideoRenderer _videoRenderer;
     private readonly ICompositionExporter _compositionExporter;
     private readonly IPluginCatalog _plugins;
     private CancellationTokenSource? _operationCancellation;
@@ -29,6 +30,8 @@ public sealed class MainViewModel : ObservableObject
     private EditorProject _project;
     private ProjectLayerRowViewModel? _selectedProjectLayer;
     private readonly HashSet<Guid> _selectedTimelineItemIds = [];
+    private readonly HashSet<Guid> _collapsedTrackIds = [];
+    private bool _isDirty;
 
     public MainViewModel(
         ApplicationSettings settings,
@@ -36,6 +39,7 @@ public sealed class MainViewModel : ObservableObject
         IProjectStore projectStore,
         IMediaCatalog catalog,
         IMediaScanner scanner,
+        IVideoRenderer videoRenderer,
         ICompositionExporter compositionExporter,
         IPluginCatalog plugins)
     {
@@ -44,6 +48,7 @@ public sealed class MainViewModel : ObservableObject
         _projectStore = projectStore;
         _catalog = catalog;
         _scanner = scanner;
+        _videoRenderer = videoRenderer;
         _compositionExporter = compositionExporter;
         _plugins = plugins;
         Timeline = new TimelineViewModel(15);
@@ -61,6 +66,8 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<MediaCardViewModel> MediaFiles { get; } = [];
 
     public ObservableCollection<ProjectLayerRowViewModel> ProjectLayers { get; } = [];
+
+    public ObservableCollection<ProjectTrackGroupViewModel> ProjectLayerGroups { get; } = [];
 
     public ObservableCollection<TimelineLaneViewModel> TimelineLanes { get; } = [];
 
@@ -83,6 +90,12 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<ICatClipPlugin> Plugins => _plugins.Plugins;
 
     public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
+
+    public bool IsDirty
+    {
+        get => _isDirty;
+        private set => SetProperty(ref _isDirty, value);
+    }
 
     public double TargetDurationMinutes => _project.TargetDurationMinutes;
 
@@ -185,6 +198,7 @@ public sealed class MainViewModel : ObservableObject
         if (recovery is not null)
         {
             ApplyProject(recovery);
+            IsDirty = true;
             StatusText = $"Recovered autosave: {recovery.Name}";
         }
 
@@ -217,6 +231,7 @@ public sealed class MainViewModel : ObservableObject
 
         await _projectStore.ClearRecoveryAsync(cancellationToken);
         await SaveRecoveryNowAsync(cancellationToken);
+        IsDirty = false;
         StatusText = "New project";
     }
 
@@ -227,6 +242,7 @@ public sealed class MainViewModel : ObservableObject
         var project = await _projectStore.LoadAsync(projectPath, cancellationToken);
         ApplyProject(project);
         await SaveRecoveryNowAsync(cancellationToken);
+        IsDirty = false;
         StatusText = $"Opened project: {project.Name}";
     }
 
@@ -248,6 +264,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ProjectFilePath));
         OnPropertyChanged(nameof(OutputSettings));
         OnPropertyChanged(nameof(ProjectSettingsSummary));
+        IsDirty = false;
         StatusText = $"Saved project: {_project.Name}";
     }
 
@@ -354,23 +371,7 @@ public sealed class MainViewModel : ObservableObject
                 StatusText = update.Message;
             });
             var result = await _compositionExporter.ExportAsync(
-                new RenderRequest(
-                    renderPlan.Segments,
-                    outputPath,
-                    orientation,
-                    _project.Output.VideoEncoder,
-                    _project.Output.FramesPerSecond,
-                    ProjectName: _project.Name,
-                    ProjectFilePath: _project.ProjectFilePath,
-                    OutputWidth: _project.Output.Width,
-                    OutputHeight: _project.Output.Height,
-                    QualityPercent: _project.Output.QualityPercent,
-                    VideoBitrateKbps: _project.Output.VideoBitrateKbps,
-                    AudioBitrateKbps: _project.Output.AudioBitrateKbps,
-                    BackgroundColor: _project.BackgroundColor,
-                    TimedOverlays: renderPlan.TimedOverlays,
-                    AudioLayers: renderPlan.AudioLayers,
-                    PluginEffects: renderPlan.PluginEffects),
+                CreateRenderRequest(renderPlan, outputPath, orientation),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -382,6 +383,75 @@ public sealed class MainViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             StatusText = "Export cancelled";
+            throw;
+        }
+        finally
+        {
+            IsBusy = false;
+            _operationCancellation.Dispose();
+            _operationCancellation = null;
+        }
+    }
+
+    public async Task<RenderResult> RenderProjectPreviewAsync()
+    {
+        if (IsBusy)
+        {
+            throw new InvalidOperationException("Another operation is already running.");
+        }
+
+        SynchronizeProjectFromTimeline();
+        var renderPlan = ProjectRenderMapper.Create(_project, _plugins);
+        if (renderPlan.Segments.Count == 0)
+        {
+            throw new InvalidOperationException("Add at least one clip to a video timeline before previewing the project.");
+        }
+
+        var previewFolder = Path.Combine(_settings.MetadataFolder, "project-previews");
+        Directory.CreateDirectory(previewFolder);
+        var outputPath = Path.Combine(previewFolder, $"{_project.Id:N}-{DateTime.UtcNow.Ticks}.mp4");
+        var orientation = _project.Output.Height > _project.Output.Width
+            ? OutputOrientation.Portrait
+            : OutputOrientation.Landscape;
+        _operationCancellation = new CancellationTokenSource();
+        IsBusy = true;
+        ScanProgress = 0;
+        StatusText = "Rendering project preview…";
+        try
+        {
+            await _projectStore.SaveRecoveryAsync(_project, _operationCancellation.Token);
+            var progress = new Progress<RenderProgress>(update =>
+            {
+                ScanProgress = update.Percent;
+                StatusText = $"Preview: {update.Message}";
+            });
+            var result = await _videoRenderer.RenderAsync(
+                CreateRenderRequest(renderPlan, outputPath, orientation),
+                _settings.FfmpegPath,
+                progress,
+                _operationCancellation.Token);
+            foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{_project.Id:N}-*.mp4")
+                         .Where(path => !path.Equals(outputPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    File.Delete(oldPreview);
+                }
+                catch (IOException)
+                {
+                    // Windows MediaElement may briefly retain the preceding preview file.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+            ScanProgress = 100;
+            StatusText = "Project preview ready";
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Preview cancelled";
             throw;
         }
         finally
@@ -410,6 +480,22 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Added {media.FileName} to timeline";
     }
 
+    public void AddMediaToTimeline(IEnumerable<MediaCardViewModel> mediaFiles)
+    {
+        var files = mediaFiles.DistinctBy(media => media.Media.Id).ToList();
+        foreach (var media in files)
+        {
+            Timeline.AddMedia(media.Media);
+        }
+
+        if (files.Count > 0)
+        {
+            StatusText = files.Count == 1
+                ? $"Added {files[0].FileName} to timeline"
+                : $"Added {files.Count} clips to timeline";
+        }
+    }
+
     public void AddMediaToTrack(MediaCardViewModel media, Guid trackId, TimeSpan start)
     {
         EnsureProjectTracks(_project);
@@ -421,7 +507,7 @@ public sealed class MainViewModel : ObservableObject
 
         var primary = _project.Tracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
+            .OrderByDescending(track => track.Order)
             .First();
         if (target.Id == primary.Id)
         {
@@ -440,7 +526,7 @@ public sealed class MainViewModel : ObservableObject
             HasAudio = media.Media.HasAudio
         };
         target.Items.Add(item);
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -466,6 +552,21 @@ public sealed class MainViewModel : ObservableObject
         await _catalog.UpdateTagsAsync(SelectedMedia.Media.Id, tags, cancellationToken);
         await LoadCatalogAsync(cancellationToken);
         StatusText = "Clip tags saved";
+    }
+
+    public async Task UpdateTagsAsync(
+        IEnumerable<MediaCardViewModel> mediaFiles,
+        string tags,
+        CancellationToken cancellationToken = default)
+    {
+        var files = mediaFiles.DistinctBy(media => media.Media.Id).ToList();
+        foreach (var media in files)
+        {
+            await _catalog.UpdateTagsAsync(media.Media.Id, tags, cancellationToken);
+        }
+
+        await LoadCatalogAsync(cancellationToken);
+        StatusText = files.Count == 1 ? "Clip tags saved" : $"Tags saved for {files.Count} clips";
     }
 
     public void UpdateSelectedClipEffects(
@@ -494,7 +595,7 @@ public sealed class MainViewModel : ObservableObject
         item.FadeInSeconds = fadeInSeconds;
         item.FadeOutSeconds = fadeOutSeconds;
         item.Volume = volume;
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers(item.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer clip effects updated";
@@ -510,7 +611,7 @@ public sealed class MainViewModel : ObservableObject
         item.StartTicks = Math.Max(0, item.StartTicks);
         item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
         track.Items.Add(item);
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -525,7 +626,7 @@ public sealed class MainViewModel : ObservableObject
         item.StartTicks = Math.Max(0, item.StartTicks);
         item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
         track.Items.Add(item);
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -535,14 +636,19 @@ public sealed class MainViewModel : ObservableObject
 
     public void AddTrack(ProjectTrackKind kind, string name)
     {
+        foreach (var existing in _project.Tracks)
+        {
+            existing.Order++;
+        }
+
         var track = new ProjectTrack
         {
             Name = name,
             Kind = kind,
-            Order = _project.Tracks.Count == 0 ? 0 : _project.Tracks.Max(item => item.Order) + 1
+            Order = 0
         };
         _project.Tracks.Add(track);
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers(trackId: track.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Added timeline: {track.Name}";
@@ -557,17 +663,89 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
+        SynchronizeProjectFromTimeline();
+        var previousPrimaryId = GetPrimaryVideoTrack().Id;
         _project.Tracks.Remove(row.Track);
         for (var index = 0; index < _project.Tracks.Count; index++)
         {
             _project.Tracks[index].Order = index;
         }
 
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
+        if (GetPrimaryVideoTrack().Id != previousPrimaryId)
+        {
+            LoadPrimaryTimeline();
+        }
         RefreshProjectLayers();
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Removed timeline: {row.Track.Name}";
         return true;
+    }
+
+    public bool MoveSelectedTrack(int offset)
+    {
+        var track = SelectedProjectLayer?.Track;
+        if (track is null || offset == 0)
+        {
+            return false;
+        }
+
+        SynchronizeProjectFromTimeline();
+        var previousPrimaryId = GetPrimaryVideoTrack().Id;
+        var ordered = _project.Tracks.OrderBy(candidate => candidate.Order).ToList();
+        var oldIndex = ordered.FindIndex(candidate => candidate.Id == track.Id);
+        var newIndex = oldIndex + offset;
+        if (oldIndex < 0 || newIndex < 0 || newIndex >= ordered.Count)
+        {
+            return false;
+        }
+
+        (ordered[oldIndex], ordered[newIndex]) = (ordered[newIndex], ordered[oldIndex]);
+        for (var index = 0; index < ordered.Count; index++)
+        {
+            ordered[index].Order = index;
+        }
+
+        _project.Tracks = ordered;
+        MarkProjectDirty();
+        if (GetPrimaryVideoTrack().Id != previousPrimaryId)
+        {
+            LoadPrimaryTimeline();
+        }
+        RefreshProjectLayers(trackId: track.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Moved timeline {track.Name} {(offset < 0 ? "up" : "down")}";
+        return true;
+    }
+
+    public void SetTrackColor(Guid trackId, string color)
+    {
+        var track = _project.Tracks.FirstOrDefault(candidate => candidate.Id == trackId);
+        if (track is null)
+        {
+            return;
+        }
+
+        track.Color = color;
+        MarkProjectDirty();
+        RefreshProjectLayers(trackId: track.Id);
+        _ = SaveRecoverySafelyAsync();
+    }
+
+    public void SetItemColor(Guid itemId, string color)
+    {
+        var entry = _project.Tracks
+            .SelectMany(track => track.Items.Select(item => (Track: track, Item: item)))
+            .FirstOrDefault(candidate => candidate.Item.Id == itemId);
+        if (entry.Item is null)
+        {
+            return;
+        }
+
+        entry.Item.Color = color;
+        MarkProjectDirty();
+        RefreshProjectLayers(itemId);
+        _ = SaveRecoverySafelyAsync();
     }
 
     public void RemoveSelectedLayerItem()
@@ -588,7 +766,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         row.Track.Items.RemoveAll(item => item.Id == row.Item.Id);
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers();
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer item removed";
@@ -610,7 +788,7 @@ public sealed class MainViewModel : ObservableObject
 
         updatedItem.Id = row.Item.Id;
         row.Track.Items[index] = updatedItem;
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers(updatedItem.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer item updated";
@@ -626,7 +804,7 @@ public sealed class MainViewModel : ObservableObject
         _project.TargetDurationMinutes = targetDurationMinutes;
         _project.BackgroundColor = backgroundColor;
         _project.Output = settings;
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         Timeline.SetTargetDuration(targetDurationMinutes);
         Timeline.SetFrameRate(settings.FramesPerSecond);
         OnPropertyChanged(nameof(ProjectName));
@@ -659,7 +837,7 @@ public sealed class MainViewModel : ObservableObject
 
         var primary = _project.Tracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
+            .OrderByDescending(track => track.Order)
             .First();
         var primaryIds = selected.Where(id => primary.Items.Any(item => item.Id == id)).ToHashSet();
         if (primaryIds.Count > 0)
@@ -673,7 +851,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _selectedTimelineItemIds.Clear();
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers();
         _ = SaveRecoverySafelyAsync();
         StatusText = selected.Count == 1 ? "Timeline item removed" : $"Removed {selected.Count} timeline items";
@@ -764,7 +942,7 @@ public sealed class MainViewModel : ObservableObject
 
         var primary = _project.Tracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
+            .OrderByDescending(track => track.Order)
             .First();
         if (target.Id == primary.Id)
         {
@@ -798,7 +976,7 @@ public sealed class MainViewModel : ObservableObject
             item.StartTicks = (item.Start + offset).Ticks;
         }
 
-        _project.ModifiedUtc = DateTime.UtcNow;
+        MarkProjectDirty();
         RefreshProjectLayers(moving[0].Id);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.UnionWith(itemIds);
@@ -864,6 +1042,7 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
+            MarkProjectDirty();
             SynchronizeProjectFromTimeline();
             RefreshProjectLayers();
             await SaveRecoveryNowAsync();
@@ -909,6 +1088,7 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
+            MarkProjectDirty();
             await SaveRecoveryNowAsync();
         }
         catch (Exception exception)
@@ -925,7 +1105,7 @@ public sealed class MainViewModel : ObservableObject
         var mediaByPath = media.ToDictionary(item => item.FullPath, StringComparer.OrdinalIgnoreCase);
         var videoItems = project.Tracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
+            .OrderByDescending(track => track.Order)
             .First()
             .Items;
 
@@ -955,12 +1135,30 @@ public sealed class MainViewModel : ObservableObject
     private void SynchronizeProjectFromTimeline()
     {
         EnsureProjectTracks(_project);
-        var videoTrack = _project.Tracks
-            .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
-            .First();
+        var videoTrack = GetPrimaryVideoTrack();
         videoTrack.Items = Timeline.CreateProjectItems().ToList();
         _project.ModifiedUtc = DateTime.UtcNow;
+    }
+
+    private ProjectTrack GetPrimaryVideoTrack() => _project.Tracks
+        .Where(track => track.Kind == ProjectTrackKind.Video)
+        .OrderByDescending(track => track.Order)
+        .First();
+
+    private void LoadPrimaryTimeline()
+    {
+        var media = MediaFiles.Select(card => card.Media).ToList();
+        var mediaById = media.ToDictionary(item => item.Id);
+        var mediaByPath = media.ToDictionary(item => item.FullPath, StringComparer.OrdinalIgnoreCase);
+        _suppressProjectAutosave = true;
+        try
+        {
+            Timeline.ReplaceProjectItems(GetPrimaryVideoTrack().Items, mediaById, mediaByPath);
+        }
+        finally
+        {
+            _suppressProjectAutosave = false;
+        }
     }
 
     private void RefreshProjectLayers(Guid? selectedItemId = null, Guid? trackId = null)
@@ -968,13 +1166,35 @@ public sealed class MainViewModel : ObservableObject
         EnsureProjectTracks(_project);
         selectedItemId ??= SelectedProjectLayer?.Item?.Id;
         ProjectLayers.Clear();
+        ProjectLayerGroups.Clear();
         foreach (var track in _project.Tracks.OrderBy(track => track.Order))
         {
-            ProjectLayers.Add(ProjectLayerRowViewModel.ForTrack(track));
-            foreach (var item in track.Items.OrderBy(item => item.StartTicks))
+            var header = ProjectLayerRowViewModel.ForTrack(track);
+            ProjectLayers.Add(header);
+            var rows = track.Items
+                .OrderBy(item => item.StartTicks)
+                .Select(item => ProjectLayerRowViewModel.ForItem(track, item))
+                .ToList();
+            foreach (var row in rows)
             {
-                ProjectLayers.Add(ProjectLayerRowViewModel.ForItem(track, item));
+                ProjectLayers.Add(row);
             }
+
+            ProjectLayerGroups.Add(new ProjectTrackGroupViewModel(
+                track,
+                rows,
+                !_collapsedTrackIds.Contains(track.Id),
+                (id, expanded) =>
+                {
+                    if (expanded)
+                    {
+                        _collapsedTrackIds.Remove(id);
+                    }
+                    else
+                    {
+                        _collapsedTrackIds.Add(id);
+                    }
+                }));
         }
 
         SelectedProjectLayer = selectedItemId.HasValue
@@ -1018,6 +1238,33 @@ public sealed class MainViewModel : ObservableObject
             StatusText = $"Recovery autosave failed: {exception.Message}";
         }
     }
+
+    private void MarkProjectDirty()
+    {
+        _project.ModifiedUtc = DateTime.UtcNow;
+        IsDirty = true;
+    }
+
+    private RenderRequest CreateRenderRequest(
+        ProjectRenderPlan renderPlan,
+        string outputPath,
+        OutputOrientation orientation) => new(
+        renderPlan.Segments,
+        outputPath,
+        orientation,
+        _project.Output.VideoEncoder,
+        _project.Output.FramesPerSecond,
+        ProjectName: _project.Name,
+        ProjectFilePath: _project.ProjectFilePath,
+        OutputWidth: _project.Output.Width,
+        OutputHeight: _project.Output.Height,
+        QualityPercent: _project.Output.QualityPercent,
+        VideoBitrateKbps: _project.Output.VideoBitrateKbps,
+        AudioBitrateKbps: _project.Output.AudioBitrateKbps,
+        BackgroundColor: _project.BackgroundColor,
+        TimedOverlays: renderPlan.TimedOverlays,
+        AudioLayers: renderPlan.AudioLayers,
+        PluginEffects: renderPlan.PluginEffects);
 
     private static void EnsureProjectTracks(EditorProject project)
     {

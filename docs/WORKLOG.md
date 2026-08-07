@@ -263,3 +263,20 @@ This is an append-only record of material project work. Newest entries go first.
 - Pinned SQLitePCLRaw 2.1.12 after a package audit found a high-severity issue in the older transitive native SQLite bundle.
 - Verified Release build, application startup, scanning, thumbnails, mixed audio/silent input, overlays, progress styles, still screens, both output orientations, and history writes.
 - Commit: `bde6480` (`feat: build the initial clip composer MVP`).
+
+## 2026-08-07 — Layered preview and timeline interaction release
+
+- Raised the portable application and shared component metadata to 0.1.7 and project persistence to schema 4.
+- Split the center viewer into muted Clip Preview and rendered Project Preview tabs; the top PREVIEW action
+  uses the shared renderer without writing completed-export history and supports seek/frame stepping.
+- Added a frame-snapped playhead that follows ruler click/drag and Project Preview playback.
+- Added visible Add track entry points, contextual browser/track/item/timeline actions, collapsible groups,
+  track sorting, and persisted track/item color codes.
+- Defined editor order as top-to-bottom and render order as bottom-to-top, with the bottommost Video track as
+  the base composition.
+- Fixed the expanded virtualized grid width, enabled multi-selection, mass tags, and multi-clip drag/drop,
+  and made Space resolve focus anywhere inside eligible panels.
+- Added dark scrollbar and preview-tab styling plus Save/Don't save/Cancel close protection whose default
+  Save path refuses to close on cancellation or failure.
+- Increased the Mr Cat startup/rescan minimum display to five seconds.
+- Verification and exact-folder portable publication are recorded by the commit containing this entry.

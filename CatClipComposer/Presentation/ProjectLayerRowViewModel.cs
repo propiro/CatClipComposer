@@ -27,6 +27,12 @@ public sealed class ProjectLayerRowViewModel
 
     public string Detail { get; }
 
+    public string Color => !string.IsNullOrWhiteSpace(Item?.Color)
+        ? Item.Color
+        : !string.IsNullOrWhiteSpace(Track.Color)
+            ? Track.Color
+            : IsTrackHeader ? "#24231F" : "Transparent";
+
     public static ProjectLayerRowViewModel ForTrack(ProjectTrack track) => new(
         track,
         null,

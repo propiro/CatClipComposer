@@ -50,13 +50,16 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 1. The GUI synchronizes timeline items into the versioned project; the CLI can load that same project or create ad-hoc ordered segments.
 2. `ProjectRenderMapper` projects enabled Background, Video, Overlay, Audio, Progress, and Effects track
-   items into one renderer plan without WPF/CLI duplication.
+   items into one renderer plan without WPF/CLI duplication. Track order is top-to-bottom in the editor;
+   the bottom Video track supplies the base and higher visual tracks are composited over it in reverse order.
 3. Project output dimensions/FPS/encoder/quality/bitrates are copied into the render request, with narrow command-line overrides.
 4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
 5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
 6. FFmpeg renders to a unique partial path.
 7. A successful render atomically replaces the selected output.
 8. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
+9. Project Preview sends the same render request directly to `IVideoRenderer` in metadata storage, deliberately
+   bypassing `ICompositionExporter` so previewing never changes completed-project usage history.
 
 ### Plugin discovery and effect rendering
 
@@ -92,8 +95,8 @@ Each component is listed separately to keep its responsibility and boundary read
   and owns neither presentation nor FFmpeg construction.
 - **`JsonProjectStore`:** Validate and atomically save/load normal and recovery project documents. It owns
   no timeline, UI, catalog, or render behavior.
-- **`TimelineViewModel`:** Ordered segments, selection, editing, duration, target, ruler/snap state, and axis
-  summaries. Lane projection is kept in focused timeline presentation models; `MOD-001` is closed.
+- **`TimelineViewModel`:** Ordered segments, selection, editing, duration, target, ruler/snap state, exact-frame
+  playhead, and axis summaries. Lane projection is kept in focused timeline presentation models; `MOD-001` is closed.
 - **`ProjectRenderMapper`:** Convert enabled persisted tracks/items into renderer values. It is pure Core
   code shared by GUI and CLI.
 - **Core plugin contracts:** Define versioned descriptors, media categories, render stages, track

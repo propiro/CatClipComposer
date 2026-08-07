@@ -8,7 +8,7 @@ namespace CatClipComposer;
 
 public partial class SplashWindow : Window
 {
-    public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(3);
+    public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(5);
 
     private readonly Stopwatch _displayTimer = Stopwatch.StartNew();
 

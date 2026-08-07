@@ -15,6 +15,7 @@ public sealed class TimelineViewModel : ObservableObject
     private double _framesPerSecond = 30;
     private TimelineRulerMode _rulerMode = TimelineRulerMode.TimeAndFrames;
     private TimelineSnapMode _snapMode = TimelineSnapMode.TenthSecond;
+    private TimeSpan _playhead;
 
     public TimelineViewModel(double targetDurationMinutes)
     {
@@ -83,6 +84,12 @@ public sealed class TimelineViewModel : ObservableObject
     }
 
     public double FramesPerSecond => _framesPerSecond;
+
+    public TimeSpan Playhead => _playhead;
+
+    public double PlayheadLeft => _playhead.TotalSeconds * PixelsPerSecond;
+
+    public string PlayheadText => $"{DurationFormatter.Format(_playhead)} | frame {Math.Round(_playhead.TotalSeconds * _framesPerSecond):0}";
 
     public double SnapIncrement => _snapMode switch
     {
@@ -340,8 +347,30 @@ public sealed class TimelineViewModel : ObservableObject
     public void SetFrameRate(double framesPerSecond)
     {
         _framesPerSecond = Math.Clamp(framesPerSecond, 1, 240);
+        SetPlayhead(_playhead);
+        OnPropertyChanged(nameof(PlayheadText));
         RefreshRuler();
     }
+
+    public void SetPlayhead(TimeSpan value)
+    {
+        var maximum = Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds);
+        var seconds = Math.Clamp(value.TotalSeconds, 0, Math.Max(0, maximum));
+        var frame = Math.Round(seconds * _framesPerSecond);
+        var normalized = TimeSpan.FromSeconds(frame / _framesPerSecond);
+        if (_playhead == normalized)
+        {
+            return;
+        }
+
+        _playhead = normalized;
+        OnPropertyChanged(nameof(Playhead));
+        OnPropertyChanged(nameof(PlayheadLeft));
+        OnPropertyChanged(nameof(PlayheadText));
+    }
+
+    public void StepFrame(int direction) =>
+        SetPlayhead(_playhead + TimeSpan.FromSeconds(direction / _framesPerSecond));
 
     public void SetDisplaySettings(TimelineRulerMode rulerMode, TimelineSnapMode snapMode)
     {
@@ -478,6 +507,7 @@ public sealed class TimelineViewModel : ObservableObject
         OnPropertyChanged(nameof(AxisThreeQuarterText));
         OnPropertyChanged(nameof(AxisEndText));
         OnPropertyChanged(nameof(TimelineWidth));
+        OnPropertyChanged(nameof(PlayheadLeft));
         RefreshRuler();
     }
 

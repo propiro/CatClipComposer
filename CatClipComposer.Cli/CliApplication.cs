@@ -236,7 +236,7 @@ internal sealed class CliApplication(
 
         Project options:
           --project-file <file>  Required .nya path.
-          --create               Create a new empty five-track project.
+          --create               Create a new empty six-track project.
           --project-name <name>  Optional name used with --create.
           --overwrite            Permit replacement when creating a project.
 

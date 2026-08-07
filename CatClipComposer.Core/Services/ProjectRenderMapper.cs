@@ -18,10 +18,11 @@ public static class ProjectRenderMapper
         var enabledTracks = project.Tracks.Where(track => track.IsEnabled).ToList();
         var primaryVideoTrack = enabledTracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
-            .OrderBy(track => track.Order)
+            .OrderByDescending(track => track.Order)
             .FirstOrDefault();
         var backgroundItems = enabledTracks
             .Where(track => track.Kind == ProjectTrackKind.Background)
+            .OrderByDescending(track => track.Order)
             .SelectMany(track => track.Items)
             .Where(item => item.IsEnabled && item.Kind == ProjectItemKind.Effect)
             .OrderBy(item => item.StartTicks)
@@ -33,11 +34,22 @@ public static class ProjectRenderMapper
             .ToList();
 
         var overlays = new List<RenderOverlay>();
-        foreach (var track in enabledTracks)
+        foreach (var track in enabledTracks.OrderByDescending(track => track.Order))
         {
             foreach (var item in track.Items.Where(item => item.IsEnabled))
             {
-                if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.TextOverlay)
+                if (track.Kind == ProjectTrackKind.Video &&
+                    track.Id != primaryVideoTrack?.Id &&
+                    item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+                {
+                    overlays.Add(new RenderOverlay(
+                        item.Kind == ProjectItemKind.StillImage ? RenderOverlayKind.Image : RenderOverlayKind.Video,
+                        item.Start,
+                        item.Duration,
+                        SourcePath: item.SourcePath,
+                        FitMode: item.FitMode));
+                }
+                else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.TextOverlay)
                 {
                     overlays.Add(new RenderOverlay(
                         RenderOverlayKind.Text,
@@ -74,19 +86,10 @@ public static class ProjectRenderMapper
 
         var secondaryVideoItems = enabledTracks
                      .Where(track => track.Kind == ProjectTrackKind.Video && track.Id != primaryVideoTrack?.Id)
-                     .OrderBy(track => track.Order)
+                     .OrderByDescending(track => track.Order)
                      .SelectMany(track => track.Items)
                      .Where(item => item.IsEnabled && item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
                      .ToList();
-        foreach (var item in secondaryVideoItems)
-        {
-            overlays.Add(new RenderOverlay(
-                item.Kind == ProjectItemKind.StillImage ? RenderOverlayKind.Image : RenderOverlayKind.Video,
-                item.Start,
-                item.Duration,
-                SourcePath: item.SourcePath,
-                FitMode: item.FitMode));
-        }
 
         var audioLayers = enabledTracks
             .Where(track => track.Kind == ProjectTrackKind.Audio)
@@ -113,15 +116,15 @@ public static class ProjectRenderMapper
 
         var pluginEffects = enabledTracks
             .Where(track => track.Kind != ProjectTrackKind.Background)
+            .OrderByDescending(track => track.Order)
             .SelectMany(track => track.Items.Select(item => (Track: track, Item: item)))
             .Where(entry => entry.Item.IsEnabled && entry.Item.Kind == ProjectItemKind.Effect)
-            .OrderBy(entry => entry.Item.StartTicks)
             .Select(entry => CreateVideoEffect(entry.Item, plugins, entry.Track.Kind))
             .ToList();
 
         return new ProjectRenderPlan(
             segments,
-            overlays.OrderBy(item => item.Start).ToList(),
+            overlays,
             audioLayers,
             pluginEffects);
     }

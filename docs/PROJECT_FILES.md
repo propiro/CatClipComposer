@@ -17,16 +17,18 @@ Use **New**, **Open**, and **Save** in the main toolbar. New projects contain si
 5. Progress
 6. Effects
 
-The first Video track is the sequential base composition. Additional Video tracks contain timed visual
-layers and their source audio. The Layers/Used Clips panel can create/remove tracks and add, edit, and remove
+The bottommost Video track is the sequential base composition. Video and other visual tracks above it are
+composited from bottom to top and can contain timed visual layers plus source audio. The Layers/Used Clips
+panel can create/remove, collapse, reorder, and color-code tracks and add, edit, and remove
 timed text, image, audio, progress, and plugin effects. Clip effects control fit/fill/stretch, fades, and
 volume. A shared Core mapper projects the enabled track model into both GUI and headless renders.
 
-Schema version 3 adds the project background color, Background timeline, multiple named tracks, and
+Schema version 4 adds optional track/item color codes. Schema version 3 added the project background color,
+Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older schema-1
-JSON projects remain readable; saving them writes schema 3. The normal Open dialog prefers `.nya`.
+JSON projects remain readable; saving them writes schema 4. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 

@@ -92,6 +92,33 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: A left-edge direction arrow switches between full-width browser focus and the saved dock
   layout; runtime expand/restore smokes passed.
 
+### `BROWSER-003` — Add reliable grid sizing, multi-selection, and mass metadata actions
+
+- Priority/status: P0 / Done
+- Acceptance: The virtualized wrap panel derives the real viewport width, expanded browsing produces
+  multiple columns, extended selection supports mass tag replacement and multi-clip drag/drop, and browser
+  context actions operate on the clicked selection.
+
+### `PROJECT-PREVIEW-001` — Separate source preview from layered project preview
+
+- Priority/status: P0 / Done
+- Acceptance: Clip Preview remains muted by default; the centered PREVIEW action renders the shared layered
+  plan to temporary metadata storage without export-history writes and Project Preview supports seek and
+  single-frame stepping.
+
+### `TIMELINE-002` — Add an exact-frame playhead and visual track stack controls
+
+- Priority/status: P0 / Done
+- Acceptance: The ruler selects a frame by click/drag; tracks collapse, reorder, and accept optional colors;
+  blocks accept optional colors; and the topmost visual track composites above lower tracks.
+
+### `UX-SAFETY-001` — Protect unsaved projects and finish application handoff polish
+
+- Priority/status: P0 / Done
+- Acceptance: Closing a dirty window defaults to Save and offers Don't save/Cancel; failed/cancelled saving
+  keeps the process open; the startup/rescan splash lasts at least five seconds; dark scrollbar templates
+  match the editor theme; and the release is published over the documented launch folder.
+
 ### `CATMETA-001` — Add editable tags, previews, and named-project usage details
 
 - Priority/status: P1 / Done
@@ -161,8 +188,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-3 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
-  background/module metadata without embedding media; GUI and CLI checks pass.
+- Acceptance: Versioned schema-4 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+  background/module metadata plus optional track/item colors without embedding media; GUI and CLI checks pass.
 
 ### `UX-PROJECT-002` — Separate durable Preferences from frequently changed project settings
 
@@ -191,7 +218,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `UX-SPLASH-001` — Report startup and rescan progress without an empty or frozen window
 
 - Priority/status: P1 / Done
-- Acceptance: The foreground Mr Cat splash displays for at least three seconds with progress plus capped
+- Acceptance: The foreground Mr Cat splash displays for at least five seconds with progress plus capped
   scrolling diagnostics during startup and manual rescans; Preferences defaults tall enough to avoid a
   scrollbar until the user shrinks it.
 
