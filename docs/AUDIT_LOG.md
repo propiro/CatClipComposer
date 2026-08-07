@@ -549,3 +549,19 @@ and timeline state owns a normalized visual range used by ruler input and bounde
 
 Verification: Release solution build passed with zero warnings/errors. The real-source H.264 render and full
 decode passed. Dependencies did not change, so a package vulnerability audit was not required.
+
+## AUDIT-2026-08-07-008 — v0.1.9 main-window construction failure
+
+Scope: the reported `StaticResourceExtension` startup exception immediately after the v0.1.9 splash.
+
+Finding: the new range label referenced `MainTextBrush`, while the application theme declares `TextBrush`.
+WPF markup compilation did not reject the unresolved runtime resource lookup, so the Release build passed but
+`MainWindow.InitializeComponent()` threw during application startup.
+
+Remediation: use the declared theme resource and run a repository-wide simple `StaticResource` definition
+check at the start of every portable publication.
+
+Verification: all 34 keys referenced across 15 XAML files resolve, the Release solution builds with zero
+warnings/errors, and a hidden startup smoke remained alive after the splash with a nonzero main-window handle.
+The smoke loaded an existing dirty recovery project, so its hidden close request correctly waited on the
+unsaved-project dialog; the isolated test process was then terminated. Dependencies did not change.

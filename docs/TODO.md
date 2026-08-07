@@ -340,6 +340,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Evidence: Release build, schema/INI round-trip, system-font/progress render, image sampling, and source audit
   confirm the requested settings split and editor behavior without launching another foreground GUI test.
 
+### `AUD-STARTUP-001` — Reject undefined XAML resources before portable publication
+
+- Priority/status: P0 / Done
+- Evidence: The v0.1.9 startup failure was reproduced as an undefined `MainTextBrush` reference, corrected to
+  the declared `TextBrush`, and the publisher now audits every simple `StaticResource` reference before build.
+
 ### `AUD-CATMETA-001` — Verify metadata migration, previews, tags, and usage semantics
 
 - Priority/status: P1 / Done

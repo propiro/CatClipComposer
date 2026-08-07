@@ -306,3 +306,13 @@ This is an append-only record of material project work. Newest entries go first.
   bounded Project Preview playback, and range-aware frame stepping.
 - Released the correction as visible application/component version 0.1.9.
 - Commit: recorded by the commit containing this entry.
+
+## 2026-08-07 — XAML resource startup correction
+
+- Corrected the timeline range label's undefined `MainTextBrush` reference to the theme's declared
+  `TextBrush`, which had caused v0.1.9 to fail while constructing the main window.
+- Added a repository XAML `StaticResource` audit and made it a required portable-publisher guard.
+- Passed the complete resource audit, Release build, and a hidden startup smoke that reached the main window
+  and remained alive beyond the five-second splash.
+- Released the startup correction as visible application/component version 0.1.10.
+- Commit: recorded by the commit containing this entry.

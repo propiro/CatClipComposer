@@ -756,7 +756,7 @@
                                                   Background="#385D554B" BorderBrush="#9A8E8071" BorderThickness="1,0"
                                                   Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}" />
                                           <TextBlock Canvas.Left="{Binding Timeline.RangeLeft}" Margin="5,12,0,0"
-                                                     Padding="3,1" FontSize="9" Foreground="{StaticResource MainTextBrush}"
+                                                     Padding="3,1" FontSize="9" Foreground="{StaticResource TextBrush}"
                                                      Background="#D02B2925" Text="{Binding Timeline.RangeText}"
                                                      Visibility="{Binding Timeline.HasRangeSelection, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                           <Border Canvas.Left="{Binding Timeline.PlayheadLeft}"
