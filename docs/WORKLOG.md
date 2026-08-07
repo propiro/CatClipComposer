@@ -279,4 +279,5 @@ This is an append-only record of material project work. Newest entries go first.
 - Added dark scrollbar and preview-tab styling plus Save/Don't save/Cancel close protection whose default
   Save path refuses to close on cancellation or failure.
 - Increased the Mr Cat startup/rescan minimum display to five seconds.
+- Made forced in-place portable publishing preserve the existing executable-directory INI byte-for-byte.
 - Verification and exact-folder portable publication are recorded by the commit containing this entry.

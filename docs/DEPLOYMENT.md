@@ -19,7 +19,9 @@ Create a framework-dependent package that requires the .NET 8 Desktop Runtime:
 .\scripts\Publish-Portable.ps1 -SelfContained $false
 ```
 
-The output folder must be empty. Use `-Force` to replace an earlier generated package explicitly. For
+The output folder must be empty. Use `-Force` to replace an earlier generated package explicitly; if that
+folder already contains `CatClipComposer.ini`, its exact bytes are carried into the replacement package so
+portable preferences and source-folder choices survive an application update. For
 safety, repository-local output is accepted only beneath `publish`; filesystem roots, the repository root,
 and repository parents are rejected.
 

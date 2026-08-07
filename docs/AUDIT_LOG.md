@@ -498,7 +498,8 @@ Findings:
 
 - The reported 0.1.5 window came from `publish\CatClipComposer`, while the preceding 0.1.6 package had been
   placed in a differently named sibling folder. The publisher already defaults to the documented path; this
-  release explicitly replaces and verifies that exact folder.
+  release explicitly replaces and verifies that exact folder. Forced updates now preserve any existing
+  `CatClipComposer.ini` byte-for-byte while replacing generated application files.
 - Preview renders must not count as accepted projects. The new path calls `IVideoRenderer` rather than
   `ICompositionExporter`, retaining identical project mapping while avoiding catalog history mutation.
 - The editor displays tracks top-to-bottom. The renderer now chooses the lowest visible Video track as its

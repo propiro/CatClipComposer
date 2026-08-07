@@ -44,6 +44,12 @@ $existingEntries = if (Test-Path -LiteralPath $resolvedOutput) {
 if ($existingEntries.Count -gt 0 -and -not $Force) {
     throw "Publish output is not empty. Re-run with -Force to replace it: $resolvedOutput"
 }
+$existingConfigurationPath = Join-Path $resolvedOutput "CatClipComposer.ini"
+$preservedConfiguration = if ($Force -and (Test-Path -LiteralPath $existingConfigurationPath)) {
+    [System.IO.File]::ReadAllBytes($existingConfigurationPath)
+} else {
+    $null
+}
 
 function Assert-FfmpegPayload([string]$Directory, [bool]$InspectCapabilities) {
     $manifestPath = Join-Path $Directory "MANIFEST.sha256"
@@ -177,6 +183,11 @@ try {
     Copy-Item -LiteralPath $pluginPublish -Destination $packageRoot -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "CatClipComposer.ini.example") `
         -Destination (Join-Path $packageRoot "CatClipComposer.ini")
+    if ($null -ne $preservedConfiguration) {
+        [System.IO.File]::WriteAllBytes(
+            (Join-Path $packageRoot "CatClipComposer.ini"),
+            $preservedConfiguration)
+    }
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "docs") `
         -Destination $packageRoot -Recurse -Force
     $packagedReadme = Get-Content `
