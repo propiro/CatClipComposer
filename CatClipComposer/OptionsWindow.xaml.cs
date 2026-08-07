@@ -28,6 +28,8 @@ public partial class OptionsWindow : Window
         ProjectFolderTextBox.Text = _workingSettings.ProjectFolder;
         MetadataFolderTextBox.Text = _workingSettings.MetadataFolder;
         PreviewSlideCountTextBox.Text = _workingSettings.PreviewSlideCount.ToString(CultureInfo.CurrentCulture);
+        SmallThumbnailSizeTextBox.Text = _workingSettings.SmallThumbnailSize.ToString(CultureInfo.CurrentCulture);
+        LargeThumbnailSizeTextBox.Text = _workingSettings.LargeThumbnailSize.ToString(CultureInfo.CurrentCulture);
         FfmpegPathTextBox.Text = _workingSettings.FfmpegPath;
         CustomFontFolderTextBox.Text = _workingSettings.CustomFontFolder;
         IncludeSubfoldersCheckBox.IsChecked = _workingSettings.IncludeSubfolders;
@@ -111,10 +113,16 @@ public partial class OptionsWindow : Window
             string.IsNullOrWhiteSpace(ProjectFolderTextBox.Text) ||
             string.IsNullOrWhiteSpace(MetadataFolderTextBox.Text) ||
             !int.TryParse(PreviewSlideCountTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
-                out var previewSlideCount) || previewSlideCount is < 1 or > 24)
+                out var previewSlideCount) || previewSlideCount is < 1 or > 24 ||
+            !int.TryParse(SmallThumbnailSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
+                out var smallThumbnailSize) || smallThumbnailSize is < 80 or > 200 ||
+            !int.TryParse(LargeThumbnailSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
+                out var largeThumbnailSize) || largeThumbnailSize is < 140 or > 360 ||
+            largeThumbnailSize < smallThumbnailSize + 20)
         {
             MessageBox.Show(this,
-                "Choose the output, project, and metadata folders and use 1–24 contact-sheet slides.",
+                "Choose the output, project, and metadata folders; use 1–24 contact-sheet slides; and choose " +
+                "thumbnail widths in range with Large at least 20 px wider than Small.",
                 "Invalid preferences", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -124,6 +132,8 @@ public partial class OptionsWindow : Window
         _workingSettings.ProjectFolder = ProjectFolderTextBox.Text.Trim();
         _workingSettings.MetadataFolder = MetadataFolderTextBox.Text.Trim();
         _workingSettings.PreviewSlideCount = previewSlideCount;
+        _workingSettings.SmallThumbnailSize = smallThumbnailSize;
+        _workingSettings.LargeThumbnailSize = largeThumbnailSize;
         _workingSettings.FfmpegPath = string.IsNullOrWhiteSpace(FfmpegPathTextBox.Text)
             ? "ffmpeg.exe"
             : FfmpegPathTextBox.Text.Trim();

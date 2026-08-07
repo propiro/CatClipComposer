@@ -19,6 +19,12 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
         typeof(VirtualizingWrapPanel),
         new FrameworkPropertyMetadata(164d, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
+    public static readonly DependencyProperty StretchItemsProperty = DependencyProperty.Register(
+        nameof(StretchItems),
+        typeof(bool),
+        typeof(VirtualizingWrapPanel),
+        new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsMeasure));
+
     private Size _extent;
     private Size _viewport;
     private Point _offset;
@@ -35,6 +41,12 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
         set => SetValue(ItemHeightProperty, value);
     }
 
+    public bool StretchItems
+    {
+        get => (bool)GetValue(StretchItemsProperty);
+        set => SetValue(StretchItemsProperty, value);
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var owner = ItemsControl.GetItemsOwner(this);
@@ -49,6 +61,7 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
             ? ItemHeight
             : availableSize.Height;
         var itemsPerRow = GetItemsPerRow(viewportWidth);
+        var effectiveItemWidth = StretchItems ? viewportWidth : ItemWidth;
         var rowCount = itemCount == 0 ? 0 : (int)Math.Ceiling(itemCount / (double)itemsPerRow);
         UpdateScrollInfo(
             new Size(viewportWidth, rowCount * ItemHeight),
@@ -89,7 +102,7 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
                     ItemContainerGenerator.PrepareItemContainer(child);
                 }
 
-                child.Measure(new Size(ItemWidth, ItemHeight));
+                child.Measure(new Size(effectiveItemWidth, ItemHeight));
             }
         }
 
@@ -99,6 +112,7 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
     protected override Size ArrangeOverride(Size finalSize)
     {
         var itemsPerRow = GetItemsPerRow(finalSize.Width);
+        var effectiveItemWidth = StretchItems ? finalSize.Width : ItemWidth;
         foreach (UIElement child in InternalChildren)
         {
             var index = IndexFromContainer(child);
@@ -110,9 +124,9 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
             var row = index / itemsPerRow;
             var column = index % itemsPerRow;
             child.Arrange(new Rect(
-                column * ItemWidth,
+                column * effectiveItemWidth,
                 row * ItemHeight - VerticalOffset,
-                ItemWidth,
+                effectiveItemWidth,
                 ItemHeight));
         }
 
@@ -125,8 +139,9 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
         InvalidateMeasure();
     }
 
-    private int GetItemsPerRow(double width) =>
-        Math.Max(1, (int)Math.Floor(Math.Max(ItemWidth, width) / ItemWidth));
+    private int GetItemsPerRow(double width) => StretchItems
+        ? 1
+        : Math.Max(1, (int)Math.Floor(Math.Max(ItemWidth, width) / ItemWidth));
 
     private void RecycleOutside(int firstIndex, int lastIndex)
     {
@@ -252,7 +267,7 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
             SetVerticalOffset(top + ItemHeight - ViewportHeight);
         }
 
-        return new Rect(0, top, ItemWidth, ItemHeight);
+        return new Rect(0, top, StretchItems ? ViewportWidth : ItemWidth, ItemHeight);
     }
 
     private int IndexFromContainer(DependencyObject container) =>

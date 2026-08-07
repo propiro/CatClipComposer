@@ -118,6 +118,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button x:Name="BrowserExpandButton"
                                     Grid.Column="0"
@@ -133,7 +134,12 @@
                             <TextBlock Grid.Column="1"
                                        Style="{StaticResource PanelTitleStyle}"
                                        Text="CONTENT BROWSER" />
-                            <Button Grid.Column="2"
+                            <Button x:Name="BrowserViewModeButton" Grid.Column="2" Margin="0,0,3,0"
+                                    Click="BrowserViewMode_Click"
+                                    Style="{StaticResource HeaderButtonStyle}"
+                                    Content="{Binding BrowserViewModeText}"
+                                    ToolTip="Cycle list, small-grid, and large-grid views" />
+                            <Button Grid.Column="3"
                                     Tag="ContentBrowser"
                                     Click="PanelDock_Click"
                                     Style="{StaticResource HeaderButtonStyle}"
@@ -185,23 +191,26 @@
                             </ListBox.ContextMenu>
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <controls:VirtualizingWrapPanel ItemWidth="142" ItemHeight="136"
+                                    <controls:VirtualizingWrapPanel ItemWidth="{Binding DataContext.BrowserItemWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        ItemHeight="{Binding DataContext.BrowserItemHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        StretchItems="{Binding DataContext.IsBrowserListView, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListBox}}" />
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                                    <Setter Property="Width" Value="136" />
-                                    <Setter Property="Height" Value="130" />
+                                    <Setter Property="Width" Value="{Binding DataContext.BrowserCardWidth, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                    <Setter Property="Height" Value="{Binding DataContext.BrowserCardHeight, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <Setter Property="Padding" Value="3" />
                                     <Setter Property="Margin" Value="3" />
                                 </Style>
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid>
+                                  <Grid>
+                                    <Grid Visibility="{Binding DataContext.IsBrowserGridView, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="78" />
+                                            <RowDefinition Height="{Binding DataContext.BrowserThumbnailHeight, RelativeSource={RelativeSource AncestorType=ListBox}}" />
                                             <RowDefinition Height="*" />
                                         </Grid.RowDefinitions>
                                         <Border Background="{StaticResource PreviewBrush}"
@@ -244,6 +253,32 @@
                                             </DockPanel>
                                         </StackPanel>
                                     </Grid>
+                                    <Grid Visibility="{Binding DataContext.IsBrowserListView, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="92" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Margin="0,0,7,0" Background="{StaticResource PreviewBrush}"
+                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                            <Grid>
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="9"
+                                                           Foreground="{StaticResource FaintTextBrush}" Text="NO PREVIEW" />
+                                                <Image Source="{Binding ThumbnailPath}" Stretch="UniformToFill" />
+                                                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="3,1" Background="#DD151513">
+                                                    <TextBlock FontSize="9" Text="{Binding DurationText}" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding FullPath}" Text="{Binding FileName}" />
+                                            <TextBlock Margin="0,3,0,0" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
+                                                       Text="{Binding DimensionsText}" />
+                                            <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource FaintTextBrush}"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding TagsText}" Text="{Binding TagsText}" />
+                                        </StackPanel>
+                                    </Grid>
+                                  </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -533,6 +568,7 @@
                                                         <MenuItem CommandParameter="{Binding Header}" Click="TrackMoveUp_Click" Header="Move track up (render above)" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="TrackMoveDown_Click" Header="Move track down" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="ColorCode_Click" Header="Set track color…" />
+                                                        <MenuItem CommandParameter="{Binding Header}" Click="AddCompatibleEffectContext_Click" Header="Add compatible effect…" />
                                                         <Separator />
                                                         <MenuItem Click="AddTrack_Click" Header="Add track…" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="RemoveTrackContext_Click" Header="Remove empty track" />
@@ -548,6 +584,11 @@
                                         </Expander.Header>
                                         <ListBox ItemsSource="{Binding Items}" SelectionChanged="ProjectLayerList_SelectionChanged"
                                                  MouseDoubleClick="ProjectLayerList_MouseDoubleClick">
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Padding="7,4" Background="{Binding Color}"
@@ -555,7 +596,7 @@
                                                         <Border.ContextMenu>
                                                             <ContextMenu>
                                                                 <MenuItem CommandParameter="{Binding}" Click="EditLayerContext_Click" Header="Edit transform / effects…" />
-                                                                <MenuItem CommandParameter="{Binding}" Click="AddClipEffectContext_Click" Header="Add effect for this item…" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="AddClipEffectContext_Click" Header="Add compatible effect for this item…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="ColorCode_Click" Header="Set item color…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="RemoveLayerContext_Click" Header="Remove item" />
                                                             </ContextMenu>
@@ -731,6 +772,7 @@
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackMoveUp_Click" Header="Move track up (render above)" />
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackMoveDown_Click" Header="Move track down" />
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackColor_Click" Header="Set track color…" />
+                                                            <MenuItem CommandParameter="{Binding}" Click="TimelineTrackAddEffect_Click" Header="Add compatible effect…" />
                                                             <Separator />
                                                             <MenuItem Click="AddTrack_Click" Header="Add track…" />
                                                         </ContextMenu>
@@ -748,7 +790,8 @@
 
                                 <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto"
                                               VerticalScrollBarVisibility="Disabled">
-                                    <Grid Width="{Binding Timeline.TimelineWidth}">
+                                    <Grid x:Name="TimelineCanvas" Width="{Binding Timeline.TimelineWidth}"
+                                          PreviewMouseRightButtonDown="TimelineCanvas_PreviewMouseRightButtonDown">
                                       <StackPanel>
                                         <Border x:Name="TimelineRulerSurface" Height="34" Background="{StaticResource InputBrush}"
                                                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
@@ -808,13 +851,14 @@
                                                                             Padding="4" Background="{Binding Background}"
                                                                             BorderBrush="{StaticResource StrongBorderBrush}"
                                                                             BorderThickness="1" Tag="{Binding}"
-                                                                            ToolTip="{Binding Title}"
+                                                                            ToolTip="{Binding ToolTipText}"
                                                                             PreviewMouseLeftButtonDown="TimelineLaneItem_PreviewMouseLeftButtonDown"
                                                                             PreviewMouseMove="TimelineLaneItem_PreviewMouseMove"
                                                                             MouseLeftButtonDown="TimelineLaneItem_MouseLeftButtonDown">
                                                                         <Border.ContextMenu>
                                                                             <ContextMenu>
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemEdit_Click" Header="Edit item…" />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemAddEffect_Click" Header="Add compatible effect…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemColor_Click" Header="Set item color…" />
                                                                                 <Separator />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemRemove_Click" Header="Remove item" />
@@ -837,6 +881,9 @@
                                                                                                TextTrimming="CharacterEllipsis" Text="{Binding Detail}" />
                                                                                 </StackPanel>
                                                                             </Grid>
+                                                                            <Border IsHitTestVisible="False"
+                                                                                    BorderBrush="#C8A95A" BorderThickness="2" Opacity="0.78"
+                                                                                    Visibility="{Binding NeedsProjectPreview, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                         </Grid>
                                                                     </Border>
                                                                     <DataTemplate.Triggers>

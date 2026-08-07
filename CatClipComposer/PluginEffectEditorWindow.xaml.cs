@@ -23,7 +23,8 @@ public partial class PluginEffectEditorWindow : Window
         double framesPerSecond,
         ProjectTimelineItem? existing = null,
         TimeSpan? initialStart = null,
-        TimeSpan? initialDuration = null)
+        TimeSpan? initialDuration = null,
+        string? initialPluginId = null)
     {
         _track = track;
         _snapMode = snapMode;
@@ -40,7 +41,9 @@ public partial class PluginEffectEditorWindow : Window
             .ToList();
         PluginComboBox.ItemsSource = compatible;
         PluginComboBox.SelectedItem = existing is null
-            ? compatible.FirstOrDefault()
+            ? compatible.FirstOrDefault(plugin => plugin.Descriptor.Id.Equals(
+                  initialPluginId,
+                  StringComparison.OrdinalIgnoreCase)) ?? compatible.FirstOrDefault()
             : compatible.FirstOrDefault(plugin => plugin.Descriptor.Id.Equals(existing.PluginId, StringComparison.OrdinalIgnoreCase));
         StartTextBox.Text = (existing?.Start.TotalSeconds ?? initialStart?.TotalSeconds ?? 0)
             .ToString("0.######", CultureInfo.InvariantCulture);

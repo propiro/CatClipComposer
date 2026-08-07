@@ -41,6 +41,21 @@ internal static class ApplicationSettingsIniMapper
             "Library",
             "PreviewSlideCount",
             settings.PreviewSlideCount);
+        settings.BrowserViewMode = ReadEnum(
+            ini,
+            "Library",
+            "BrowserViewMode",
+            settings.BrowserViewMode);
+        settings.SmallThumbnailSize = ReadInt(
+            ini,
+            "Library",
+            "SmallThumbnailSize",
+            settings.SmallThumbnailSize);
+        settings.LargeThumbnailSize = ReadInt(
+            ini,
+            "Library",
+            "LargeThumbnailSize",
+            settings.LargeThumbnailSize);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
@@ -88,6 +103,9 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine("[Library]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"MetadataFolder={settings.MetadataFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewSlideCount={settings.PreviewSlideCount}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"BrowserViewMode={settings.BrowserViewMode}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"SmallThumbnailSize={settings.SmallThumbnailSize}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"LargeThumbnailSize={settings.LargeThumbnailSize}");
 
         builder.AppendLine();
         builder.AppendLine("[Output]");
@@ -137,6 +155,9 @@ internal static class ApplicationSettingsIniMapper
                 "CatClipComposer")
             : settings.MetadataFolder.Trim();
         settings.PreviewSlideCount = Math.Clamp(settings.PreviewSlideCount, 1, 24);
+        settings.SmallThumbnailSize = Math.Clamp(settings.SmallThumbnailSize, 80, 200);
+        settings.LargeThumbnailSize = Math.Clamp(settings.LargeThumbnailSize, 140, 360);
+        settings.LargeThumbnailSize = Math.Max(settings.LargeThumbnailSize, settings.SmallThumbnailSize + 20);
         settings.FfmpegPath = string.IsNullOrWhiteSpace(settings.FfmpegPath)
             ? "ffmpeg.exe"
             : settings.FfmpegPath.Trim();

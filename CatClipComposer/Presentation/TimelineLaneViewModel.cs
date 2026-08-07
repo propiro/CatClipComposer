@@ -48,7 +48,8 @@ public sealed class TimelineLaneItemViewModel
         TimelineClipViewModel? clip,
         double pixelsPerSecond,
         double trackHeight,
-        bool isSelected)
+        bool isSelected,
+        bool needsProjectPreview)
     {
         Id = item.Id;
         TrackKind = track.Kind;
@@ -64,6 +65,7 @@ public sealed class TimelineLaneItemViewModel
         IsSelected = isSelected;
         TrackId = track.Id;
         ShowClipActions = IsVideo && isSelected;
+        NeedsProjectPreview = needsProjectPreview;
         Background = !string.IsNullOrWhiteSpace(item.Color)
             ? item.Color
             : !string.IsNullOrWhiteSpace(track.Color)
@@ -105,6 +107,12 @@ public sealed class TimelineLaneItemViewModel
     public bool IsSelected { get; }
 
     public bool ShowClipActions { get; }
+
+    public bool NeedsProjectPreview { get; }
+
+    public string ToolTipText => NeedsProjectPreview
+        ? $"{Title}\nNot included in the current Project Preview. Render preview to update it."
+        : Title;
 
     public string Background { get; }
 }

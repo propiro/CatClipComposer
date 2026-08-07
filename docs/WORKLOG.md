@@ -344,3 +344,18 @@ This is an append-only record of material project work. Newest entries go first.
   and track groups.
 - Raised the visible application/component version to 0.1.12; verification and exact-folder publication are
   recorded by the commit containing this entry.
+
+## 2026-08-07 — Contextual preview, browser modes, and strict-canvas correction
+
+- Reproduced the reported background-blur preview failure and traced it to a plugin-stage 1920x1081 frame
+  reaching Media Foundation H.264. Final composition now restores exact project dimensions, SAR 1:1, and the
+  encoder pixel format after every plugin and overlay stage.
+- Added playhead actions for Preview from here and range marking, plus Preview range on the active ruler
+  selection. Successful previews record their covered interval; newly changed or uncovered media blocks use
+  a restrained yellow edge until rendered again.
+- Added recycled thumbnail-list, small-grid, and large-grid Content Browser modes with portable Preferences
+  for bounded small/large sizes and matching headless config output.
+- Synchronized timeline and Layers / Used Clips selection and exposed compatible plugin actions from empty
+  timeline lanes, track headers, and individual items.
+- Raised the visible application/component version to 0.1.13; verification and exact-folder publication are
+  recorded by the commit containing this entry.

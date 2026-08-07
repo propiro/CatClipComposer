@@ -30,6 +30,13 @@ public enum WorkspaceDockSlot
     Bottom
 }
 
+public enum ContentBrowserViewMode
+{
+    List,
+    SmallGrid,
+    LargeGrid
+}
+
 public sealed class ApplicationSettings
 {
     public List<string> SourceFolders { get; set; } = [];
@@ -41,6 +48,12 @@ public sealed class ApplicationSettings
     public string MetadataFolder { get; set; } = string.Empty;
 
     public int PreviewSlideCount { get; set; } = 12;
+
+    public ContentBrowserViewMode BrowserViewMode { get; set; } = ContentBrowserViewMode.SmallGrid;
+
+    public int SmallThumbnailSize { get; set; } = 120;
+
+    public int LargeThumbnailSize { get; set; } = 220;
 
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
@@ -67,6 +80,9 @@ public sealed class ApplicationSettings
         ProjectFolder = ProjectFolder,
         MetadataFolder = MetadataFolder,
         PreviewSlideCount = PreviewSlideCount,
+        BrowserViewMode = BrowserViewMode,
+        SmallThumbnailSize = SmallThumbnailSize,
+        LargeThumbnailSize = LargeThumbnailSize,
         FfmpegPath = FfmpegPath,
         CustomFontFolder = CustomFontFolder,
         IncludeSubfolders = IncludeSubfolders,

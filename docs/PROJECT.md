@@ -40,6 +40,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Selectable thumbnails and search — Done.** Cached thumbnails support name, path, and tag search.
 - **Large-library safety and drag/drop — Done.** A recycled tile grid loads cached previews only when
   realized, supports extended selection and mass tag editing, and drags one or many clips into a selected Video timeline.
+- **Selectable browser presentation — Done.** One header control cycles through a thumbnail list, small grid,
+  and large grid; Preferences stores separate bounded thumbnail sizes for both grid modes.
 - **Full-width browser focus — Done.** A left-edge arrow expands the browser while preserving the timeline
   drop target; toggling back restores the saved dock layout.
 - **Video/contact-sheet preview — Done.** Muted-by-default playback has play/pause, seek, mute, and volume
@@ -78,6 +80,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   double-clicks. Project Preview renders only an active range after composition, maps local playback back onto
   project time, and uses Windows-compatible H.264 without recording export history. Project Settings is a
   compact rollout at the bottom-left of Project Preview rather than consuming Used Clips space.
+- **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
+  marks range boundaries; the selected-range menu renders only that interval. Empty lanes, track headers, and
+  items list only compatible plugin effects. Timeline selection mirrors Layers / Used Clips, and a yellow
+  media-block edge marks content outside the current rendered-preview coverage.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder.
@@ -112,7 +118,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.12 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.13 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

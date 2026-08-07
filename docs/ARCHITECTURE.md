@@ -65,6 +65,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 10. An optional preview range trims the final composited video and final mixed audio together, then resets both
     timestamps to zero. The WPF transport retains the project-time offset so seeking and frame stepping still
     move the global timeline playhead correctly.
+11. After every plugin and overlay stage, the filter graph normalizes the final canvas to the requested width,
+    height, square-pixel aspect, and encoder pixel format. This prevents a blur or zoom stage from leaving an
+    odd-sized frame that Media Foundation H.264 rejects as an invalid media type.
 
 ### Plugin discovery and effect rendering
 
@@ -124,8 +127,8 @@ Each component is listed separately to keep its responsibility and boundary read
 - **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
 - **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary panel focus. Focus never
   overwrites durable settings.
-- **Content browser:** Search cached metadata and recycle a virtualized tile grid. It does not eagerly decode video;
-  full-width focus retains the timeline drop target.
+- **Content browser:** Search cached metadata and recycle one virtualized surface across list, small-grid, and
+  large-grid presentation. It does not eagerly decode video; full-width focus retains the timeline drop target.
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.

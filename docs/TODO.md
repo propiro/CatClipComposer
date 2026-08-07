@@ -99,6 +99,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   multiple columns, extended selection supports mass tag replacement and multi-clip drag/drop, and browser
   context actions operate on the clicked selection.
 
+### `BROWSER-004` — Offer list and configurable grid presentations
+
+- Priority/status: P1 / Done
+- Acceptance: One browser-header action cycles thumbnail list, small grid, and large grid without changing
+  catalog loading behavior; bounded small/large sizes persist in the portable INI and appear in CLI config.
+
 ### `PROJECT-PREVIEW-001` — Separate source preview from layered project preview
 
 - Priority/status: P0 / Done
@@ -119,6 +125,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: An active timeline range trims final composited video and mixed audio to that interval; output
   timestamps restart at zero, WPF maps playback to global project time, and full preview remains unchanged.
 
+### `PROJECT-PREVIEW-004` — Add contextual preview entry points and coverage feedback
+
+- Priority/status: P0 / Done
+- Acceptance: The playhead menu previews from its global time and marks range boundaries; a selected-range
+  menu previews that interval; media outside the latest preview coverage has a restrained yellow edge.
+
 ### `TIMELINE-002` — Add an exact-frame playhead and visual track stack controls
 
 - Priority/status: P0 / Done
@@ -136,6 +148,18 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P0 / Done
 - Acceptance: Start/end handles drag independently without crossing, Mark start/end use the current frame,
   and changing a range invalidates a stale rendered preview.
+
+### `TIMELINE-005` — Synchronize selection and expose compatible lane effects
+
+- Priority/status: P0 / Done
+- Acceptance: Selecting a timeline item highlights its Layers / Used Clips row; empty lanes, track headers,
+  and items offer only plugins compatible with their resolved target track and preserve item timing.
+
+### `RENDER-CANVAS-001` — Normalize the post-effect canvas for strict encoders
+
+- Priority/status: P0 / Done
+- Acceptance: Final plugin/overlay output is forced to the requested even dimensions, square pixels, and
+  encoder pixel format; the reported 1920x1080 background-blur project renders and decodes with H.264 MF.
 
 ### `UX-PREVIEW-003` — Consolidate preview transport controls
 

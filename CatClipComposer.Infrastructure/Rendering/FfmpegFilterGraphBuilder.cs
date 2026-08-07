@@ -99,6 +99,15 @@ internal static class FfmpegFilterGraphBuilder
             ref stage,
             PluginRenderStage.Overlay);
 
+        // Scale and overlay filters can round a fitted portrait source one pixel beyond the canvas
+        // (for example 1920x1081). Normalize the completed composition before it reaches an encoder;
+        // Media Foundation H.264 rejects odd dimensions and plugins must not change project geometry.
+        var normalizedCanvasLabel = $"canvas{stage++}";
+        graph.Append(CultureInfo.InvariantCulture,
+            $"[{currentLabel}]scale={width}:{height},setsar=1," +
+            $"format={GetPixelFormat(request.VideoEncoder)}[{normalizedCanvasLabel}];");
+        currentLabel = normalizedCanvasLabel;
+
         if (request.OutputRangeStart.HasValue && request.OutputRangeDuration.HasValue)
         {
             var start = FormatSeconds(request.OutputRangeStart.Value);

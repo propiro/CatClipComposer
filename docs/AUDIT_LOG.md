@@ -612,3 +612,29 @@ Verification: the Release solution built with zero warnings/errors; the XAML res
 across 15 files; and a non-visible WPF construction smoke exercised Split, Join, pane reparenting, autoplay
 visibility, settings placement, and the themed expander resource. Dependencies did not change, so a package
 vulnerability audit was not required.
+
+## AUDIT-2026-08-07-011 — Context preview, browser modes, and blur-render audit
+
+Scope: playhead/range context actions, browser presentation choices, selection synchronization, stale-preview
+feedback, compatible effect discovery, and the reported Background blur Media Foundation failure.
+
+Findings and remediation:
+
+- The blur plugin's scale expression could round a 1920x1080 composition to 1920x1081. Media Foundation H.264
+  rejected the odd final height with `MF_E_INVALIDMEDIATYPE`. The renderer now normalizes the fully composed
+  stream to exact requested dimensions, SAR 1:1, and encoder pixel format after plugin and overlay stages.
+- Preview rendering had only footer entry points and no explicit coverage state. Context menus now derive the
+  playhead or selected interval, and media blocks outside the successful render interval receive a subdued
+  yellow edge and explanatory tooltip.
+- The browser had one presentation even though its virtualization could support several. The same recycling
+  panel now switches among list, small-grid, and large-grid modes without loading source videos; bounded sizes
+  round-trip through INI and headless config.
+- Timeline selection and effect discovery were uneven across editor surfaces. Stable item IDs now synchronize
+  timeline and Used Clips selection; lane, track, and item menus resolve track compatibility before listing
+  modules, and item actions inherit the source interval.
+
+Verification: Release builds passed after each code batch. The exact recovered 1920x1080 blur project rendered
+through Media Foundation H.264, reported H.264/AAC, yuv420p, SAR 1:1, and decoded cleanly. A 45-55 second
+selected range rendered exactly 10.000 seconds. A non-visible WPF smoke exercised all three browser modes,
+selection synchronization, preview-coverage chrome, and default Preferences height. Dependencies did not
+change, so a package vulnerability audit was not required.

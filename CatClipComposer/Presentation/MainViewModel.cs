@@ -32,6 +32,9 @@ public sealed class MainViewModel : ObservableObject
     private readonly HashSet<Guid> _selectedTimelineItemIds = [];
     private readonly HashSet<Guid> _collapsedTrackIds = [];
     private bool _isDirty;
+    private bool _projectPreviewCurrent;
+    private TimeSpan _projectPreviewCoverageStart;
+    private TimeSpan _projectPreviewCoverageEnd;
 
     public MainViewModel(
         ApplicationSettings settings,
@@ -110,7 +113,23 @@ public sealed class MainViewModel : ObservableObject
     public ProjectLayerRowViewModel? SelectedProjectLayer
     {
         get => _selectedProjectLayer;
-        set => SetProperty(ref _selectedProjectLayer, value);
+        set
+        {
+            if (ReferenceEquals(_selectedProjectLayer, value))
+            {
+                return;
+            }
+
+            if (_selectedProjectLayer is not null)
+            {
+                _selectedProjectLayer.IsSelected = false;
+            }
+
+            if (SetProperty(ref _selectedProjectLayer, value) && value is not null)
+            {
+                value.IsSelected = true;
+            }
+        }
     }
 
     public MediaCardViewModel? SelectedMedia
@@ -162,6 +181,55 @@ public sealed class MainViewModel : ObservableObject
         1 => "1 clip in catalog",
         _ => $"{MediaFiles.Count} clips in catalog"
     };
+
+    public string BrowserViewModeText => _settings.BrowserViewMode switch
+    {
+        ContentBrowserViewMode.List => "View: list",
+        ContentBrowserViewMode.LargeGrid => "View: large",
+        _ => "View: small"
+    };
+
+    public bool IsBrowserListView => _settings.BrowserViewMode == ContentBrowserViewMode.List;
+
+    public bool IsBrowserGridView => !IsBrowserListView;
+
+    public double BrowserItemWidth => _settings.BrowserViewMode switch
+    {
+        ContentBrowserViewMode.LargeGrid => _settings.LargeThumbnailSize + 8,
+        _ => _settings.SmallThumbnailSize + 8
+    };
+
+    public double BrowserItemHeight => _settings.BrowserViewMode switch
+    {
+        ContentBrowserViewMode.List => 76,
+        ContentBrowserViewMode.LargeGrid => Math.Round(_settings.LargeThumbnailSize * 0.68) + 58,
+        _ => Math.Round(_settings.SmallThumbnailSize * 0.65) + 58
+    };
+
+    public double BrowserCardWidth => IsBrowserListView
+        ? double.NaN
+        : _settings.BrowserViewMode == ContentBrowserViewMode.LargeGrid
+            ? _settings.LargeThumbnailSize + 2
+            : _settings.SmallThumbnailSize + 2;
+
+    public double BrowserCardHeight => BrowserItemHeight - 6;
+
+    public double BrowserThumbnailHeight => _settings.BrowserViewMode == ContentBrowserViewMode.LargeGrid
+        ? Math.Round(_settings.LargeThumbnailSize * 0.68)
+        : Math.Round(_settings.SmallThumbnailSize * 0.65);
+
+    public async Task CycleBrowserViewModeAsync(CancellationToken cancellationToken = default)
+    {
+        _settings.BrowserViewMode = _settings.BrowserViewMode switch
+        {
+            ContentBrowserViewMode.List => ContentBrowserViewMode.SmallGrid,
+            ContentBrowserViewMode.SmallGrid => ContentBrowserViewMode.LargeGrid,
+            _ => ContentBrowserViewMode.List
+        };
+        NotifyBrowserLayoutChanged();
+        await _settingsStore.SaveAsync(_settings, cancellationToken);
+        StatusText = $"Content Browser {_settings.BrowserViewMode} view";
+    }
 
     public async Task InitializeAsync(
         IProgress<StartupProgress>? startupProgress = null,
@@ -287,7 +355,20 @@ public sealed class MainViewModel : ObservableObject
 
         OnPropertyChanged(nameof(Settings));
         OnPropertyChanged(nameof(SourceSummary));
+        NotifyBrowserLayoutChanged();
         StatusText = "Preferences saved";
+    }
+
+    private void NotifyBrowserLayoutChanged()
+    {
+        OnPropertyChanged(nameof(BrowserViewModeText));
+        OnPropertyChanged(nameof(IsBrowserListView));
+        OnPropertyChanged(nameof(IsBrowserGridView));
+        OnPropertyChanged(nameof(BrowserItemWidth));
+        OnPropertyChanged(nameof(BrowserItemHeight));
+        OnPropertyChanged(nameof(BrowserCardWidth));
+        OnPropertyChanged(nameof(BrowserCardHeight));
+        OnPropertyChanged(nameof(BrowserThumbnailHeight));
     }
 
     public async Task<ScanResult> ScanAsync(
@@ -489,6 +570,14 @@ public sealed class MainViewModel : ObservableObject
             _operationCancellation.Dispose();
             _operationCancellation = null;
         }
+    }
+
+    public void MarkProjectPreviewRendered(TimeSpan? rangeStart = null, TimeSpan? rangeEnd = null)
+    {
+        _projectPreviewCurrent = true;
+        _projectPreviewCoverageStart = rangeStart ?? TimeSpan.Zero;
+        _projectPreviewCoverageEnd = rangeEnd ?? Timeline.Duration;
+        RefreshTimelineLanes();
     }
 
     public void CancelOperation() => _operationCancellation?.Cancel();
@@ -1264,10 +1353,16 @@ public sealed class MainViewModel : ObservableObject
                     clips.GetValueOrDefault(item.Id),
                     Timeline.PixelsPerSecond,
                     Timeline.TrackHeight,
-                    _selectedTimelineItemIds.Contains(item.Id)));
+                    _selectedTimelineItemIds.Contains(item.Id),
+                    NeedsProjectPreview(item)));
             TimelineLanes.Add(new TimelineLaneViewModel(track, kindOrdinals[track.Kind], items));
         }
     }
+
+    private bool NeedsProjectPreview(ProjectTimelineItem item) =>
+        item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage &&
+        (!_projectPreviewCurrent || item.Start < _projectPreviewCoverageStart ||
+         item.Start + item.Duration > _projectPreviewCoverageEnd);
 
     private async Task SaveRecoverySafelyAsync()
     {
@@ -1285,6 +1380,7 @@ public sealed class MainViewModel : ObservableObject
     {
         _project.ModifiedUtc = DateTime.UtcNow;
         IsDirty = true;
+        _projectPreviewCurrent = false;
     }
 
     private RenderRequest CreateRenderRequest(

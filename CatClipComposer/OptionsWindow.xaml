@@ -23,7 +23,7 @@
                        Text="Application folders, media library behavior, tools, and workspace defaults." />
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="PreferencesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="Video library" />
                 <TextBlock Margin="0,3,0,8"
@@ -68,6 +68,20 @@
                                FontSize="11" Foreground="{StaticResource FaintTextBrush}"
                                Text="1–24; new default is 12" />
                 </StackPanel>
+
+                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Content Browser thumbnails" />
+                <TextBlock Margin="0,3,0,5" Foreground="{StaticResource MutedTextBrush}"
+                           Text="Card widths used by the Small and Large grid modes." />
+                <WrapPanel Margin="0,0,0,14">
+                    <TextBlock VerticalAlignment="Center" Text="Small" />
+                    <TextBox x:Name="SmallThumbnailSizeTextBox" Width="58" Margin="7,0,5,0" />
+                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FaintTextBrush}"
+                               Text="px (80–200)" />
+                    <TextBlock Margin="22,0,0,0" VerticalAlignment="Center" Text="Large" />
+                    <TextBox x:Name="LargeThumbnailSizeTextBox" Width="58" Margin="7,0,5,0" />
+                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FaintTextBrush}"
+                               Text="px (140–360)" />
+                </WrapPanel>
 
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="Final video output folder" />
                 <Grid Margin="0,5,0,12">

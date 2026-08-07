@@ -31,6 +31,9 @@ internal static class ConfigCommand
                 sourceFolders = settings.SourceFolders,
                 settings.MetadataFolder,
                 settings.PreviewSlideCount,
+                browserViewMode = settings.BrowserViewMode.ToString(),
+                settings.SmallThumbnailSize,
+                settings.LargeThumbnailSize,
                 settings.IncludeSubfolders,
                 settings.ShowFileNames,
                 settings.RescanLibraryOnStartup,
@@ -82,6 +85,9 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Project folder: {settings.ProjectFolder}");
         await context.Output.WriteLineAsync($"Metadata folder: {settings.MetadataFolder}");
         await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
+        await context.Output.WriteLineAsync(
+            $"Browser view: {settings.BrowserViewMode}; thumbnails: small={settings.SmallThumbnailSize}px, " +
+            $"large={settings.LargeThumbnailSize}px");
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
         await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");

@@ -3,8 +3,10 @@ using CatClipComposer.Core.Utilities;
 
 namespace CatClipComposer.Presentation;
 
-public sealed class ProjectLayerRowViewModel
+public sealed class ProjectLayerRowViewModel : ObservableObject
 {
+    private bool _isSelected;
+
     private ProjectLayerRowViewModel(
         ProjectTrack track,
         ProjectTimelineItem? item,
@@ -22,6 +24,12 @@ public sealed class ProjectLayerRowViewModel
     public ProjectTimelineItem? Item { get; }
 
     public bool IsTrackHeader => Item is null;
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
 
     public string Title { get; }
 

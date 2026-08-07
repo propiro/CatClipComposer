@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.12**.
+Current application and component version: **0.1.13**.
 
 ## Documentation
 
@@ -25,8 +25,9 @@ Current application and component version: **0.1.12**.
 - Scan MP4, WebM, AVI, MOV, MKV, and M4V files, including optional subfolder scanning.
 - Store clip metadata and export history in a durable SQLite database.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
-- Search names, paths, and editable tags in a multi-select recycled thumbnail grid without opening every video;
-  single or mass tag edits are available from its context menu.
+- Search names, paths, and editable tags in a multi-select recycled browser without opening every video.
+  Its header cycles between a thumbnail list, small grid, and large grid; both grid sizes are configurable in
+  Preferences, and single or mass tag edits are available from the context menu.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
   resizable left/right viewports. The centered Project Preview action renders all enabled layers to a
@@ -49,8 +50,11 @@ Current application and component version: **0.1.12**.
   composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
   range selection, draggable range edges, Mark start/end controls, fit controls, and usable minus/value/plus
   controls for time zoom and track height are available.
+- Right-click the playhead to preview from that frame or mark either range edge; right-click a selected ruler
+  range to preview only that interval. Empty lanes, track headers, and compatible items expose effect actions.
 - Select or double-click an item under Layers / Used Clips to edit its scaling mode, fades, and volume, or add
-  a plugin effect pre-timed to that item's exact project interval.
+  a plugin effect pre-timed to that item's exact project interval. Timeline and Used Clips selections remain
+  synchronized, and a muted-yellow block edge identifies media not covered by the current rendered preview.
 - Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
   keeping the timeline available, and drag thumbnail cards onto a chosen Video timeline.
 - Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly

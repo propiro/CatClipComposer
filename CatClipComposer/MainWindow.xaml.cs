@@ -382,6 +382,18 @@ public partial class MainWindow : Window
 
     private void CancelScan_Click(object sender, RoutedEventArgs e) => _viewModel.CancelOperation();
 
+    private async void BrowserViewMode_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await _viewModel.CycleBrowserViewModeAsync();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save the Content Browser view.", exception);
+        }
+    }
+
     private void CatalogListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
         AddSelectedCatalogItems();
 
@@ -584,6 +596,17 @@ public partial class MainWindow : Window
 
     private async void ProjectPreview_Click(object sender, RoutedEventArgs e)
     {
+        var rangeStart = _viewModel.Timeline.HasRangeSelection
+            ? _viewModel.Timeline.RangeStart
+            : (TimeSpan?)null;
+        var rangeEnd = _viewModel.Timeline.HasRangeSelection
+            ? _viewModel.Timeline.RangeEnd
+            : (TimeSpan?)null;
+        await RenderAndPlayProjectPreviewAsync(rangeStart, rangeEnd);
+    }
+
+    private async Task RenderAndPlayProjectPreviewAsync(TimeSpan? rangeStart, TimeSpan? rangeEnd)
+    {
         if (_viewModel.IsBusy)
         {
             return;
@@ -597,23 +620,21 @@ public partial class MainWindow : Window
             _projectPreviewTimer.Stop();
             SetProjectPlaybackState(false);
             ProjectPreviewPlayer.Source = null;
-            var rangeStart = _viewModel.Timeline.HasRangeSelection
-                ? _viewModel.Timeline.RangeStart
-                : (TimeSpan?)null;
-            var rangeEnd = _viewModel.Timeline.HasRangeSelection
-                ? _viewModel.Timeline.RangeEnd
-                : (TimeSpan?)null;
             var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd);
             _projectPreviewTimelineOffset = rangeStart ?? TimeSpan.Zero;
             _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + result.Duration;
+            _viewModel.MarkProjectPreviewRendered(rangeStart, rangeEnd);
             _viewModel.Timeline.SetPlayhead(_projectPreviewTimelineOffset);
 
             ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
             ProjectPreviewPlayer.IsMuted = true;
             UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
-            ProjectPreviewStatusText.Text = rangeStart.HasValue
-                ? $"Selected range rendered: {_viewModel.Timeline.RangeText}"
-                : "Full project preview ready";
+            ProjectPreviewStatusText.Text = !rangeStart.HasValue
+                ? "Full project preview ready"
+                : _viewModel.Timeline.HasRangeSelection &&
+                  rangeStart == _viewModel.Timeline.RangeStart && rangeEnd == _viewModel.Timeline.RangeEnd
+                    ? $"Selected range rendered: {_viewModel.Timeline.RangeText}"
+                    : $"Preview rendered from {FormatPreviewTime(rangeStart.Value)}";
             ProjectPreviewPlayer.Play();
             _projectPreviewTimer.Start();
             SetProjectPlaybackState(true);
@@ -626,6 +647,36 @@ public partial class MainWindow : Window
             ProjectPreviewStatusText.Text = "Preview could not be rendered.";
             DesktopDialogs.ShowError(this, "The project preview could not be rendered.", exception);
         }
+    }
+
+    private async void PreviewFromPlayhead_Click(object sender, RoutedEventArgs e)
+    {
+        var start = _viewModel.Timeline.Playhead;
+        var end = _viewModel.Timeline.Duration;
+        if (end <= start)
+        {
+            MessageBox.Show(
+                this,
+                "Move the current-frame needle onto rendered project content before using Play from here.",
+                "Nothing to preview",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        await RenderAndPlayProjectPreviewAsync(start, end);
+    }
+
+    private async void PreviewSelectedRange_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.Timeline.HasRangeSelection)
+        {
+            return;
+        }
+
+        await RenderAndPlayProjectPreviewAsync(
+            _viewModel.Timeline.RangeStart,
+            _viewModel.Timeline.RangeEnd);
     }
 
     private void ProjectPreviewPlayer_MediaOpened(object sender, RoutedEventArgs e)
@@ -906,8 +957,14 @@ public partial class MainWindow : Window
 
     private void AddClipEffectContext_Click(object sender, RoutedEventArgs e)
     {
-        SelectLayerCommandTarget(sender);
-        AddPluginEffect_Click(sender, e);
+        var row = SelectLayerCommandTarget(sender);
+        OpenCompatibleEffectEditor(row, useSelectedItemTiming: true);
+    }
+
+    private void AddCompatibleEffectContext_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender);
+        OpenCompatibleEffectEditor(row, useSelectedItemTiming: false);
     }
 
     private void ColorCode_Click(object sender, RoutedEventArgs e)
@@ -948,35 +1005,77 @@ public partial class MainWindow : Window
 
     private void AddPluginEffect_Click(object sender, RoutedEventArgs e)
     {
-        var selectedItem = _viewModel.SelectedProjectLayer?.Item;
-        var track = _viewModel.SelectedProjectLayer?.Track;
-        if (track is null || track.Kind is not (ProjectTrackKind.Background or ProjectTrackKind.Effects))
+        OpenCompatibleEffectEditor(_viewModel.SelectedProjectLayer, useSelectedItemTiming: true, allowDefaultEffectsTrack: true);
+    }
+
+    private void OpenCompatibleEffectEditor(
+        ProjectLayerRowViewModel? sourceRow,
+        bool useSelectedItemTiming,
+        bool allowDefaultEffectsTrack = false,
+        TimeSpan? initialStart = null,
+        TimeSpan? initialDuration = null,
+        string? initialPluginId = null)
+    {
+        var targetTrack = ResolveEffectTargetTrack(sourceRow, allowDefaultEffectsTrack);
+        if (targetTrack is null)
         {
-            track = _viewModel.ProjectLayers
-                .FirstOrDefault(row => row.IsTrackHeader && row.Track.Kind == ProjectTrackKind.Effects)
-                ?.Track;
+            MessageBox.Show(
+                this,
+                "No loaded effect module is compatible with this timeline or item.",
+                "No compatible effects",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
         }
 
-        if (track is null)
+        var compatiblePlugins = _viewModel.Plugins
+            .OfType<ICatClipVideoEffectPlugin>()
+            .Where(plugin => plugin.Descriptor.CompatibleTracks.Contains(targetTrack.Kind))
+            .ToList();
+        if (compatiblePlugins.Count == 0)
         {
             return;
         }
 
+        var sourceItem = useSelectedItemTiming ? sourceRow?.Item : null;
         var dialog = new PluginEffectEditorWindow(
             _viewModel.Plugins,
-            track,
+            targetTrack,
             _viewModel.Timeline.Duration,
             _viewModel.Timeline.SnapMode,
             _viewModel.Timeline.FramesPerSecond,
-            initialStart: selectedItem?.Start,
-            initialDuration: selectedItem?.Duration)
+            initialStart: initialStart ?? sourceItem?.Start,
+            initialDuration: initialDuration ?? sourceItem?.Duration,
+            initialPluginId: initialPluginId)
         {
             Owner = this
         };
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
-            _viewModel.AddLayerItem(track.Id, dialog.ResultItem);
+            _viewModel.AddLayerItem(targetTrack.Id, dialog.ResultItem);
         }
+    }
+
+    private ProjectTrack? ResolveEffectTargetTrack(
+        ProjectLayerRowViewModel? sourceRow,
+        bool allowDefaultEffectsTrack)
+    {
+        if (sourceRow is not null && _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>()
+                .Any(plugin => plugin.Descriptor.CompatibleTracks.Contains(sourceRow.Track.Kind)))
+        {
+            return sourceRow.Track;
+        }
+
+        var isVideoSource = sourceRow?.Track.Kind == ProjectTrackKind.Video ||
+                            sourceRow?.Item?.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage;
+        if (!isVideoSource && !allowDefaultEffectsTrack)
+        {
+            return null;
+        }
+
+        return _viewModel.ProjectLayers
+            .FirstOrDefault(row => row.IsTrackHeader && row.Track.Kind == ProjectTrackKind.Effects)
+            ?.Track;
     }
 
     private void RemoveTrack_Click(object sender, RoutedEventArgs e)
@@ -1299,6 +1398,110 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TimelineCanvas_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Grid canvas)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(canvas);
+        var menu = new ContextMenu { Placement = PlacementMode.MousePoint, PlacementTarget = canvas };
+        if (Math.Abs(position.X - _viewModel.Timeline.PlayheadLeft) <= 7)
+        {
+            menu.Items.Add(CreateContextMenuItem("Play from here", PreviewFromPlayhead_Click));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(CreateContextMenuItem("Mark selection start", MarkRangeStart_Click));
+            menu.Items.Add(CreateContextMenuItem("Mark selection end", MarkRangeEnd_Click));
+        }
+        else if (_viewModel.Timeline.HasRangeSelection &&
+                 position.X >= _viewModel.Timeline.RangeLeft &&
+                 position.X <= _viewModel.Timeline.RangeEndLeft)
+        {
+            menu.Items.Add(CreateContextMenuItem("Preview range", PreviewSelectedRange_Click));
+        }
+        else if (!HasTimelineItemAncestor(e.OriginalSource as DependencyObject))
+        {
+            AddTimelineLaneEffectItems(menu, position);
+        }
+
+        if (menu.Items.Count == 0)
+        {
+            return;
+        }
+
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private void AddTimelineLaneEffectItems(ContextMenu menu, Point position)
+    {
+        const double rulerHeight = 34;
+        if (position.Y < rulerHeight)
+        {
+            return;
+        }
+
+        var laneIndex = (int)((position.Y - rulerHeight) / Math.Max(1, _viewModel.Timeline.TrackHeight));
+        if (laneIndex < 0 || laneIndex >= _viewModel.TimelineLanes.Count)
+        {
+            return;
+        }
+
+        var lane = _viewModel.TimelineLanes[laneIndex];
+        var row = _viewModel.ProjectLayers.FirstOrDefault(candidate =>
+            candidate.IsTrackHeader && candidate.Track.Id == lane.TrackId);
+        var targetTrack = ResolveEffectTargetTrack(row, allowDefaultEffectsTrack: false);
+        if (row is null || targetTrack is null)
+        {
+            return;
+        }
+
+        var start = TimeSpan.FromSeconds(Math.Max(0, position.X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
+        var compatible = _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>()
+            .Where(plugin => plugin.Descriptor.CompatibleTracks.Contains(targetTrack.Kind))
+            .OrderBy(plugin => plugin.Descriptor.Name)
+            .ToList();
+        foreach (var plugin in compatible)
+        {
+            var item = new MenuItem { Header = $"Add {plugin.Descriptor.Name}…" };
+            item.Click += (_, _) =>
+            {
+                _viewModel.SelectedProjectLayer = row;
+                var duration = targetTrack.Kind == ProjectTrackKind.Background
+                    ? TimeSpan.FromSeconds(Math.Max(1, _viewModel.Timeline.Duration.TotalSeconds - start.TotalSeconds))
+                    : TimeSpan.FromSeconds(5);
+                OpenCompatibleEffectEditor(
+                    row,
+                    useSelectedItemTiming: false,
+                    initialStart: start,
+                    initialDuration: duration,
+                    initialPluginId: plugin.Descriptor.Id);
+            };
+            menu.Items.Add(item);
+        }
+    }
+
+    private static MenuItem CreateContextMenuItem(string header, RoutedEventHandler handler)
+    {
+        var item = new MenuItem { Header = header };
+        item.Click += handler;
+        return item;
+    }
+
+    private static bool HasTimelineItemAncestor(DependencyObject? source)
+    {
+        for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is Border { Tag: TimelineLaneItemViewModel })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private TimeSpan GetRulerPosition(Border ruler, MouseEventArgs e)
     {
         var x = Math.Clamp(e.GetPosition(ruler).X, 0, ruler.ActualWidth);
@@ -1487,6 +1690,12 @@ public partial class MainWindow : Window
         ColorCode_Click(sender, e);
     }
 
+    private void TimelineTrackAddEffect_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTimelineTrack(sender);
+        OpenCompatibleEffectEditor(_viewModel.SelectedProjectLayer, useSelectedItemTiming: false);
+    }
+
     private void SelectTimelineTrack(object sender)
     {
         if (sender is not MenuItem { CommandParameter: TimelineLaneViewModel lane })
@@ -1526,6 +1735,19 @@ public partial class MainWindow : Window
 
         _viewModel.SelectedProjectLayer = row;
         ColorCode_Click(sender, e);
+    }
+
+    private void TimelineItemAddEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is null)
+        {
+            return;
+        }
+
+        var row = _viewModel.ProjectLayers.FirstOrDefault(candidate => candidate.Item?.Id == item.Id);
+        _viewModel.SelectedProjectLayer = row;
+        OpenCompatibleEffectEditor(row, useSelectedItemTiming: true);
     }
 
     private void TimelineItemRemove_Click(object sender, RoutedEventArgs e)
