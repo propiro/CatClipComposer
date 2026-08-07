@@ -511,3 +511,17 @@ Findings:
 Verification: Release build, CLI/version and project-schema smokes, portable-publisher guards, exact output
 layout/version inspection, and `git diff --check` are recorded with the release commit. Dependencies did not
 change, so a new package vulnerability audit was not required.
+
+## AUDIT-2026-08-07-006 — Mixed-aspect Project Preview failure
+
+Scope: FFmpeg concat rejection reported from the v0.1.7 Project Preview workflow.
+
+Finding: input normalization applied `setsar=1` before scale. FFmpeg's scale filter then recalculated sample
+aspect ratio to preserve display aspect for sources with different stored geometry, producing otherwise equal
+1920x1080 frames with incompatible SAR values at concat.
+
+Remediation: apply a final `setsar=1` after every base-segment and timed-video scale pipeline. The earlier
+normalization remains useful for plugin input, while the final reset establishes concat's actual invariant.
+
+Verification: a copied catalog rendered the exact reported clips (catalog IDs 10, 11, and 5) without touching
+the real history database. FFprobe reported MPEG-4 1920x1080, square-pixel SAR 1:1, AAC audio, and 70.804 seconds.

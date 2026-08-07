@@ -281,3 +281,13 @@ This is an append-only record of material project work. Newest entries go first.
 - Increased the Mr Cat startup/rescan minimum display to five seconds.
 - Made forced in-place portable publishing preserve the existing executable-directory INI byte-for-byte.
 - Verification and exact-folder portable publication are recorded by the commit containing this entry.
+
+## 2026-08-07 — Mixed-aspect preview concat correction
+
+- Reproduced the Project Preview failure with the same three catalog clips selected by the user.
+- Confirmed FFmpeg received equal 1920x1080 frame sizes but different post-scale sample-aspect ratios.
+- Reset sample aspect ratio after final scale/pad/crop/background processing for base segments and timed
+  video layers, ensuring concat receives identical square-pixel streams.
+- Rendered the three real sources through a copied catalog so testing did not alter real project-use history;
+  FFprobe reported MPEG-4 1920x1080, SAR 1:1, AAC, and 70.804 seconds.
+- Commit: recorded by the commit containing this entry.

@@ -119,6 +119,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   keeps the process open; the startup/rescan splash lasts at least five seconds; dark scrollbar templates
   match the editor theme; and the release is published over the documented launch folder.
 
+### `RENDER-SAR-001` — Normalize scaled clip aspect metadata before concatenation
+
+- Priority/status: P0 / Done
+- Acceptance: Every base segment and timed video layer resets to square pixels after its final scale,
+  pad, crop, or background-module stage. The exact three real catalog clips from the reported failure render
+  together at 1920x1080 with `sample_aspect_ratio=1:1` and 70.804 seconds of output.
+
 ### `CATMETA-001` — Add editable tags, previews, and named-project usage details
 
 - Priority/status: P1 / Done

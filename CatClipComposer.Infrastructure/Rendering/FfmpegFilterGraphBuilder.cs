@@ -177,6 +177,10 @@ internal static class FfmpegFilterGraphBuilder
             });
         }
 
+        // Scale may recalculate SAR to preserve the input display aspect ratio. Concat requires every
+        // normalized segment to have identical geometry *and* sample aspect ratio, so reset it after
+        // all scale/pad/background-plugin work rather than relying on the earlier input normalization.
+        graph.Append("setsar=1,");
         AddFadeFilters(graph, segment.FadeInSeconds, segment.FadeOutSeconds, segment.Duration);
         graph.Append(CultureInfo.InvariantCulture, $"null[{outputLabel}];");
     }
@@ -338,7 +342,7 @@ internal static class FfmpegFilterGraphBuilder
                 $"scale={width}:{height}:force_original_aspect_ratio=decrease," +
                 $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color={NormalizeColor(request.BackgroundColor)}"
         });
-        graph.Append(CultureInfo.InvariantCulture, $"[layervideo{stage}];");
+        graph.Append(CultureInfo.InvariantCulture, $",setsar=1[layervideo{stage}];");
         graph.Append(CultureInfo.InvariantCulture,
             $"[{currentLabel}][layervideo{stage}]overlay=0:0:eof_action=pass:repeatlast=0:" +
             $"enable='between(t,{start},{FormatSeconds(overlay.Start + overlay.Duration)})'[stage{stage}];");
