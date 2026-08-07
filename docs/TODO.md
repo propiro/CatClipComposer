@@ -143,6 +143,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Clip and Project Preview each use one stateful play/pause button and an icon mute toggle; Project
   Preview owns the centered accented render action, and Clip Preview offers timeline-double-click autoplay.
 
+### `UX-PREVIEW-004` — Split/join previews and expose compact editor controls
+
+- Priority/status: P1 / Done
+- Acceptance: Clip and Project Preview switch between joined tabs and resizable side-by-side viewports;
+  Video-block double-click activates Clip Preview; autoplay remains visible; Project Settings lives in the
+  Project Preview footer; track groups use themed square triangle expanders; timeline zoom and height use
+  minus/value/plus controls.
+
 ### `UX-LAYERS-001` — Expose per-item transforms and effects from Used Clips
 
 - Priority/status: P1 / Done
@@ -245,7 +253,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: Preferences now contain application folders, scanning, previews, tools, fonts, and workspace
-  behavior; project target/output settings live in `.nya` and are visible from the Layers rollout.
+  behavior; project target/output settings live in `.nya` and are visible from the Project Preview rollout.
 
 ### `UX-TIMELINE-002` — Add precise scalable timeline editing
 

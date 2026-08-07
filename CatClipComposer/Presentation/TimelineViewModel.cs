@@ -66,6 +66,7 @@ public sealed class TimelineViewModel : ObservableObject
             var normalized = Math.Clamp(value, 0.1, 40);
             if (SetProperty(ref _pixelsPerSecond, normalized))
             {
+                OnPropertyChanged(nameof(TimeZoomText));
                 RefreshRuler();
                 NotifyRangeDisplayChanged();
                 DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -81,10 +82,15 @@ public sealed class TimelineViewModel : ObservableObject
             var normalized = Math.Clamp(value, 28, 110);
             if (SetProperty(ref _trackHeight, normalized))
             {
+                OnPropertyChanged(nameof(TrackHeightText));
                 DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
     }
+
+    public string TimeZoomText => $"{PixelsPerSecond:0.#} px/s";
+
+    public string TrackHeightText => $"{TrackHeight:0} px";
 
     public double FramesPerSecond => _framesPerSecond;
 

@@ -50,7 +50,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 ### Workspace and visual design
 
 - **Main editor panels — Done.** Browser, preview, layers/used clips, and timeline occupy four resizable
-  slots.
+  slots. Clip and Project Preview can be joined as tabs or split into resizable side-by-side viewports.
 - **Repositionable docking — Done.** Every panel can swap into left, center, right, or bottom and persists
   its slot in the INI.
 - **Complete Visual Studio designer layout — Done.** Default coordinates live in XAML; runtime settings can
@@ -64,7 +64,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 ### Timeline and presentation
 
 - **Configurable duration axis and total — Done.** The target is project-specific; scalable lanes, timeline
-  zoom, frame/time/both rulers, and frame/0.1/0.5/1-second snapping support precise placement.
+  zoom, frame/time/both rulers, and frame/0.1/0.5/1-second snapping support precise placement. Time zoom and
+  track height use discrete minus/value/plus controls rather than narrow sliders.
 - **Add, select, remove, and reorder clips — Done.** Blocks drag to snapped interval or neighboring-block
   positions, Ctrl supports multi-selection, and selected-video controls plus Delete are available.
 - **Dynamic timelines — Done.** Background, Video, Overlay, Audio, Progress, and Effects tracks can be
@@ -75,7 +76,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   Shift/Ctrl drag paints a frame-snapped range, Mark start/end creates one from the playhead, and either edge
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
   double-clicks. Project Preview renders only an active range after composition, maps local playback back onto
-  project time, and uses Windows-compatible H.264 without recording export history.
+  project time, and uses Windows-compatible H.264 without recording export history. Project Settings is a
+  compact rollout at the bottom-left of Project Preview rather than consuming Used Clips space.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder.
@@ -110,7 +112,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.11 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.12 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

@@ -589,3 +589,26 @@ concat boundary rendered exactly 10.000 seconds of H.264/AAC from project time 4
 started at zero, used constant 30 fps with no B-frames, decoded cleanly, and sampled coherently. A two-second
 full render also passed. Hidden UI Automation observed paced fast-startup log transitions and the updated XAML
 resource audit passed. Dependencies did not change, so a vulnerability audit was not required.
+
+## AUDIT-2026-08-07-010 — Preview layout and compact-control audit
+
+Scope: joined/split preview behavior, Clip Preview discoverability, timeline sizing controls, Project Settings
+placement, and Layers / Used Clips expander styling.
+
+Findings and remediation:
+
+- A single tab host made simultaneous clip/composition comparison impossible. Split mode now reparents the same
+  pane instances into resizable left/right hosts, and Join restores them to their original tabs.
+- Autoplay previously shared a wrapping transport row and could disappear at narrower widths. It now occupies a
+  fixed location beside Add this clip. Video-block double-click has a post-selection handler so a refreshed block
+  still activates Clip Preview and uses the current autoplay state.
+- Narrow sliders made small zoom/height changes difficult. Discrete controls now expose the current pixels-per-
+  second and pixel-height values between accessible decrement/increment buttons.
+- Project Settings consumed scarce Used Clips height, and native Expander glyphs did not match the dark theme.
+  Settings now lives in the Project Preview footer; both its rollout and track groups use one square-triangle
+  expander template.
+
+Verification: the Release solution built with zero warnings/errors; the XAML resource audit resolved 36 keys
+across 15 files; and a non-visible WPF construction smoke exercised Split, Join, pane reparenting, autoplay
+visibility, settings placement, and the themed expander resource. Dependencies did not change, so a package
+vulnerability audit was not required.

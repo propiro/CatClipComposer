@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.11**.
+Current application and component version: **0.1.12**.
 
 ## Documentation
 
@@ -27,8 +27,9 @@ Current application and component version: **0.1.11**.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in a multi-select recycled thumbnail grid without opening every video;
   single or mass tag edits are available from its context menu.
-- Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with optional
-  timeline-double-click autoplay. The centered Project Preview action renders all enabled layers to a
+- Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
+  permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
+  resizable left/right viewports. The centered Project Preview action renders all enabled layers to a
   Windows-compatible temporary H.264 preview; an active range renders only that interval. Both previews use
   merged play/pause and icon mute controls, and neither action records an export.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
@@ -46,7 +47,8 @@ Current application and component version: **0.1.11**.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
 - Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
   composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
-  range selection, draggable range edges, Mark start/end controls, and fit controls are available.
+  range selection, draggable range edges, Mark start/end controls, fit controls, and usable minus/value/plus
+  controls for time zoom and track height are available.
 - Select or double-click an item under Layers / Used Clips to edit its scaling mode, fades, and volume, or add
   a plugin effect pre-timed to that item's exact project interval.
 - Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
@@ -89,7 +91,7 @@ On the first run:
 2. Add the folders containing source clips.
 3. Choose the output and editable-project folders. Leave FFmpeg at its default to use the bundle.
 4. Save Preferences; startup rescanning is enabled by default.
-5. Open **Project settings** to choose the timeline target and output preset.
+5. Expand **Project settings** at the bottom-left of Project Preview to choose the timeline target and output preset.
 6. Drag clips to the timeline, add any still screens or timed effects, and select **Export**.
 
 To add another lane, select **+ Track** in Layers / Used Clips, choose Video, Overlay, Audio, Progress,

@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private bool _previewSeekDragging;
     private bool _clipPreviewPlaying;
     private bool _clipPreviewAutoplayPending;
+    private bool _previewsSplit;
     private bool _projectPreviewSeekDragging;
     private bool _projectPreviewPlaying;
     private TimeSpan _projectPreviewTimelineOffset;
@@ -528,6 +529,33 @@ public partial class MainWindow : Window
 
     private static string FormatPreviewTime(TimeSpan value) =>
         value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
+
+    private void PreviewLayout_Click(object sender, RoutedEventArgs e)
+    {
+        _previewsSplit = !_previewsSplit;
+
+        if (_previewsSplit)
+        {
+            ClipPreviewTabHost.Content = null;
+            ProjectPreviewTabHost.Content = null;
+            SplitClipPreviewHost.Content = ClipPreviewPane;
+            SplitProjectPreviewHost.Content = ProjectPreviewPane;
+            PreviewTabs.Visibility = Visibility.Collapsed;
+            PreviewSplitGrid.Visibility = Visibility.Visible;
+            PreviewLayoutButton.Content = "Join";
+            PreviewLayoutButton.ToolTip = "Join the preview viewports as tabs";
+            return;
+        }
+
+        SplitClipPreviewHost.Content = null;
+        SplitProjectPreviewHost.Content = null;
+        ClipPreviewTabHost.Content = ClipPreviewPane;
+        ProjectPreviewTabHost.Content = ProjectPreviewPane;
+        PreviewSplitGrid.Visibility = Visibility.Collapsed;
+        PreviewTabs.Visibility = Visibility.Visible;
+        PreviewLayoutButton.Content = "Split";
+        PreviewLayoutButton.ToolTip = "Show clip and project previews side by side";
+    }
 
     private void SetClipPlaybackState(bool playing)
     {
@@ -1375,6 +1403,18 @@ public partial class MainWindow : Window
     private void FitTimelineVertically_Click(object sender, RoutedEventArgs e) =>
         _viewModel.FitTimelineVertically(Math.Max(100, TimelineDropSurface.ActualHeight));
 
+    private void TimelineZoomOut_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.Timeline.PixelsPerSecond /= 1.25;
+
+    private void TimelineZoomIn_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.Timeline.PixelsPerSecond *= 1.25;
+
+    private void TrackHeightDecrease_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.Timeline.TrackHeight -= 8;
+
+    private void TrackHeightIncrease_Click(object sender, RoutedEventArgs e) =>
+        _viewModel.Timeline.TrackHeight += 8;
+
     private void TimelineLaneItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border { Tag: TimelineLaneItemViewModel item })
@@ -1383,16 +1423,26 @@ public partial class MainWindow : Window
             _timelineDragStart = e.GetPosition(this);
             _timelineDragItem = item;
             TimelineDropSurface.Focus();
-            if (e.ClickCount == 2 && item.Kind == ProjectItemKind.Video &&
-                !string.IsNullOrWhiteSpace(item.SourcePath) && File.Exists(item.SourcePath))
-            {
-                _viewModel.SelectCatalogMedia(item.SourcePath);
-                PreviewTabs.SelectedItem = ClipPreviewTab;
-                LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
-                _timelineDragItem = null;
-                e.Handled = true;
-            }
         }
+    }
+
+    private void TimelineLaneItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2 ||
+            sender is not Border { Tag: TimelineLaneItemViewModel item } ||
+            item.Kind != ProjectItemKind.Video ||
+            string.IsNullOrWhiteSpace(item.SourcePath) ||
+            !File.Exists(item.SourcePath))
+        {
+            return;
+        }
+
+        _viewModel.SelectTimelineItem(item.Id);
+        _viewModel.SelectCatalogMedia(item.SourcePath);
+        PreviewTabs.SelectedItem = ClipPreviewTab;
+        LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
+        _timelineDragItem = null;
+        e.Handled = true;
     }
 
     private void TimelineLaneItem_PreviewMouseMove(object sender, MouseEventArgs e)

@@ -274,9 +274,17 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Style="{StaticResource PanelTitleStyle}" Text="PREVIEW" />
-                            <Button Grid.Column="1"
+                            <Button x:Name="PreviewLayoutButton"
+                                    Grid.Column="1"
+                                    Margin="0,0,3,0"
+                                    Click="PreviewLayout_Click"
+                                    Style="{StaticResource HeaderButtonStyle}"
+                                    Content="Split"
+                                    ToolTip="Show clip and project previews side by side" />
+                            <Button Grid.Column="2"
                                     Tag="Preview"
                                     Click="PanelDock_Click"
                                     Style="{StaticResource HeaderButtonStyle}"
@@ -285,7 +293,8 @@
                     </Border>
                     <TabControl x:Name="PreviewTabs" Grid.Row="1" Grid.RowSpan="2" Margin="6">
                         <TabItem x:Name="ClipPreviewTab" Header="CLIP PREVIEW">
-                            <Grid Margin="5">
+                            <ContentControl x:Name="ClipPreviewTabHost">
+                            <Grid x:Name="ClipPreviewPane" Margin="5">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="48" />
@@ -311,8 +320,13 @@
                                         <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
                                                    Text="{Binding SelectedMedia.DimensionsText}" />
                                     </StackPanel>
-                                    <Button Grid.Column="1" Click="AddSelected_Click" Style="{StaticResource PrimaryButtonStyle}"
-                                            Content="Add this clip" />
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <Button Click="AddSelected_Click" Style="{StaticResource PrimaryButtonStyle}"
+                                                Content="Add this clip" />
+                                        <CheckBox x:Name="AutoplayClipsCheckBox" Margin="1,5,0,0"
+                                                  HorizontalAlignment="Left" Content="Autoplay clips"
+                                                  ToolTip="Automatically play timeline videos opened by double-click" />
+                                    </StackPanel>
                                 </Grid>
                                 <Grid Grid.Row="3" Margin="0,5,0,0">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -332,15 +346,15 @@
                                             FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
                                     <Slider x:Name="PreviewVolumeSlider" Width="72" Margin="6,0,0,0" Minimum="0" Maximum="1" Value="0.5"
                                             VerticalAlignment="Center" ValueChanged="PreviewVolumeSlider_ValueChanged" />
-                                    <CheckBox x:Name="AutoplayClipsCheckBox" Margin="9,0,0,0" VerticalAlignment="Center"
-                                              Content="Autoplay clips" ToolTip="Automatically play timeline videos opened by double-click" />
                                     <Button Margin="4,0,0,0" Click="OpenSource_Click" Content="Show file" />
                                     <Button Margin="4,0,0,0" Click="ClipMetadata_Click" Content="Metadata" />
                                 </WrapPanel>
                             </Grid>
+                            </ContentControl>
                         </TabItem>
                         <TabItem x:Name="ProjectPreviewTab" Header="PROJECT PREVIEW">
-                            <Grid Margin="5">
+                            <ContentControl x:Name="ProjectPreviewTabHost">
+                            <Grid x:Name="ProjectPreviewPane" Margin="5">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
@@ -363,6 +377,10 @@
                                                VerticalAlignment="Center" FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="0:00" />
                                 </Grid>
                                 <Grid Grid.Row="2" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
@@ -383,10 +401,75 @@
                                                VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
                                                FontSize="10" Foreground="{StaticResource MutedTextBrush}"
                                                Text="Render the current composition." />
+                                    <Expander x:Name="ProjectSettingsExpander"
+                                              Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                              Margin="0,7,8,0" MaxWidth="380"
+                                              HorizontalAlignment="Left" IsExpanded="False"
+                                              Style="{StaticResource LayerExpanderStyle}">
+                                        <Expander.Header>
+                                            <TextBlock FontSize="11" FontWeight="SemiBold" Text="PROJECT SETTINGS" />
+                                        </Expander.Header>
+                                        <Border Margin="22,4,0,0" Padding="7"
+                                                Background="{StaticResource InputBrush}"
+                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding ProjectName}" />
+                                                <TextBlock Margin="0,3,0,0" FontSize="10"
+                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                           TextWrapping="Wrap" Text="{Binding ProjectSettingsSummary}" />
+                                                <TextBlock Margin="0,2,0,5" FontSize="10"
+                                                           Foreground="{StaticResource FaintTextBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding ProjectFilePath}"
+                                                           Text="{Binding ProjectFilePath, TargetNullValue=Not saved yet}" />
+                                                <Button HorizontalAlignment="Left" Click="OutputSettings_Click"
+                                                        Content="Edit project settings…" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Expander>
                                 </Grid>
                             </Grid>
+                            </ContentControl>
                         </TabItem>
                     </TabControl>
+                    <Grid x:Name="PreviewSplitGrid" Grid.Row="1" Grid.RowSpan="2" Margin="6" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="260" />
+                            <ColumnDefinition Width="5" />
+                            <ColumnDefinition Width="*" MinWidth="260" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border Background="{StaticResource ToolbarBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                                    <TextBlock Margin="7,0" VerticalAlignment="Center" FontSize="10"
+                                               FontWeight="SemiBold" Text="CLIP PREVIEW" />
+                                </Border>
+                                <ContentControl x:Name="SplitClipPreviewHost" Grid.Row="1" />
+                            </Grid>
+                        </Border>
+                        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                                      Background="{StaticResource BorderBrush}" ShowsPreview="True" />
+                        <Border Grid.Column="2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border Background="{StaticResource ToolbarBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                                    <TextBlock Margin="7,0" VerticalAlignment="Center" FontSize="10"
+                                               FontWeight="SemiBold" Text="PROJECT PREVIEW" />
+                                </Border>
+                                <ContentControl x:Name="SplitProjectPreviewHost" Grid.Row="1" />
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Border>
 
@@ -399,7 +482,6 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="31" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="44" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
@@ -426,30 +508,7 @@
                                     Content="Dock" />
                         </Grid>
                     </Border>
-                    <Expander Grid.Row="1" Margin="6,5,6,3" IsExpanded="True">
-                        <Expander.Header>
-                            <TextBlock FontSize="11" FontWeight="SemiBold" Text="PROJECT SETTINGS" />
-                        </Expander.Header>
-                        <Border Margin="0,4,0,2" Padding="7"
-                                Background="{StaticResource InputBrush}"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                                           Text="{Binding ProjectName}" />
-                                <TextBlock Margin="0,3,0,0" FontSize="10"
-                                           Foreground="{StaticResource MutedTextBrush}"
-                                           TextWrapping="Wrap" Text="{Binding ProjectSettingsSummary}" />
-                                <TextBlock Margin="0,2,0,5" FontSize="10"
-                                           Foreground="{StaticResource FaintTextBrush}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding ProjectFilePath}"
-                                           Text="{Binding ProjectFilePath, TargetNullValue=Not saved yet}" />
-                                <Button HorizontalAlignment="Left" Click="OutputSettings_Click"
-                                        Content="Edit project settings…" />
-                            </StackPanel>
-                        </Border>
-                    </Expander>
-                    <Grid Grid.Row="2" Margin="7,6,7,3">
+                    <Grid Grid.Row="1" Margin="7,6,7,3">
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
@@ -459,11 +518,12 @@
                                    Foreground="{StaticResource MutedTextBrush}"
                                    Text="{Binding Timeline.TotalText}" />
                     </Grid>
-                    <ScrollViewer Grid.Row="3" Margin="4,0" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="2" Margin="4,0" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding ProjectLayerGroups}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,2">
+                                    <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,2"
+                                              Style="{StaticResource LayerExpanderStyle}">
                                         <Expander.Header>
                                             <Border Padding="7,4" MinWidth="150" Background="{Binding HeaderColor}"
                                                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
@@ -514,7 +574,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <WrapPanel Grid.Row="4" Margin="6">
+                    <WrapPanel Grid.Row="3" Margin="6">
                         <Button Click="TrackMoveUp_Click" Content="Track up" />
                         <Button Margin="4,0,0,0" Click="TrackMoveDown_Click" Content="Track down" />
                         <Button Margin="4,0,0,0" Click="RemoveTrack_Click" Content="- Track" />
@@ -589,9 +649,9 @@
                             <ColumnDefinition Width="170" />
                             <ColumnDefinition Width="170" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="118" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="108" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -601,12 +661,40 @@
                                 Content="{Binding Timeline.SnapModeButtonText}" />
                         <TextBlock Grid.Column="2" Margin="9,0,4,0" VerticalAlignment="Center"
                                    FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Time zoom" />
-                        <Slider Grid.Column="3" Minimum="0.1" Maximum="40"
-                                Value="{Binding Timeline.PixelsPerSecond, Mode=TwoWay}" />
+                        <Grid Grid.Column="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="29" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="29" />
+                            </Grid.ColumnDefinitions>
+                            <Button Padding="0" Click="TimelineZoomOut_Click" Content="−"
+                                    AutomationProperties.Name="Decrease time zoom" />
+                            <Border Grid.Column="1" Margin="3,0" Background="{StaticResource InputBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"
+                                           Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.TimeZoomText}" />
+                            </Border>
+                            <Button Grid.Column="2" Padding="0" Click="TimelineZoomIn_Click" Content="+"
+                                    AutomationProperties.Name="Increase time zoom" />
+                        </Grid>
                         <TextBlock Grid.Column="4" Margin="9,0,4,0" VerticalAlignment="Center"
                                    FontSize="10" Foreground="{StaticResource MutedTextBrush}" Text="Track height" />
-                        <Slider Grid.Column="5" Minimum="28" Maximum="110"
-                                Value="{Binding Timeline.TrackHeight, Mode=TwoWay}" />
+                        <Grid Grid.Column="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="29" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="29" />
+                            </Grid.ColumnDefinitions>
+                            <Button Padding="0" Click="TrackHeightDecrease_Click" Content="−"
+                                    AutomationProperties.Name="Decrease track height" />
+                            <Border Grid.Column="1" Margin="3,0" Background="{StaticResource InputBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"
+                                           Foreground="{StaticResource MutedTextBrush}" Text="{Binding Timeline.TrackHeightText}" />
+                            </Border>
+                            <Button Grid.Column="2" Padding="0" Click="TrackHeightIncrease_Click" Content="+"
+                                    AutomationProperties.Name="Increase track height" />
+                        </Grid>
                         <Button Grid.Column="6" Margin="8,0,0,0" Click="MarkRangeStart_Click"
                                 Content="Mark start" ToolTip="Set the selection start at the current frame" />
                         <Button Grid.Column="7" Margin="4,0,0,0" Click="MarkRangeEnd_Click"
@@ -722,7 +810,8 @@
                                                                             BorderThickness="1" Tag="{Binding}"
                                                                             ToolTip="{Binding Title}"
                                                                             PreviewMouseLeftButtonDown="TimelineLaneItem_PreviewMouseLeftButtonDown"
-                                                                             PreviewMouseMove="TimelineLaneItem_PreviewMouseMove">
+                                                                            PreviewMouseMove="TimelineLaneItem_PreviewMouseMove"
+                                                                            MouseLeftButtonDown="TimelineLaneItem_MouseLeftButtonDown">
                                                                         <Border.ContextMenu>
                                                                             <ContextMenu>
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemEdit_Click" Header="Edit item…" />

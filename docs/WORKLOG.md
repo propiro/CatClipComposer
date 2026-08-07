@@ -331,3 +331,16 @@ This is an append-only record of material project work. Newest entries go first.
 - Paced only fast startup log lines by 500–750 ms; configured startup rescans and manual refreshes remain live.
 - Released the work as visible application/component version 0.1.11.
 - Commit: recorded by the commit containing this entry.
+
+## 2026-08-07 — Split preview and compact timeline controls
+
+- Added a header-level Split/Join action that moves the existing Clip and Project Preview panes between
+  joined tabs and resizable left/right viewports without duplicating media state or controls.
+- Moved the autoplay checkbox beside Add this clip so it remains visible, and routed Video timeline-block
+  double-click through a dedicated post-selection event that activates Clip Preview before loading the source.
+- Replaced the narrow time-zoom and track-height sliders with minus/value/plus controls and readable live values.
+- Moved the Project Settings rollout from Layers / Used Clips to the bottom-left of Project Preview.
+- Replaced native white expander glyphs with themed square buttons and up/down triangles for Project Settings
+  and track groups.
+- Raised the visible application/component version to 0.1.12; verification and exact-folder publication are
+  recorded by the commit containing this entry.
