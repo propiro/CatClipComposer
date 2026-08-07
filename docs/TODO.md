@@ -106,11 +106,24 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   plan to temporary metadata storage without export-history writes and Project Preview supports seek and
   single-frame stepping.
 
+### `PROJECT-PREVIEW-002` — Stabilize Windows playback and connect timeline selection
+
+- Priority/status: P0 / Done
+- Acceptance: Temporary Project Preview uses Media Foundation H.264 rather than the project's final-export
+  encoder; a real mixed-source render decodes cleanly with constant frame timestamps; double-clicking a Video
+  block opens its source in muted Clip Preview.
+
 ### `TIMELINE-002` — Add an exact-frame playhead and visual track stack controls
 
 - Priority/status: P0 / Done
 - Acceptance: The ruler selects a frame by click/drag; tracks collapse, reorder, and accept optional colors;
   blocks accept optional colors; and the topmost visual track composites above lower tracks.
+
+### `TIMELINE-003` — Add frame-snapped range selection
+
+- Priority/status: P0 / Done
+- Acceptance: Shift/Ctrl drag on the ruler paints a visible frame-snapped range, modifier-click extends from
+  the current frame, normal clicks clear the range, and Project Preview playback stops at the selected end.
 
 ### `UX-SAFETY-001` — Protect unsaved projects and finish application handoff polish
 

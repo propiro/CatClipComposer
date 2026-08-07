@@ -426,7 +426,11 @@ public sealed class MainViewModel : ObservableObject
                 StatusText = $"Preview: {update.Message}";
             });
             var result = await _videoRenderer.RenderAsync(
-                CreateRenderRequest(renderPlan, outputPath, orientation),
+                CreateRenderRequest(
+                    renderPlan,
+                    outputPath,
+                    orientation,
+                    VideoEncoderPreset.WindowsMediaFoundationH264),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -1001,6 +1005,18 @@ public sealed class MainViewModel : ObservableObject
 
     public void CycleTimelineSnapMode() => Timeline.CycleSnapMode();
 
+    public MediaCardViewModel? SelectCatalogMedia(string sourcePath)
+    {
+        var media = MediaFiles.FirstOrDefault(item =>
+            item.FullPath.Equals(sourcePath, StringComparison.OrdinalIgnoreCase));
+        if (media is not null)
+        {
+            SelectedMedia = media;
+        }
+
+        return media;
+    }
+
     private async Task LoadCatalogAsync(CancellationToken cancellationToken)
     {
         var files = await _catalog.GetAllAsync(cancellationToken: cancellationToken);
@@ -1248,11 +1264,12 @@ public sealed class MainViewModel : ObservableObject
     private RenderRequest CreateRenderRequest(
         ProjectRenderPlan renderPlan,
         string outputPath,
-        OutputOrientation orientation) => new(
+        OutputOrientation orientation,
+        VideoEncoderPreset? videoEncoderOverride = null) => new(
         renderPlan.Segments,
         outputPath,
         orientation,
-        _project.Output.VideoEncoder,
+        videoEncoderOverride ?? _project.Output.VideoEncoder,
         _project.Output.FramesPerSecond,
         ProjectName: _project.Name,
         ProjectFilePath: _project.ProjectFilePath,

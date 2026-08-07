@@ -71,9 +71,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   added, named, resized, collapsed, color-coded, vertically sorted, removed when empty, and focused with
   Space from anywhere inside the panel; horizontal/vertical fit controls are available. Visual tracks render
   bottom-to-top so the topmost track is the topmost composite.
-- **Frame playhead and dual previews — Done.** Clicking or dragging the ruler selects an exact frame.
-  Clip Preview handles raw library media; Project Preview uses the normal layered renderer to create a
-  seekable, frame-step temporary composition without recording export history.
+- **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
+  Shift/Ctrl drag paints a frame-snapped range and preview playback stops at its end. Clip Preview handles raw
+  library media, including Video-block double-clicks. Project Preview uses the normal layered renderer with a
+  Windows-compatible H.264 preview override to create a seekable composition without recording export history.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder.
@@ -108,7 +109,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.8 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.9 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

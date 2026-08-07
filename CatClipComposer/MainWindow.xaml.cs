@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private bool _previewSeekDragging;
     private bool _projectPreviewSeekDragging;
     private bool _timelinePlayheadDragging;
+    private bool _timelineRangeSelecting;
+    private TimeSpan _timelineRangeAnchor;
+    private TimeSpan _timelineRangeClickAnchor;
     private bool _allowClose;
     private bool _closeSaveInProgress;
 
@@ -413,15 +416,21 @@ public partial class MainWindow : Window
                 .Last();
         }
 
+        LoadClipPreview(_viewModel.SelectedMedia?.FullPath);
+    }
+
+    private void LoadClipPreview(string? sourcePath)
+    {
         PreviewPlayer.Stop();
+        _previewTimer.Stop();
         PreviewPlayer.IsMuted = true;
         PreviewMuteButton.Content = "Unmute";
         PreviewSeekSlider.Value = 0;
         PreviewPositionText.Text = "0:00";
         PreviewDurationText.Text = "0:00";
-        PreviewPlayer.Source = _viewModel.SelectedMedia is null
+        PreviewPlayer.Source = string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath)
             ? null
-            : new Uri(_viewModel.SelectedMedia.FullPath, UriKind.Absolute);
+            : new Uri(sourcePath, UriKind.Absolute);
     }
 
     private void PreviewPlay_Click(object sender, RoutedEventArgs e)
@@ -520,6 +529,13 @@ public partial class MainWindow : Window
             ProjectPreviewPlayer.Stop();
             ProjectPreviewPlayer.Source = null;
             var result = await _viewModel.RenderProjectPreviewAsync();
+            if (_viewModel.Timeline.HasRangeSelection &&
+                (_viewModel.Timeline.Playhead < _viewModel.Timeline.RangeStart ||
+                 _viewModel.Timeline.Playhead >= _viewModel.Timeline.RangeEnd))
+            {
+                _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeStart);
+            }
+
             ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
             ProjectPreviewPlayer.IsMuted = true;
             ProjectPreviewMuteButton.Content = "Unmute";
@@ -566,6 +582,7 @@ public partial class MainWindow : Window
 
     private void ProjectPreviewPlay_Click(object sender, RoutedEventArgs e)
     {
+        PrepareRangePlayback();
         ProjectPreviewPlayer.Play();
         _projectPreviewTimer.Start();
     }
@@ -591,6 +608,16 @@ public partial class MainWindow : Window
         ProjectPreviewPlayer.Pause();
         _projectPreviewTimer.Stop();
         _viewModel.Timeline.StepFrame(direction);
+        if (_viewModel.Timeline.HasRangeSelection)
+        {
+            var clamped = _viewModel.Timeline.Playhead < _viewModel.Timeline.RangeStart
+                ? _viewModel.Timeline.RangeStart
+                : _viewModel.Timeline.Playhead > _viewModel.Timeline.RangeEnd
+                    ? _viewModel.Timeline.RangeEnd
+                    : _viewModel.Timeline.Playhead;
+            _viewModel.Timeline.SetPlayhead(clamped);
+        }
+
         SeekProjectPreview(_viewModel.Timeline.Playhead);
     }
 
@@ -602,12 +629,37 @@ public partial class MainWindow : Window
         }
 
         var position = ProjectPreviewPlayer.Position;
+        if (_viewModel.Timeline.HasRangeSelection && position >= _viewModel.Timeline.RangeEnd)
+        {
+            ProjectPreviewPlayer.Pause();
+            _projectPreviewTimer.Stop();
+            SeekProjectPreview(_viewModel.Timeline.RangeEnd);
+            ProjectPreviewStatusText.Text = "Selected range complete";
+            return;
+        }
+
         ProjectPreviewSeekSlider.Value = Math.Clamp(
             position.TotalSeconds,
             ProjectPreviewSeekSlider.Minimum,
             ProjectPreviewSeekSlider.Maximum);
         ProjectPreviewPositionText.Text = FormatPreviewTime(position);
         _viewModel.Timeline.SetPlayhead(position);
+    }
+
+    private void PrepareRangePlayback()
+    {
+        if (!_viewModel.Timeline.HasRangeSelection)
+        {
+            return;
+        }
+
+        var playhead = _viewModel.Timeline.Playhead;
+        if (playhead < _viewModel.Timeline.RangeStart || playhead >= _viewModel.Timeline.RangeEnd)
+        {
+            SeekProjectPreview(_viewModel.Timeline.RangeStart);
+        }
+
+        ProjectPreviewStatusText.Text = $"Playing selected range: {_viewModel.Timeline.RangeText}";
     }
 
     private void ProjectPreviewSeekSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
@@ -1061,8 +1113,13 @@ public partial class MainWindow : Window
         }
 
         _timelinePlayheadDragging = true;
+        _timelineRangeSelecting = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ||
+                                  Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+        _timelineRangeClickAnchor = _viewModel.Timeline.Playhead;
+        _timelineRangeAnchor = GetRulerPosition(ruler, e);
+        _viewModel.Timeline.ClearRangeSelection();
         ruler.CaptureMouse();
-        SetPlayheadFromRuler(ruler, e);
+        SetPlayheadFromRuler(ruler, e, false);
         e.Handled = true;
     }
 
@@ -1070,7 +1127,7 @@ public partial class MainWindow : Window
     {
         if (_timelinePlayheadDragging && e.LeftButton == MouseButtonState.Pressed && sender is Border ruler)
         {
-            SetPlayheadFromRuler(ruler, e);
+            SetPlayheadFromRuler(ruler, e, _timelineRangeSelecting);
             e.Handled = true;
         }
     }
@@ -1079,17 +1136,38 @@ public partial class MainWindow : Window
     {
         if (sender is Border ruler && _timelinePlayheadDragging)
         {
-            SetPlayheadFromRuler(ruler, e);
+            var position = GetRulerPosition(ruler, e);
+            if (_timelineRangeSelecting)
+            {
+                var frameDuration = 1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond);
+                var moved = Math.Abs((position - _timelineRangeAnchor).TotalSeconds) >= frameDuration;
+                _viewModel.Timeline.SetRangeSelection(
+                    moved ? _timelineRangeAnchor : _timelineRangeClickAnchor,
+                    position);
+            }
+
+            SetPlayheadFromRuler(ruler, e, false);
             ruler.ReleaseMouseCapture();
             _timelinePlayheadDragging = false;
+            _timelineRangeSelecting = false;
             e.Handled = true;
         }
     }
 
-    private void SetPlayheadFromRuler(Border ruler, MouseEventArgs e)
+    private TimeSpan GetRulerPosition(Border ruler, MouseEventArgs e)
     {
         var x = Math.Clamp(e.GetPosition(ruler).X, 0, ruler.ActualWidth);
-        var position = TimeSpan.FromSeconds(x / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
+        return TimeSpan.FromSeconds(x / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
+    }
+
+    private void SetPlayheadFromRuler(Border ruler, MouseEventArgs e, bool updateRange)
+    {
+        var position = GetRulerPosition(ruler, e);
+        if (updateRange)
+        {
+            _viewModel.Timeline.SetRangeSelection(_timelineRangeAnchor, position);
+        }
+
         _viewModel.Timeline.SetPlayhead(position);
         if (ProjectPreviewPlayer.Source is not null)
         {
@@ -1113,6 +1191,15 @@ public partial class MainWindow : Window
             _timelineDragStart = e.GetPosition(this);
             _timelineDragItem = item;
             TimelineDropSurface.Focus();
+            if (e.ClickCount == 2 && item.Kind == ProjectItemKind.Video &&
+                !string.IsNullOrWhiteSpace(item.SourcePath) && File.Exists(item.SourcePath))
+            {
+                _viewModel.SelectCatalogMedia(item.SourcePath);
+                PreviewTabs.SelectedItem = ClipPreviewTab;
+                LoadClipPreview(item.SourcePath);
+                _timelineDragItem = null;
+                e.Handled = true;
+            }
         }
     }
 

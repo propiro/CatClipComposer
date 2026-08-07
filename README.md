@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.8**.
+Current application and component version: **0.1.9**.
 
 ## Documentation
 
@@ -27,8 +27,9 @@ Current application and component version: **0.1.8**.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in a multi-select recycled thumbnail grid without opening every video;
   single or mass tag edits are available from its context menu.
-- Preview a selected library clip in Clip Preview, or use the top PREVIEW action to render all enabled
-  project layers into a temporary Project Preview with seeking and frame stepping; neither action records an export.
+- Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview. The top
+  PREVIEW action renders all enabled layers to a Windows-compatible temporary H.264 Project Preview with
+  seeking and frame stepping; neither action records an export.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
@@ -43,7 +44,8 @@ Current application and component version: **0.1.8**.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
 - Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
-  composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, and fit controls are available.
+  composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
+  range selection, selected-range preview playback, and fit controls are available.
 - Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
   keeping the timeline available, and drag thumbnail cards onto a chosen Video timeline.
 - Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly

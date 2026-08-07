@@ -54,6 +54,7 @@ public sealed class TimelineLaneItemViewModel
         TrackKind = track.Kind;
         Kind = item.Kind;
         Title = item.Name;
+        SourcePath = item.SourcePath;
         Detail = $"{DurationFormatter.Format(item.Start)} + {DurationFormatter.Format(item.Duration)}";
         ThumbnailPath = clip?.ThumbnailPath;
         Left = Math.Max(0, item.Start.TotalSeconds * pixelsPerSecond);
@@ -86,6 +87,8 @@ public sealed class TimelineLaneItemViewModel
     public ProjectItemKind Kind { get; }
 
     public string Title { get; }
+
+    public string? SourcePath { get; }
 
     public string Detail { get; }
 

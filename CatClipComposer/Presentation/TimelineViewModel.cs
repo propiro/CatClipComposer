@@ -16,6 +16,8 @@ public sealed class TimelineViewModel : ObservableObject
     private TimelineRulerMode _rulerMode = TimelineRulerMode.TimeAndFrames;
     private TimelineSnapMode _snapMode = TimelineSnapMode.TenthSecond;
     private TimeSpan _playhead;
+    private TimeSpan _rangeStart;
+    private TimeSpan _rangeEnd;
 
     public TimelineViewModel(double targetDurationMinutes)
     {
@@ -65,6 +67,7 @@ public sealed class TimelineViewModel : ObservableObject
             if (SetProperty(ref _pixelsPerSecond, normalized))
             {
                 RefreshRuler();
+                NotifyRangeDisplayChanged();
                 DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -90,6 +93,20 @@ public sealed class TimelineViewModel : ObservableObject
     public double PlayheadLeft => _playhead.TotalSeconds * PixelsPerSecond;
 
     public string PlayheadText => $"{DurationFormatter.Format(_playhead)} | frame {Math.Round(_playhead.TotalSeconds * _framesPerSecond):0}";
+
+    public bool HasRangeSelection => _rangeEnd > _rangeStart;
+
+    public TimeSpan RangeStart => _rangeStart;
+
+    public TimeSpan RangeEnd => _rangeEnd;
+
+    public double RangeLeft => _rangeStart.TotalSeconds * PixelsPerSecond;
+
+    public double RangeWidth => Math.Max(0, (_rangeEnd - _rangeStart).TotalSeconds * PixelsPerSecond);
+
+    public string RangeText => HasRangeSelection
+        ? $"{DurationFormatter.Format(_rangeStart)} - {DurationFormatter.Format(_rangeEnd)} ({DurationFormatter.Format(_rangeEnd - _rangeStart)})"
+        : string.Empty;
 
     public double SnapIncrement => _snapMode switch
     {
@@ -336,6 +353,7 @@ public sealed class TimelineViewModel : ObservableObject
     {
         _clips.Clear();
         SelectedClip = null;
+        ClearRangeSelection();
     }
 
     public void SetTargetDuration(double minutes)
@@ -348,16 +366,17 @@ public sealed class TimelineViewModel : ObservableObject
     {
         _framesPerSecond = Math.Clamp(framesPerSecond, 1, 240);
         SetPlayhead(_playhead);
+        if (HasRangeSelection)
+        {
+            SetRangeSelection(_rangeStart, _rangeEnd);
+        }
         OnPropertyChanged(nameof(PlayheadText));
         RefreshRuler();
     }
 
     public void SetPlayhead(TimeSpan value)
     {
-        var maximum = Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds);
-        var seconds = Math.Clamp(value.TotalSeconds, 0, Math.Max(0, maximum));
-        var frame = Math.Round(seconds * _framesPerSecond);
-        var normalized = TimeSpan.FromSeconds(frame / _framesPerSecond);
+        var normalized = NormalizeFrameTime(value);
         if (_playhead == normalized)
         {
             return;
@@ -371,6 +390,34 @@ public sealed class TimelineViewModel : ObservableObject
 
     public void StepFrame(int direction) =>
         SetPlayhead(_playhead + TimeSpan.FromSeconds(direction / _framesPerSecond));
+
+    public void SetRangeSelection(TimeSpan first, TimeSpan second)
+    {
+        var normalizedFirst = NormalizeFrameTime(first);
+        var normalizedSecond = NormalizeFrameTime(second);
+        var start = normalizedFirst <= normalizedSecond ? normalizedFirst : normalizedSecond;
+        var end = normalizedFirst <= normalizedSecond ? normalizedSecond : normalizedFirst;
+        if (_rangeStart == start && _rangeEnd == end)
+        {
+            return;
+        }
+
+        _rangeStart = start;
+        _rangeEnd = end;
+        NotifyRangeDisplayChanged();
+    }
+
+    public void ClearRangeSelection()
+    {
+        if (_rangeStart == TimeSpan.Zero && _rangeEnd == TimeSpan.Zero)
+        {
+            return;
+        }
+
+        _rangeStart = TimeSpan.Zero;
+        _rangeEnd = TimeSpan.Zero;
+        NotifyRangeDisplayChanged();
+    }
 
     public void SetDisplaySettings(TimelineRulerMode rulerMode, TimelineSnapMode snapMode)
     {
@@ -508,7 +555,26 @@ public sealed class TimelineViewModel : ObservableObject
         OnPropertyChanged(nameof(AxisEndText));
         OnPropertyChanged(nameof(TimelineWidth));
         OnPropertyChanged(nameof(PlayheadLeft));
+        NotifyRangeDisplayChanged();
         RefreshRuler();
+    }
+
+    private TimeSpan NormalizeFrameTime(TimeSpan value)
+    {
+        var maximum = Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds);
+        var seconds = Math.Clamp(value.TotalSeconds, 0, Math.Max(0, maximum));
+        var frame = Math.Round(seconds * _framesPerSecond);
+        return TimeSpan.FromSeconds(frame / _framesPerSecond);
+    }
+
+    private void NotifyRangeDisplayChanged()
+    {
+        OnPropertyChanged(nameof(HasRangeSelection));
+        OnPropertyChanged(nameof(RangeStart));
+        OnPropertyChanged(nameof(RangeEnd));
+        OnPropertyChanged(nameof(RangeLeft));
+        OnPropertyChanged(nameof(RangeWidth));
+        OnPropertyChanged(nameof(RangeText));
     }
 
     private void RefreshRuler()

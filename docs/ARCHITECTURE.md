@@ -52,13 +52,15 @@ The executable modules may reference Core and Infrastructure for composition. Co
 2. `ProjectRenderMapper` projects enabled Background, Video, Overlay, Audio, Progress, and Effects track
    items into one renderer plan without WPF/CLI duplication. Track order is top-to-bottom in the editor;
    the bottom Video track supplies the base and higher visual tracks are composited over it in reverse order.
-3. Project output dimensions/FPS/encoder/quality/bitrates are copied into the render request, with narrow command-line overrides.
+3. Project output dimensions/FPS/encoder/quality/bitrates are copied into export requests, with narrow
+   command-line overrides. Temporary WPF previews retain project dimensions/FPS/quality but select the
+   Media Foundation H.264 compatibility encoder for stable Windows playback.
 4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
 5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
 6. FFmpeg renders to a unique partial path.
 7. A successful render atomically replaces the selected output.
 8. `ICompositionExporter` records the render job and ordered media IDs through `IMediaCatalog`.
-9. Project Preview sends the same render request directly to `IVideoRenderer` in metadata storage, deliberately
+9. Project Preview sends the same layered plan directly to `IVideoRenderer` in metadata storage, deliberately
    bypassing `ICompositionExporter` so previewing never changes completed-project usage history.
 
 ### Plugin discovery and effect rendering

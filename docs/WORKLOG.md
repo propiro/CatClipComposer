@@ -292,3 +292,17 @@ This is an append-only record of material project work. Newest entries go first.
   FFprobe reported MPEG-4 1920x1080, SAR 1:1, AAC, and 70.804 seconds.
 - Released the correction as visible application/component version 0.1.8.
 - Commit: recorded by the commit containing this entry.
+
+## 2026-08-07 — Stable Windows preview playback and timeline ranges
+
+- Verified the reported jittered preview had monotonic 30 fps timestamps, decoded without FFmpeg warnings,
+  and produced clean sequential sampled frames; the affected stream was MPEG-4 Advanced Simple Profile with
+  B-frames, leaving Windows/WPF decoding as the incompatible boundary.
+- Kept the project's chosen encoder for final export but made temporary Project Preview files use Windows
+  Media Foundation H.264 Constrained Baseline without B-frames.
+- Added Video-block double-click routing to the muted Clip Preview tab, including direct source fallback when
+  the catalog card is unavailable.
+- Added visible frame-snapped Shift/Ctrl ruler ranges, modifier-click extension, normal-click clearing, range-
+  bounded Project Preview playback, and range-aware frame stepping.
+- Released the correction as visible application/component version 0.1.9.
+- Commit: recorded by the commit containing this entry.

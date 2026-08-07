@@ -526,3 +526,26 @@ normalization remains useful for plugin input, while the final reset establishes
 Verification: a copied catalog rendered the exact reported clips (catalog IDs 10, 11, and 5) without touching
 the real history database. FFprobe reported MPEG-4 1920x1080, square-pixel SAR 1:1, AAC audio, and 70.804 seconds.
 The corrected portable package is versioned 0.1.8 so it is visibly distinguishable from the reported build.
+
+## AUDIT-2026-08-07-007 — Windows Project Preview playback and range interaction
+
+Scope: jittered v0.1.8 Project Preview playback, timeline-to-source preview routing, and ruler range selection.
+
+Findings:
+
+- The affected 1920x1080 preview contained 2,267 monotonically ordered video frames at 30 fps, with a largest
+  timestamp gap of one frame. Bundled FFmpeg decoded it fully without warnings, and distributed frame samples
+  showed coherent sequential clip content.
+- Its MPEG-4 Advanced Simple Profile stream used B-frames. This isolated the visible jitter to the Windows
+  MediaElement decoder path rather than the renderer's frame order or concat timing.
+- The same real three-clip composition rendered through `h264_mf` as H.264 Constrained Baseline with no
+  B-frames, constant 30 fps, 70.800 seconds of video, 70.804 seconds overall, and a clean full decode.
+- Ruler input previously tracked only a single playhead and ignored modifiers; timeline blocks exposed no
+  source path to WPF interaction code.
+
+Remediation: temporary Project Preview requests override only the encoder with Media Foundation H.264. Final
+exports retain project settings. Timeline lane items now expose their source for Video-block double-click,
+and timeline state owns a normalized visual range used by ruler input and bounded preview playback.
+
+Verification: Release solution build passed with zero warnings/errors. The real-source H.264 render and full
+decode passed. Dependencies did not change, so a package vulnerability audit was not required.
