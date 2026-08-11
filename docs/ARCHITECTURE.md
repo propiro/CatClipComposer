@@ -130,7 +130,11 @@ The executable modules may reference Core and Infrastructure for composition. Co
    after synchronization, undo/redo reapplies through the normal project projection, and the exact saved
    snapshot determines the dirty marker even when navigating backward and forward.
 8. Closing first resolves unsaved project state through Save / Don't save / Cancel, then atomically persists
-   window geometry, workspace splitter dimensions, preview layout/tab, focus, and expansion to the INI.
+   window geometry, workspace splitter dimensions, preview layout/tab, focus, and expansion to the INI. After
+   those operations succeed, clean shutdown removes recovery so it cannot masquerade as a new edit next launch.
+9. Startup reconciles recovery with its named saved project by semantic JSON comparison that excludes schema,
+   normal-file path, and modification timestamp. Equivalent legacy recovery and pristine untitled recovery are
+   clean; any content difference retains the recovery and dirty marker.
 
 ## Responsibility audit
 

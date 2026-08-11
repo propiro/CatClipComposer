@@ -2,6 +2,18 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.16 session-state correction
+
+- Corrected clean recovery being unconditionally classified as an unsaved edit on every startup. Clean shutdown
+  now clears recovery, and startup reconciles stale recovery against the named saved project while preserving
+  genuinely changed crash-recovery content.
+- Added all runtime workspace defaults to the packaged INI template and advanced every application/component
+  to visible version 0.1.16.
+- An isolated real WPF smoke moved the v0.1.16 main window to 111,99 at 1366x822, closed without a prompt,
+  verified the exact INI values, reopened at the exact geometry, and closed cleanly again. A schema-6 saved
+  project plus equivalent schema-7 recovery opened without an asterisk and deleted recovery; a changed recovery
+  retained both its asterisk and recovery file.
+
 ## 2026-08-12 — Session restoration, undo, contextual prerender, and transactional overlays
 
 - Persisted normal/maximized window geometry, workspace splitter sizes, preview split/tab state, focused panel,

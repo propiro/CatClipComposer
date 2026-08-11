@@ -103,7 +103,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P0 / Done
 - Acceptance: Normal/maximized window bounds, three workspace splitter sizes, preview join/split and divider,
   active preview tab, focused panel, and optional expanded panel round-trip through the executable-directory
-  INI; missing/off-screen geometry falls back safely.
+  INI; missing/off-screen geometry falls back safely. An isolated real-window close/reopen returns the exact
+  saved position and dimensions.
 
 ### `BROWSER-001` — Make the content browser safe for very large libraries and support drag/drop
 
@@ -248,7 +249,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P0 / Done
 - Acceptance: Ctrl+Z/Ctrl+Y and toolbar arrows navigate a bounded project history; undoing back to and redoing
   onto the save point updates the title/project asterisk; closing dirty work offers literal Save, Don't save,
-  and Cancel choices and never closes after a cancelled or failed save.
+  and Cancel choices and never closes after a cancelled or failed save. Clean shutdown clears crash recovery;
+  equivalent legacy recovery opens clean, while semantically changed recovery remains dirty.
 
 ### `RENDER-ORDER-001` — Apply filter effects and overlays in visual track order
 

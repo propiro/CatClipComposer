@@ -301,12 +301,13 @@ public partial class MainWindow : Window
             }
 
             await _viewModel.ApplySettingsAsync(CaptureWorkspaceSettings());
+            await _viewModel.CompleteCleanSessionAsync();
             _allowClose = true;
             Close();
         }
         catch (Exception exception)
         {
-            DesktopDialogs.ShowError(this, "Could not save the workspace layout.", exception);
+            DesktopDialogs.ShowError(this, "Could not finish closing the editor session.", exception);
         }
         finally
         {

@@ -67,6 +67,12 @@ Startup loads recovery after the catalog so source media can be resolved. Creati
 previous recovery before writing the new empty state. A normal save also refreshes recovery, so later
 unsaved timeline changes can be restored without overwriting the named project.
 
+Recovery exists only for crash protection. A successful normal close clears it after the project decision and
+workspace save complete. On startup, older recovery left by a previous version is compared with its named saved
+project while ignoring schema/path/modification metadata; identical content is restored as clean and the stale
+recovery is removed. A semantically changed recovery remains dirty. A pristine untitled recovery is likewise
+treated as clean, while renamed, reconfigured, or populated untitled projects remain recoverable edits.
+
 Closing a dirty project opens a dedicated Save / Don't save / Cancel dialog. A cancelled file dialog or failed
 save keeps the editor open. Window/workspace preferences are saved only after that project decision permits the
 close; they remain application INI values rather than project data.

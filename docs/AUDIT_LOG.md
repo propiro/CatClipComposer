@@ -1,5 +1,30 @@
 # Audit log
 
+## AUDIT-2026-08-12-005 — v0.1.16 clean-session and workspace-restoration correction
+
+Scope: user reports that an unchanged project prompted to save again, window geometry did not appear restored,
+and the post-feature executable still identified itself as v0.1.15.
+
+Findings and remediation:
+
+- Recovery autosave was loaded as dirty unconditionally. Normal Save itself refreshes recovery, so a clean saved
+  project could be presented as an unsaved edit on every later launch. Clean shutdown now deletes recovery only
+  after the close decision and INI write succeed. Startup also handles recovery left by older builds: it compares
+  project content while excluding schema/path/modification metadata and classifies equivalent named projects or a
+  pristine untitled project as clean. Any semantic difference remains recoverable and dirty.
+- The source implementation had not advanced central version metadata or produced a distinguishable portable
+  executable. Shared WPF/CLI/Core/Infrastructure/plugin assembly metadata is now 0.1.16, and the packaged INI
+  template contains the complete workspace state schema instead of only dock slots.
+- Window persistence itself was exercised through the real WPF lifecycle rather than inferred from mapper output.
+
+Verification: the Release solution build passed with zero warnings/errors. An isolated v0.1.16 GUI process was
+moved to X=111, Y=99, 1366x822, then closed without a prompt. Its executable-directory INI recorded those exact
+values; the next process reported v0.1.16 and `GetWindowRect` returned the exact saved geometry before another
+clean close. Recovery was absent after both closes. An existing schema-6 project with semantically identical
+schema-7 recovery opened without a dirty asterisk, removed recovery during startup, and closed without a prompt.
+Changing only target duration in recovery retained the asterisk and recovery file. No dependency changed, so a
+new vulnerability audit was not required.
+
 ## AUDIT-2026-08-12-004 — Editing-session interaction and persistence audit
 
 Scope: session workspace restoration, linear timeline resizing, undo/redo and unsaved state, contextual project

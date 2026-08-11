@@ -145,7 +145,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
 - **Public binary release — Done.** GitHub Release v0.1.15 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.15 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.16 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

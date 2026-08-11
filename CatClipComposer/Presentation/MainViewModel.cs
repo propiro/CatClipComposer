@@ -310,11 +310,14 @@ public sealed class MainViewModel : ObservableObject
         var recovery = await _projectStore.LoadRecoveryAsync(cancellationToken);
         if (recovery is not null)
         {
-            ApplyProject(recovery);
-            _projectHistory.Reset(recovery, isSaved: false);
-            NotifyHistoryStateChanged();
-            IsDirty = true;
-            StatusText = $"Recovered autosave: {recovery.Name}";
+            if (!await RestoreCleanRecoveryAsync(recovery, cancellationToken))
+            {
+                ApplyProject(recovery);
+                _projectHistory.Reset(recovery, isSaved: false);
+                NotifyHistoryStateChanged();
+                IsDirty = true;
+                StatusText = $"Recovered autosave: {recovery.Name}";
+            }
         }
 
         startupProgress?.Report(new StartupProgress(100, "Editor ready."));
@@ -393,6 +396,86 @@ public sealed class MainViewModel : ObservableObject
     {
         SynchronizeProjectFromTimeline();
         await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+    }
+
+    public Task CompleteCleanSessionAsync(CancellationToken cancellationToken = default) =>
+        _projectStore.ClearRecoveryAsync(cancellationToken);
+
+    private async Task<bool> RestoreCleanRecoveryAsync(
+        EditorProject recovery,
+        CancellationToken cancellationToken)
+    {
+        EditorProject? savedProject = null;
+        if (!string.IsNullOrWhiteSpace(recovery.ProjectFilePath) &&
+            File.Exists(recovery.ProjectFilePath))
+        {
+            try
+            {
+                savedProject = await _projectStore.LoadAsync(recovery.ProjectFilePath, cancellationToken);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
+
+        var cleanProject = savedProject is not null &&
+                           ProjectContentComparer.EqualsIgnoringPersistenceMetadata(recovery, savedProject)
+            ? savedProject
+            : IsPristineUntitledProject(recovery) ? recovery : null;
+        if (cleanProject is null)
+        {
+            return false;
+        }
+
+        ApplyProject(cleanProject);
+        _projectHistory.Reset(cleanProject, isSaved: true);
+        NotifyHistoryStateChanged();
+        IsDirty = false;
+        await _projectStore.ClearRecoveryAsync(cancellationToken);
+        StatusText = savedProject is null
+            ? "New project"
+            : $"Restored last project: {savedProject.Name}";
+        return true;
+    }
+
+    private static bool IsPristineUntitledProject(EditorProject project)
+    {
+        var expectedTracks = new[]
+        {
+            ("Background", ProjectTrackKind.Background, 0),
+            ("Video 1", ProjectTrackKind.Video, 1),
+            ("Overlays 1", ProjectTrackKind.Overlay, 2),
+            ("Audio 1", ProjectTrackKind.Audio, 3),
+            ("Progress 1", ProjectTrackKind.Progress, 4),
+            ("Effects 1", ProjectTrackKind.Effects, 5)
+        };
+        var output = project.Output;
+        return project.Name.Equals("Untitled project", StringComparison.OrdinalIgnoreCase) &&
+               string.IsNullOrWhiteSpace(project.ProjectFilePath) &&
+               project.BackgroundColor == "#101010" &&
+               Math.Abs(project.TargetDurationMinutes - 15) < 0.000001 &&
+               project.TimelineRulerMode == TimelineRulerMode.TimeAndFrames &&
+               project.TimelineSnapMode == TimelineSnapMode.TenthSecond &&
+               output.PresetName == "YouTube 1080p" &&
+               output.Width == 1920 && output.Height == 1080 &&
+               Math.Abs(output.FramesPerSecond - 30) < 0.000001 &&
+               output.VideoEncoder == VideoEncoderPreset.NativeMpeg4 &&
+               output.QualityPercent == 80 && output.VideoBitrateKbps == 8000 &&
+               output.AudioBitrateKbps == 192 &&
+               project.Tracks.OrderBy(track => track.Order)
+                   .Select(track => (track.Name, track.Kind, track.Order))
+                   .SequenceEqual(expectedTracks) &&
+               project.Tracks.All(track => track.Items.Count == 0 && track.IsEnabled &&
+                                           !track.IsLocked && string.IsNullOrWhiteSpace(track.Color));
     }
 
     public async Task<bool> UndoAsync(CancellationToken cancellationToken = default) =>
