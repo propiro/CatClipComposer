@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-11 — Portable GitHub Release preparation
+
+- Prepared a complete self-contained Windows x64 ZIP and SHA-256 checksum through the established portable
+  publisher after validating the central and packaged CLI versions.
+- Kept generated executables out of the source branch and documented version-tagged GitHub Release assets as
+  the public distribution boundary.
+- Updated public installation and deployment guidance to distinguish the executable asset from GitHub's
+  source archives and disclose the current lack of code signing and possible SmartScreen prompt.
+
 ## 2026-08-11 — Public installation and FFmpeg guidance
 
 - Reworked the public README into a usable installation page with honest portable-release status, complete

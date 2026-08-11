@@ -28,6 +28,34 @@ and repository parents are rejected.
 There is no application-only or skip-FFmpeg publish mode. The publisher always takes the repository's pinned
 payload and validates it before any package is accepted.
 
+## GitHub Releases
+
+Publish the validated, self-contained Windows x64 output as GitHub Release assets rather than committing
+generated executables to the source branch. Each public release contains:
+
+- `CatClipComposer-v<version>-win-x64.zip`
+- `CatClipComposer-v<version>-win-x64.zip.sha256`
+
+The ZIP contains the complete `CatClipComposer` folder. GitHub's automatically generated source archives are
+source checkouts, not end-user application packages.
+
+After the version change and all verification are committed and pushed, create an annotated tag that exactly
+matches `Directory.Build.props`:
+
+```powershell
+git tag -a v0.1.15 -m "Cat Clip Composer v0.1.15"
+git push origin v0.1.15
+```
+
+Replace `0.1.15` with the central version. Do not reuse or move a published version tag; increment the
+application version for another release. Create a GitHub Release from that tag and attach the portable ZIP
+and its lowercase SHA-256 checksum file. The Release description gives the four extraction/launch steps and
+identifies the bundled FFmpeg license/source records.
+
+The application is not code-signed yet, so Windows can show an unknown-publisher SmartScreen prompt. Release
+notes and the public README disclose this and direct users to verify the SHA-256 asset rather than disabling
+Windows security.
+
 ## Package layout
 
 ```text

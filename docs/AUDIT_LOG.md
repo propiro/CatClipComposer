@@ -1,5 +1,26 @@
 # Audit log
 
+## AUDIT-2026-08-11-004 — Public binary-release audit
+
+Scope: making Cat Clip Composer installable without a programming environment through GitHub Releases.
+
+Findings and remediation:
+
+- Generated binaries do not belong in the Git source branch. The validated package is attached to a semantic
+  version GitHub Release instead.
+- The existing portable publisher remains the single packaging path, so local and hosted releases receive
+  the same XAML, single-file, plugin, FFmpeg manifest/license, capability, and folder-layout checks.
+- The release procedure requires a tag matching `Directory.Build.props`, verifies the packaged CLI version,
+  and accompanies the self-contained ZIP with a SHA-256 file.
+- User guidance identifies the correct binary asset, warns that source archives are not runnable packages,
+  and discloses the unsigned executable and possible SmartScreen prompt.
+
+Verification so far: the exact v0.1.15 tag/version comparison passed; the NuGet audit found no known
+vulnerable direct or transitive packages; the required Release solution build passed with zero warnings/errors;
+and the local publisher passed its XAML, single-file, plugin, and bundled-FFmpeg checks. The candidate archive
+was 267.23 MiB and contained the expected application, CLI, docs, plugin, FFmpeg executable, license,
+source/build record, and manifest. Public upload and a downloaded-asset smoke remain before closure.
+
 ## AUDIT-2026-08-11-003 — Public install and FFmpeg documentation audit
 
 Scope: public installation/build instructions and accurate FFmpeg requirement, download, and license

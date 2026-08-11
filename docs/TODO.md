@@ -317,6 +317,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: A pinned LGPL v3 shared FFmpeg/FFprobe payload, DLLs, license, source record, build flags,
   and hashes live under `thirdparty\ffmpeg`; GUI/CLI builds and every portable publish copy it.
 
+### `DEPLOY-004` — Publish an installable GitHub Release for non-developers
+
+- Priority/status: P0 / In progress
+- Acceptance: A versioned self-contained Windows x64 ZIP and SHA-256 file are attached to a public GitHub
+  Release after the CLI version, package layout, and FFmpeg payload pass validation; the Release includes
+  direct installation and unsigned-binary guidance.
+
 ### `OVERLAY-001` — Support multiple image/text overlays with individual timing
 
 - Priority/status: P2 / Done

@@ -89,16 +89,23 @@ most users should not install FFmpeg separately. The default `ffmpeg.exe` prefer
 ### Portable application
 
 Cat Clip Composer uses a portable, one-folder Windows package rather than an installer. Check the
-[GitHub Releases page](https://github.com/propiro/CatClipComposer/releases) for a Windows x64 package. If no
-release asset is listed yet, use the source-build instructions below.
+[latest GitHub Release](https://github.com/propiro/CatClipComposer/releases/latest) for a Windows x64
+package. If no release asset is listed yet, use the source-build instructions below.
 
 When a portable package is available:
 
-1. Download and extract the complete archive to a writable folder.
-2. Keep the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside `CatClipComposer.exe`.
-3. Run `CatClipComposer.exe`. The normal self-contained package does not need a separate .NET installation.
+1. Download `CatClipComposer-v<version>-win-x64.zip`, not GitHub's automatically generated **Source code**
+   archives.
+2. Optionally verify the download with the adjacent `.sha256` checksum file.
+3. Extract the complete `CatClipComposer` folder to a writable location.
+4. Keep the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside `CatClipComposer.exe`.
+5. Run `CatClipComposer.exe`. The normal self-contained package does not need a separate .NET installation.
 
 Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.
+
+The application is not currently code-signed. Windows SmartScreen may therefore show an unknown-publisher
+warning on first launch. Only continue when the archive came from this repository's Releases page and its
+SHA-256 matches the published checksum; do not disable Windows security globally.
 
 ### Build from source
 
@@ -135,6 +142,9 @@ Create the self-contained portable Windows x64 package under `publish\CatClipCom
 
 See [portable deployment](docs/DEPLOYMENT.md) for framework-dependent publishing, package validation, and
 safe replacement of an existing portable folder.
+
+Maintainers publish the validated portable ZIP and its SHA-256 file as assets on a `v<version>` GitHub
+Release. Generated build output is never committed to the source branch.
 
 ## Using a separately downloaded FFmpeg
 
