@@ -319,7 +319,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 ### `DEPLOY-004` — Publish an installable GitHub Release for non-developers
 
-- Priority/status: P0 / In progress
+- Priority/status: P0 / Done
 - Acceptance: A versioned self-contained Windows x64 ZIP and SHA-256 file are attached to a public GitHub
   Release after the CLI version, package layout, and FFmpeg payload pass validation; the Release includes
   direct installation and unsigned-binary guidance.

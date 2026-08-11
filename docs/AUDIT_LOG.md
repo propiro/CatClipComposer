@@ -21,6 +21,13 @@ and the local publisher passed its XAML, single-file, plugin, and bundled-FFmpeg
 was 267.23 MiB and contained the expected application, CLI, docs, plugin, FFmpeg executable, license,
 source/build record, and manifest. Public upload and a downloaded-asset smoke remain before closure.
 
+Closure verification: public Release `v0.1.15` points to commit `6eb6c21` and exposes the expected ZIP and
+checksum assets. GitHub accepted the ZIP at exactly 280,213,770 bytes and recorded digest
+`sha256:5aeffc0121ae8ff06f49b16a23da6bbbd2ccdd596f67c80d983fd406fc0cf1a9`. The separately downloaded checksum
+and full ZIP matched that digest. A fresh extraction ran the packaged CLI as v0.1.15 and passed all ten
+bundled-FFmpeg manifest hashes, including the executable, shared DLLs, and LGPL license. `DEPLOY-004` is
+closed; the application remains intentionally disclosed as unsigned.
+
 ## AUDIT-2026-08-11-003 — Public install and FFmpeg documentation audit
 
 Scope: public installation/build instructions and accurate FFmpeg requirement, download, and license

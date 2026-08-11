@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-11 — Public v0.1.15 Windows release
+
+- Published `v0.1.15` from commit `6eb6c21` with the 280,213,770-byte self-contained Windows x64 ZIP and its
+  separate lowercase SHA-256 file; generated executables remain outside the source branch.
+- GitHub's stored asset digest, the downloaded checksum, and an independently downloaded ZIP all matched
+  SHA-256 `5aeffc0121ae8ff06f49b16a23da6bbbd2ccdd596f67c80d983fd406fc0cf1a9`.
+- A fresh extraction reported Cat Clip Composer v0.1.15 through the packaged CLI, and all ten files covered
+  by the bundled FFmpeg manifest passed their individual SHA-256 checks.
+
 ## 2026-08-11 — Portable GitHub Release preparation
 
 - Prepared a complete self-contained Windows x64 ZIP and SHA-256 checksum through the established portable
