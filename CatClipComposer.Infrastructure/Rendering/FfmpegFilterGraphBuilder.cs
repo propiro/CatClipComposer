@@ -18,25 +18,39 @@ internal static class FfmpegFilterGraphBuilder
         AddConcatenation(graph, request.Segments.Count);
         var currentLabel = "joinedv";
         var stage = 0;
-        var nextInputIndex = request.Segments.Count;
-        currentLabel = AddPluginEffects(
-            graph,
-            request,
-            width,
-            height,
-            currentLabel,
-            ref stage,
-            PluginRenderStage.Filter);
-
         var overlays = request.TimedOverlays ?? [];
+        var overlayInputIndexes = Enumerable.Repeat(-1, overlays.Count).ToArray();
+        var nextInputIndex = request.Segments.Count;
         for (var index = 0; index < overlays.Count; index++)
         {
-            var overlay = overlays[index];
-            if (overlay.Duration <= TimeSpan.Zero)
+            if (overlays[index].Kind is RenderOverlayKind.Image or RenderOverlayKind.Video)
+            {
+                overlayInputIndexes[index] = nextInputIndex++;
+            }
+        }
+
+        var visualStages = overlays
+            .Select((overlay, index) => new VisualStage(overlay.TrackOrder, index, overlay, null))
+            .Concat((request.PluginEffects ?? [])
+                .Where(effect => effect.Plugin.Descriptor.Stage is PluginRenderStage.Filter or PluginRenderStage.Overlay)
+                .Select((effect, index) => new VisualStage(effect.TrackOrder, overlays.Count + index, null, effect)))
+            .OrderByDescending(item => item.TrackOrder)
+            .ThenBy(item => item.Sequence);
+        foreach (var visualStage in visualStages)
+        {
+            if (visualStage.Effect is { } effect && effect.Duration > TimeSpan.Zero)
+            {
+                currentLabel = AddPluginEffect(graph, request, width, height, currentLabel, ref stage, effect);
+                continue;
+            }
+
+            var overlay = visualStage.Overlay;
+            if (overlay is null || overlay.Duration <= TimeSpan.Zero)
             {
                 continue;
             }
 
+            var index = visualStage.Sequence;
             switch (overlay.Kind)
             {
                 case RenderOverlayKind.Text when timedTextPaths.TryGetValue(index, out var textPath):
@@ -56,7 +70,7 @@ internal static class FfmpegFilterGraphBuilder
                     currentLabel = AddImageOverlay(
                         graph,
                         overlay.Position,
-                        nextInputIndex++,
+                        overlayInputIndexes[index],
                         currentLabel,
                         stage++,
                         overlay.Start,
@@ -69,7 +83,7 @@ internal static class FfmpegFilterGraphBuilder
                         overlay,
                         width,
                         height,
-                        nextInputIndex++,
+                        overlayInputIndexes[index],
                         currentLabel,
                         stage++);
                     break;
@@ -89,15 +103,6 @@ internal static class FfmpegFilterGraphBuilder
                     break;
             }
         }
-
-        currentLabel = AddPluginEffects(
-            graph,
-            request,
-            width,
-            height,
-            currentLabel,
-            ref stage,
-            PluginRenderStage.Overlay);
 
         // Scale and overlay filters can round a fitted portrait source one pixel beyond the canvas
         // (for example 1920x1081). Normalize the completed composition before it reaches an encoder;
@@ -212,41 +217,35 @@ internal static class FfmpegFilterGraphBuilder
         graph.Append(CultureInfo.InvariantCulture, $"null[{outputLabel}];");
     }
 
-    private static string AddPluginEffects(
+    private static string AddPluginEffect(
         StringBuilder graph,
         RenderRequest request,
         int width,
         int height,
         string currentLabel,
         ref int stage,
-        PluginRenderStage targetStage)
+        RenderPluginEffect effect)
     {
-        foreach (var effect in (request.PluginEffects ?? [])
-                     .Where(effect => effect.Plugin.Descriptor.Stage == targetStage)
-                     .OrderBy(effect => effect.Start))
-        {
-            if (effect.Duration <= TimeSpan.Zero)
-            {
-                continue;
-            }
-
-            var outputLabel = $"plugin{stage++}";
-            graph.Append(effect.Plugin.BuildFilterGraph(
-                new PluginVideoFilterContext(
-                    currentLabel,
-                    outputLabel,
-                    width,
-                    height,
-                    request.FramesPerSecond,
-                    effect.Start,
-                    effect.Duration,
-                    request.BackgroundColor),
-                effect.Parameters));
-            currentLabel = outputLabel;
-        }
-
-        return currentLabel;
+        var outputLabel = $"plugin{stage++}";
+        graph.Append(effect.Plugin.BuildFilterGraph(
+            new PluginVideoFilterContext(
+                currentLabel,
+                outputLabel,
+                width,
+                height,
+                request.FramesPerSecond,
+                effect.Start,
+                effect.Duration,
+                request.BackgroundColor),
+            effect.Parameters));
+        return outputLabel;
     }
+
+    private sealed record VisualStage(
+        int TrackOrder,
+        int Sequence,
+        RenderOverlay? Overlay,
+        RenderPluginEffect? Effect);
 
     private static void AddFadeFilters(
         StringBuilder graph,

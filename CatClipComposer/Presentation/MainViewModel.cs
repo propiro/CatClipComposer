@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text.Json;
 using System.Windows.Data;
 using CatClipComposer.Core;
 using CatClipComposer.Core.Models;
@@ -590,6 +591,108 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public async Task<RenderResult> RenderEffectFramePreviewAsync(
+        Guid trackId,
+        ProjectTimelineItem previewItem,
+        TimeSpan frame,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsBusy)
+        {
+            throw new InvalidOperationException("Another operation is already running.");
+        }
+
+        SynchronizeProjectFromTimeline();
+        var previewProject = JsonSerializer.Deserialize<EditorProject>(JsonSerializer.Serialize(_project)) ??
+                             throw new InvalidOperationException("The project could not be cloned for preview.");
+        var track = previewProject.Tracks.FirstOrDefault(candidate => candidate.Id == trackId) ??
+                    throw new InvalidOperationException("The effect timeline no longer exists.");
+        var existingIndex = track.Items.FindIndex(item => item.Id == previewItem.Id);
+        if (existingIndex >= 0)
+        {
+            track.Items[existingIndex] = previewItem;
+        }
+        else
+        {
+            track.Items.Add(previewItem);
+        }
+
+        var renderPlan = ProjectRenderMapper.Create(previewProject, _plugins);
+        if (renderPlan.Segments.Count == 0)
+        {
+            throw new InvalidOperationException("Add at least one clip before previewing an effect frame.");
+        }
+
+        var compositionDuration = TimeSpan.FromTicks(renderPlan.Segments.Sum(segment => segment.Duration.Ticks));
+        var frameDuration = TimeSpan.FromSeconds(Math.Max(0.1, 1 / Math.Clamp(previewProject.Output.FramesPerSecond, 1, 240)));
+        var start = frame < TimeSpan.Zero ? TimeSpan.Zero : frame;
+        if (start >= compositionDuration)
+        {
+            start = compositionDuration > frameDuration ? compositionDuration - frameDuration : TimeSpan.Zero;
+        }
+
+        var duration = compositionDuration - start < frameDuration
+            ? compositionDuration - start
+            : frameDuration;
+        if (duration <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException("The selected frame is outside rendered project content.");
+        }
+
+        var previewFolder = Path.Combine(_settings.MetadataFolder, "effect-frame-previews");
+        Directory.CreateDirectory(previewFolder);
+        var outputPath = Path.Combine(previewFolder, $"{previewProject.Id:N}-{DateTime.UtcNow.Ticks}.mp4");
+        var orientation = previewProject.Output.Height > previewProject.Output.Width
+            ? OutputOrientation.Portrait
+            : OutputOrientation.Landscape;
+        _operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        IsBusy = true;
+        StatusText = $"Rendering effect frame at {DurationFormatter.Format(start)}…";
+        try
+        {
+            var result = await _videoRenderer.RenderAsync(
+                CreateRenderRequest(
+                    renderPlan,
+                    outputPath,
+                    orientation,
+                    VideoEncoderPreset.WindowsMediaFoundationH264,
+                    start,
+                    duration,
+                    previewProject),
+                _settings.FfmpegPath,
+                progress: null,
+                _operationCancellation.Token);
+            foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{previewProject.Id:N}-*.mp4")
+                         .Where(path => !path.Equals(outputPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    File.Delete(oldPreview);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+
+            StatusText = "Effect frame preview ready";
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Effect frame preview cancelled";
+            throw;
+        }
+        finally
+        {
+            IsBusy = false;
+            _operationCancellation.Dispose();
+            _operationCancellation = null;
+        }
+    }
+
     public void MarkProjectPreviewRendered(TimeSpan? rangeStart = null, TimeSpan? rangeEnd = null)
     {
         _projectPreviewCurrent = true;
@@ -826,8 +929,6 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
-        SynchronizeProjectFromTimeline();
-        var previousPrimaryId = GetPrimaryVideoTrack().Id;
         var ordered = _project.Tracks.OrderBy(candidate => candidate.Order).ToList();
         var oldIndex = ordered.FindIndex(candidate => candidate.Id == track.Id);
         var newIndex = oldIndex + offset;
@@ -836,7 +937,29 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
-        (ordered[oldIndex], ordered[newIndex]) = (ordered[newIndex], ordered[oldIndex]);
+        return MoveTrack(track.Id, ordered[newIndex].Id, offset > 0);
+    }
+
+    public bool MoveTrack(Guid trackId, Guid targetTrackId, bool insertAfter)
+    {
+        if (trackId == targetTrackId)
+        {
+            return false;
+        }
+
+        SynchronizeProjectFromTimeline();
+        var previousPrimaryId = GetPrimaryVideoTrack().Id;
+        var ordered = _project.Tracks.OrderBy(candidate => candidate.Order).ToList();
+        var moving = ordered.FirstOrDefault(candidate => candidate.Id == trackId);
+        var target = ordered.FirstOrDefault(candidate => candidate.Id == targetTrackId);
+        if (moving is null || target is null)
+        {
+            return false;
+        }
+
+        ordered.Remove(moving);
+        var targetIndex = ordered.IndexOf(target) + (insertAfter ? 1 : 0);
+        ordered.Insert(Math.Clamp(targetIndex, 0, ordered.Count), moving);
         for (var index = 0; index < ordered.Count; index++)
         {
             ordered[index].Order = index;
@@ -848,9 +971,9 @@ public sealed class MainViewModel : ObservableObject
         {
             LoadPrimaryTimeline();
         }
-        RefreshProjectLayers(trackId: track.Id);
+        RefreshProjectLayers(trackId: moving.Id);
         _ = SaveRecoverySafelyAsync();
-        StatusText = $"Moved timeline {track.Name} {(offset < 0 ? "up" : "down")}";
+        StatusText = $"Moved timeline {moving.Name}";
         return true;
     }
 
@@ -1528,25 +1651,30 @@ public sealed class MainViewModel : ObservableObject
         OutputOrientation orientation,
         VideoEncoderPreset? videoEncoderOverride = null,
         TimeSpan? outputRangeStart = null,
-        TimeSpan? outputRangeDuration = null) => new(
-        renderPlan.Segments,
-        outputPath,
-        orientation,
-        videoEncoderOverride ?? _project.Output.VideoEncoder,
-        _project.Output.FramesPerSecond,
-        ProjectName: _project.Name,
-        ProjectFilePath: _project.ProjectFilePath,
-        OutputWidth: _project.Output.Width,
-        OutputHeight: _project.Output.Height,
-        QualityPercent: _project.Output.QualityPercent,
-        VideoBitrateKbps: _project.Output.VideoBitrateKbps,
-        AudioBitrateKbps: _project.Output.AudioBitrateKbps,
-        BackgroundColor: _project.BackgroundColor,
-        TimedOverlays: renderPlan.TimedOverlays,
-        AudioLayers: renderPlan.AudioLayers,
-        PluginEffects: renderPlan.PluginEffects,
-        OutputRangeStart: outputRangeStart,
-        OutputRangeDuration: outputRangeDuration);
+        TimeSpan? outputRangeDuration = null,
+        EditorProject? sourceProject = null)
+    {
+        sourceProject ??= _project;
+        return new RenderRequest(
+            renderPlan.Segments,
+            outputPath,
+            orientation,
+            videoEncoderOverride ?? sourceProject.Output.VideoEncoder,
+            sourceProject.Output.FramesPerSecond,
+            ProjectName: sourceProject.Name,
+            ProjectFilePath: sourceProject.ProjectFilePath,
+            OutputWidth: sourceProject.Output.Width,
+            OutputHeight: sourceProject.Output.Height,
+            QualityPercent: sourceProject.Output.QualityPercent,
+            VideoBitrateKbps: sourceProject.Output.VideoBitrateKbps,
+            AudioBitrateKbps: sourceProject.Output.AudioBitrateKbps,
+            BackgroundColor: sourceProject.BackgroundColor,
+            TimedOverlays: renderPlan.TimedOverlays,
+            AudioLayers: renderPlan.AudioLayers,
+            PluginEffects: renderPlan.PluginEffects,
+            OutputRangeStart: outputRangeStart,
+            OutputRangeDuration: outputRangeDuration);
+    }
 
     private static void EnsureProjectTracks(EditorProject project)
     {

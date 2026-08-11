@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using CatClipComposer.Controls;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Plugins;
@@ -15,6 +16,13 @@ public partial class PluginEffectEditorWindow : Window
     private readonly double _framesPerSecond;
     private readonly Dictionary<string, FrameworkElement> _parameterEditors = new(StringComparer.OrdinalIgnoreCase);
     private readonly ProjectTimelineItem? _existing;
+    private readonly Func<ProjectTimelineItem, CancellationToken, Task<RenderResult>>? _framePreviewRenderer;
+    private readonly TimeSpan? _previewFrame;
+    private readonly DispatcherTimer _framePreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(450) };
+    private readonly SemaphoreSlim _framePreviewGate = new(1, 1);
+    private EffectFramePreviewWindow? _framePreviewWindow;
+    private CancellationTokenSource? _framePreviewCancellation;
+    private long _framePreviewGeneration;
 
     public PluginEffectEditorWindow(
         IEnumerable<ICatClipPlugin> plugins,
@@ -25,14 +33,26 @@ public partial class PluginEffectEditorWindow : Window
         ProjectTimelineItem? existing = null,
         TimeSpan? initialStart = null,
         TimeSpan? initialDuration = null,
-        string? initialPluginId = null)
+        string? initialPluginId = null,
+        TimeSpan? previewFrame = null,
+        Func<ProjectTimelineItem, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
     {
         _track = track;
         _snapMode = snapMode;
         _framesPerSecond = framesPerSecond;
         _existing = existing;
+        _previewFrame = previewFrame;
+        _framePreviewRenderer = framePreviewRenderer;
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
+        _framePreviewDebounce.Tick += FramePreviewDebounce_Tick;
+        TimeRangeEditor.RangeEdited += EditorValueChanged;
+        FramePreviewControls.Visibility = previewFrame.HasValue && framePreviewRenderer is not null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        LocationChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
+        SizeChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
+        Closed += (_, _) => CloseFramePreview();
         TrackText.Text = $"Target timeline: {track.Name} ({track.Kind})";
         SnapText.Text = $"Sliders and ± buttons use {DescribeSnap(snapMode, framesPerSecond)}; typed values stay exact. Timeline dragging can also snap to clip boundaries.";
         var compatible = plugins.OfType<ICatClipVideoEffectPlugin>()
@@ -106,16 +126,33 @@ public partial class PluginEffectEditorWindow : Window
             };
             _parameterEditors[parameter.Key] = editor;
             ParametersPanel.Children.Add(editor);
+            WatchEditor(editor);
         }
+
+        QueueFramePreview();
     }
 
     private void Apply_Click(object sender, RoutedEventArgs e)
     {
+        if (!TryCreateResultItem(out var resultItem, out var error))
+        {
+            ShowInvalid(error);
+            return;
+        }
+
+        ResultItem = resultItem;
+        DialogResult = true;
+    }
+
+    private bool TryCreateResultItem(out ProjectTimelineItem resultItem, out string error)
+    {
+        resultItem = null!;
+        error = string.Empty;
         if (PluginComboBox.SelectedItem is not ICatClipPlugin plugin ||
             !TimeRangeEditor.TryGetRange(out var start, out var duration))
         {
-            ShowInvalid("Choose a module and enter a non-negative start with an end after it.");
-            return;
+            error = "Choose a module and enter a non-negative start with an end after it.";
+            return false;
         }
 
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -126,20 +163,20 @@ public partial class PluginEffectEditorWindow : Window
             {
                 if (!TryNumber(value, out _))
                 {
-                    ShowInvalid($"{definition.DisplayName} must be a finite number.");
-                    return;
+                    error = $"{definition.DisplayName} must be a finite number.";
+                    return false;
                 }
             }
             else if (definition.Type == PluginParameterType.Color && !IsHexColor(value))
             {
-                ShowInvalid($"{definition.DisplayName} must use #RRGGBB format.");
-                return;
+                error = $"{definition.DisplayName} must use #RRGGBB format.";
+                return false;
             }
 
             values[definition.Key] = value;
         }
 
-        ResultItem = new ProjectTimelineItem
+        resultItem = new ProjectTimelineItem
         {
             Id = _existing?.Id ?? Guid.NewGuid(),
             Kind = ProjectItemKind.Effect,
@@ -147,9 +184,136 @@ public partial class PluginEffectEditorWindow : Window
             StartTicks = start.Ticks,
             DurationTicks = duration.Ticks,
             PluginId = plugin.Descriptor.Id,
-            PluginParameters = values
+            PluginParameters = values,
+            IsEnabled = _existing?.IsEnabled ?? true,
+            Color = _existing?.Color ?? string.Empty
         };
-        DialogResult = true;
+        return true;
+    }
+
+    private void WatchEditor(FrameworkElement editor)
+    {
+        switch (editor)
+        {
+            case NumericEditorControl numeric:
+                numeric.Edited += EditorValueChanged;
+                break;
+            case TextBox text:
+                text.TextChanged += (_, _) => EditorValueChanged(text, EventArgs.Empty);
+                break;
+            case CheckBox checkBox:
+                checkBox.Checked += (_, _) => EditorValueChanged(checkBox, EventArgs.Empty);
+                checkBox.Unchecked += (_, _) => EditorValueChanged(checkBox, EventArgs.Empty);
+                break;
+            case ComboBox comboBox:
+                comboBox.SelectionChanged += (_, _) => EditorValueChanged(comboBox, EventArgs.Empty);
+                break;
+        }
+    }
+
+    private void EditorValueChanged(object? sender, EventArgs e) => QueueFramePreview();
+
+    private void QueueFramePreview()
+    {
+        if (_framePreviewWindow is null || AutoPreviewCheckBox.IsChecked != true)
+        {
+            return;
+        }
+
+        _framePreviewDebounce.Stop();
+        _framePreviewDebounce.Start();
+    }
+
+    private async void FramePreviewDebounce_Tick(object? sender, EventArgs e)
+    {
+        _framePreviewDebounce.Stop();
+        await RefreshFramePreviewAsync();
+    }
+
+    private async void PreviewFrame_Click(object sender, RoutedEventArgs e)
+    {
+        EnsureFramePreviewWindow();
+        await RefreshFramePreviewAsync();
+    }
+
+    private void EnsureFramePreviewWindow()
+    {
+        if (_framePreviewWindow is not null)
+        {
+            _framePreviewWindow.Activate();
+            return;
+        }
+
+        _framePreviewWindow = new EffectFramePreviewWindow { Owner = this };
+        _framePreviewWindow.Closed += (_, _) =>
+        {
+            _framePreviewCancellation?.Cancel();
+            _framePreviewWindow = null;
+        };
+        _framePreviewWindow.Show();
+        _framePreviewWindow.SnapBeside(this);
+    }
+
+    private async Task RefreshFramePreviewAsync()
+    {
+        if (_framePreviewWindow is null || !_previewFrame.HasValue || _framePreviewRenderer is null)
+        {
+            return;
+        }
+
+        var generation = Interlocked.Increment(ref _framePreviewGeneration);
+        _framePreviewCancellation?.Cancel();
+        await _framePreviewGate.WaitAsync();
+        try
+        {
+            if (generation != _framePreviewGeneration || _framePreviewWindow is null)
+            {
+                return;
+            }
+
+            if (!TryCreateResultItem(out var previewItem, out var error))
+            {
+                _framePreviewWindow.ShowError(error);
+                return;
+            }
+
+            _framePreviewCancellation?.Dispose();
+            _framePreviewCancellation = new CancellationTokenSource();
+            _framePreviewWindow.SetLoading(_previewFrame.Value);
+            try
+            {
+                var result = await _framePreviewRenderer(previewItem, _framePreviewCancellation.Token);
+                if (generation == _framePreviewGeneration && _framePreviewWindow is not null)
+                {
+                    _framePreviewWindow.ShowPreview(result.OutputPath, _previewFrame.Value);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                _framePreviewWindow?.ShowError($"Frame preview failed: {exception.Message}");
+            }
+        }
+        finally
+        {
+            _framePreviewGate.Release();
+        }
+    }
+
+    private void CloseFramePreview()
+    {
+        _framePreviewDebounce.Stop();
+        _framePreviewCancellation?.Cancel();
+        _framePreviewCancellation?.Dispose();
+        _framePreviewCancellation = null;
+        if (_framePreviewWindow is not null)
+        {
+            var window = _framePreviewWindow;
+            _framePreviewWindow = null;
+            window.Close();
+        }
     }
 
     private double SnapIncrement => _snapMode switch

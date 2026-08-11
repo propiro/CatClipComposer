@@ -20,6 +20,12 @@ public partial class NumericEditorControl : UserControl
 
     public event EventHandler? Edited;
 
+    public bool ShowSlider
+    {
+        get => ValueSlider.Visibility == Visibility.Visible;
+        set => ValueSlider.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     public double Minimum
     {
         get => ValueSlider.Minimum;

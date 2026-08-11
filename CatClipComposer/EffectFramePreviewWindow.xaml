@@ -1,0 +1,21 @@
+<Window x:Class="CatClipComposer.EffectFramePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Effect frame preview" Width="520" Height="360" MinWidth="360" MinHeight="260"
+        Background="{StaticResource WindowBrush}" WindowStartupLocation="Manual"
+        ShowInTaskbar="False">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="StatusText" Margin="0,0,0,7"
+                   Foreground="{StaticResource MutedTextBrush}" Text="Select Preview frame to render." />
+        <Border Grid.Row="1" Background="#050505"
+                BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">
+            <MediaElement x:Name="FramePlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
+                          Stretch="Uniform" ScrubbingEnabled="True"
+                          MediaOpened="FramePlayer_MediaOpened" MediaFailed="FramePlayer_MediaFailed" />
+        </Border>
+    </Grid>
+</Window>

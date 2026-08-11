@@ -162,12 +162,45 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   left/right handles resize non-primary timed blocks; an enabled-by-default checkbox additionally snaps either
   block edge to primary source-clip starts and ends.
 
+### `TIMELINE-007` — Correct live manipulation and add direct track/item gestures
+
+- Priority/status: P0 / Done
+- Acceptance: Resize capture survives lane selection updates; drag grab coordinates are measured before lane
+  projection changes; track names drag vertically; Video track double-click brings Project Preview forward;
+  timed effect and overlay double-click opens the matching editor.
+
 ### `UX-RANGE-001` — Standardize effect ranges and numeric adjustment
 
 - Priority/status: P1 / Done
 - Acceptance: Editors show Start/End by default with optional duration entry and whole-timeline shortcuts;
   new effects inherit the enclosing range of all selected Video items; numeric sliders/arrows use documented
   convenience bounds while exact finite manual entry remains possible beyond them.
+
+### `UX-RANGE-002` — Replace independent time sliders with one compact range timeline
+
+- Priority/status: P1 / Done
+- Acceptance: Start/End text and arrow controls remain exact, while one miniature track moves the full interval
+  or resizes either boundary using the project's snap increment.
+
+### `PROJECT-PREVIEW-005` — Preview the selected frame while editing an effect
+
+- Priority/status: P1 / Done
+- Acceptance: The effect editor opens a companion frame window snapped to its side; Preview renders an unsaved
+  candidate at the playhead, Auto refresh debounces changes, stale renders cancel, and no recovery/history state
+  is changed by the candidate.
+
+### `RENDER-ORDER-001` — Apply filter effects and overlays in visual track order
+
+- Priority/status: P0 / Done
+- Acceptance: Bottom-to-top filter/overlay operations retain their project track order; a real image below
+  Video blur renders blurred, while moving its track above the effect renders the image sharp.
+
+### `RENDER-BG-002` — Define optional overlay contribution to Blur content background
+
+- Priority/status: P1 / Open
+- Acceptance: Confirm whether “exclude from bg blur” targets the raw-source side-fill Background module or the
+  track-ordered Video blur adjustment layer, then persist and render the default-on overlay preference without
+  duplicating or unexpectedly dimming the visible overlay.
 
 ### `RENDER-OVERLAY-002` — Compose still overlays safely after Background effects
 

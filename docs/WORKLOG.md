@@ -2,6 +2,21 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-11 — Direct timeline gestures and selected-frame effect preview
+
+- Corrected two WPF event-order bugs: resize selection rebuilt and destroyed the captured Thumb, while drag
+  grab coordinates were read from a lane visual after that visual had been replaced.
+- Added vertical track-name drag/drop, Video-track double-click routing to Project Preview, and effect/overlay
+  block double-click routing to the appropriate editor.
+- Replaced separate Start and End sliders with one miniature timeline whose body moves the interval and whose
+  handles resize either boundary; exact numeric and optional-duration entry remain available.
+- Retained track order through render mapping and interleaved Video filter effects with overlays bottom-to-top.
+  A real image/blur smoke visually confirmed blurred-below and sharp-above behavior.
+- Added a snapped effect-frame companion window. It renders a cloned, unsaved effect candidate at the selected
+  playhead on demand or after a debounced edit, with cancellation and no recovery/history mutation.
+- Released the completed portion as visible application/component version 0.1.15. The distinct raw-source
+  Background-module contribution preference remains open pending semantic confirmation in `RENDER-BG-002`.
+
 ## 2026-08-11 — Predictable effect timing and still-overlay render correction
 
 - Preserved the exact pointer grab offset while dragging timeline blocks and added a translucent preview of

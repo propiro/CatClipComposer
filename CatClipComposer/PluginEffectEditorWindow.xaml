@@ -28,10 +28,21 @@
                 </Border>
             </StackPanel>
         </ScrollViewer>
-        <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button MinWidth="80" IsCancel="True" Content="Cancel" />
-            <Button x:Name="ApplyButton" MinWidth="110" Margin="5,0,0,0" Click="Apply_Click"
-                    Style="{StaticResource PrimaryButtonStyle}" Content="Add effect" />
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel x:Name="FramePreviewControls" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="PreviewFrameButton" Click="PreviewFrame_Click" Content="Preview selected frame" />
+                <CheckBox x:Name="AutoPreviewCheckBox" Margin="9,0,0,0" VerticalAlignment="Center"
+                          Content="Auto refresh" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button MinWidth="80" IsCancel="True" Content="Cancel" />
+                <Button x:Name="ApplyButton" MinWidth="110" Margin="5,0,0,0" Click="Apply_Click"
+                        Style="{StaticResource PrimaryButtonStyle}" Content="Add effect" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

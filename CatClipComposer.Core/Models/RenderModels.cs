@@ -25,7 +25,8 @@ public sealed record RenderPluginEffect(
     ICatClipVideoEffectPlugin Plugin,
     TimeSpan Start,
     TimeSpan Duration,
-    IReadOnlyDictionary<string, string> Parameters);
+    IReadOnlyDictionary<string, string> Parameters,
+    int TrackOrder = 0);
 
 public enum RenderOverlayKind
 {
@@ -49,7 +50,8 @@ public sealed record RenderOverlay(
     ProgressBarPosition ProgressBarPosition = ProgressBarPosition.Bottom,
     string ProgressColor = "#C8C0B2",
     int ProgressHeight = 10,
-    VideoFitMode FitMode = VideoFitMode.Fit);
+    VideoFitMode FitMode = VideoFitMode.Fit,
+    int TrackOrder = 0);
 
 public sealed record RenderAudioLayer(
     string SourcePath,

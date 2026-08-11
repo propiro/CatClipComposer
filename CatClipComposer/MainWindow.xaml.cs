@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private Point _timelineDragStart;
     private TimelineLaneItemViewModel? _timelineDragItem;
     private TimeSpan _timelineDragGrabOffset;
+    private Point _trackDragStart;
+    private TimelineLaneViewModel? _trackDragLane;
     private TimelineLaneItemViewModel? _timelineResizeItem;
     private bool _timelineResizeMovesStart;
     private TimeSpan _timelineResizeOriginalStart;
@@ -57,6 +59,7 @@ public partial class MainWindow : Window
     private bool _closeSaveInProgress;
 
     private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds, TimeSpan GrabOffset);
+    private sealed record TrackDragData(Guid TrackId);
     private sealed record MediaDragData(IReadOnlyList<MediaCardViewModel> MediaFiles);
 
     public MainWindow(
@@ -1048,6 +1051,9 @@ public partial class MainWindow : Window
 
         var sourceItem = useSelectedItemTiming ? sourceRow?.Item : null;
         var selectedVideoRange = _viewModel.GetSelectedVideoRange();
+        var previewFrame = _viewModel.Timeline.Duration > TimeSpan.Zero
+            ? _viewModel.Timeline.Playhead
+            : (TimeSpan?)null;
         var dialog = new PluginEffectEditorWindow(
             _viewModel.Plugins,
             targetTrack,
@@ -1056,7 +1062,15 @@ public partial class MainWindow : Window
             _viewModel.Timeline.FramesPerSecond,
             initialStart: initialStart ?? selectedVideoRange?.Start ?? sourceItem?.Start,
             initialDuration: initialDuration ?? selectedVideoRange?.Duration ?? sourceItem?.Duration,
-            initialPluginId: initialPluginId)
+            initialPluginId: initialPluginId,
+            previewFrame: previewFrame,
+            framePreviewRenderer: previewFrame.HasValue
+                ? (item, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                    targetTrack.Id,
+                    item,
+                    previewFrame.Value,
+                    cancellationToken)
+                : null)
         {
             Owner = this
         };
@@ -1169,13 +1183,24 @@ public partial class MainWindow : Window
 
         if (row.Item.Kind == ProjectItemKind.Effect)
         {
+            var previewFrame = _viewModel.Timeline.Duration > TimeSpan.Zero
+                ? _viewModel.Timeline.Playhead
+                : (TimeSpan?)null;
             var pluginDialog = new PluginEffectEditorWindow(
                 _viewModel.Plugins,
                 row.Track,
                 _viewModel.Timeline.Duration,
                 _viewModel.Timeline.SnapMode,
                 _viewModel.Timeline.FramesPerSecond,
-                row.Item)
+                row.Item,
+                previewFrame: previewFrame,
+                framePreviewRenderer: previewFrame.HasValue
+                    ? (item, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                        row.Track.Id,
+                        item,
+                        previewFrame.Value,
+                        cancellationToken)
+                    : null)
             {
                 Owner = this
             };
@@ -1638,6 +1663,11 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // Measure before selection refreshes the lane projection. Coordinates against the detached
+            // pre-refresh Border are not stable and previously produced the apparently random drag offset.
+            var localOffset = TimeSpan.FromSeconds(
+                Math.Clamp(e.GetPosition((Border)sender).X, 0, ((Border)sender).ActualWidth) /
+                Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
             _viewModel.SelectTimelineItem(item.Id, Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
             _timelineDragStart = e.GetPosition(this);
             _timelineDragItem = item;
@@ -1647,9 +1677,6 @@ public partial class MainWindow : Window
                 .Select(candidate => candidate.Start)
                 .DefaultIfEmpty(item.Start)
                 .Min();
-            var localOffset = TimeSpan.FromSeconds(
-                Math.Max(0, e.GetPosition((Border)sender).X) /
-                Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
             _timelineDragGrabOffset = item.Start - selectedStart + localOffset;
             TimelineDropSurface.Focus();
         }
@@ -1657,19 +1684,28 @@ public partial class MainWindow : Window
 
     private void TimelineLaneItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount != 2 ||
-            sender is not Border { Tag: TimelineLaneItemViewModel item } ||
-            item.Kind != ProjectItemKind.Video ||
-            string.IsNullOrWhiteSpace(item.SourcePath) ||
-            !File.Exists(item.SourcePath))
+        if (e.ClickCount != 2 || sender is not Border { Tag: TimelineLaneItemViewModel item })
         {
             return;
         }
 
         _viewModel.SelectTimelineItem(item.Id);
-        _viewModel.SelectCatalogMedia(item.SourcePath);
-        PreviewTabs.SelectedItem = ClipPreviewTab;
-        LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
+        if (item.Kind == ProjectItemKind.Video &&
+            !string.IsNullOrWhiteSpace(item.SourcePath) &&
+            File.Exists(item.SourcePath))
+        {
+            _viewModel.SelectCatalogMedia(item.SourcePath);
+            PreviewTabs.SelectedItem = ClipPreviewTab;
+            LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
+        }
+        else if (item.Kind is ProjectItemKind.Effect or ProjectItemKind.TextOverlay or
+                 ProjectItemKind.ImageOverlay or ProjectItemKind.Audio or ProjectItemKind.ProgressBar)
+        {
+            _viewModel.SelectedProjectLayer = _viewModel.ProjectLayers
+                .FirstOrDefault(row => row.Item?.Id == item.Id);
+            EditLayer_Click(sender, e);
+        }
+
         _timelineDragItem = null;
         e.Handled = true;
     }
@@ -1715,7 +1751,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        _viewModel.SelectTimelineItem(item.Id);
+        // Selecting rebuilds TimelineLanes. Do it after the Thumb completes, not while WPF is
+        // establishing capture, otherwise the active resize Thumb disappears before DragDelta.
         _timelineResizeItem = item;
         _timelineResizeMovesStart = edge == "Start";
         _timelineResizeOriginalStart = item.Start;
@@ -1790,6 +1827,87 @@ public partial class MainWindow : Window
     {
         SelectTimelineTrack(sender);
         _viewModel.MoveSelectedTrack(1);
+    }
+
+    private void TimelineTrackHeader_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border { DataContext: TimelineLaneViewModel lane })
+        {
+            return;
+        }
+
+        _viewModel.SelectedProjectLayer = _viewModel.ProjectLayers
+            .FirstOrDefault(row => row.IsTrackHeader && row.Track.Id == lane.TrackId);
+        _trackDragStart = e.GetPosition(this);
+        _trackDragLane = lane;
+    }
+
+    private void TimelineTrackHeader_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed ||
+            sender is not Border { DataContext: TimelineLaneViewModel lane } ||
+            _trackDragLane?.TrackId != lane.TrackId)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(this);
+        if (Math.Abs(position.X - _trackDragStart.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(position.Y - _trackDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        _trackDragLane = null;
+        DragDrop.DoDragDrop(
+            (DependencyObject)sender,
+            new DataObject(typeof(TrackDragData), new TrackDragData(lane.TrackId)),
+            DragDropEffects.Move);
+    }
+
+    private void TimelineTrackHeader_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = sender is Border { DataContext: TimelineLaneViewModel target } &&
+                    e.Data.GetData(typeof(TrackDragData)) is TrackDragData moving &&
+                    moving.TrackId != target.TrackId
+            ? DragDropEffects.Move
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void TimelineTrackHeader_Drop(object sender, DragEventArgs e)
+    {
+        if (sender is Border { DataContext: TimelineLaneViewModel target } targetBorder &&
+            e.Data.GetData(typeof(TrackDragData)) is TrackDragData moving)
+        {
+            var insertAfter = e.GetPosition(targetBorder).Y >= targetBorder.ActualHeight / 2;
+            _viewModel.MoveTrack(moving.TrackId, target.TrackId, insertAfter);
+        }
+
+        _trackDragLane = null;
+        e.Handled = true;
+    }
+
+    private void TimelineTrackHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2 || sender is not Border { DataContext: TimelineLaneViewModel lane })
+        {
+            return;
+        }
+
+        if (lane.TrackKind == ProjectTrackKind.Video)
+        {
+            if (!_previewsSplit)
+            {
+                PreviewTabs.SelectedItem = ProjectPreviewTab;
+            }
+            else
+            {
+                ProjectPreviewPane.Focus();
+            }
+
+            e.Handled = true;
+        }
     }
 
     private void TimelineTrackColor_Click(object sender, RoutedEventArgs e)

@@ -770,7 +770,13 @@
                                             <DataTemplate>
                                                 <Border Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         Background="{Binding TrackColor}" Tag="{Binding TrackId}"
-                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,1">
+                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,1"
+                                                        Cursor="SizeNS" AllowDrop="True"
+                                                        PreviewMouseLeftButtonDown="TimelineTrackHeader_PreviewMouseLeftButtonDown"
+                                                        MouseLeftButtonDown="TimelineTrackHeader_MouseLeftButtonDown"
+                                                        PreviewMouseMove="TimelineTrackHeader_MouseMove"
+                                                        DragOver="TimelineTrackHeader_DragOver"
+                                                        Drop="TimelineTrackHeader_Drop">
                                                     <Border.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackMoveUp_Click" Header="Move track up (render above)" />

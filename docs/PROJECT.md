@@ -96,7 +96,13 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   and combine bounded sliders/arrows with unrestricted finite manual values.
 - **Predictable timed-block editing — Done.** Dragging preserves the pointer's grab offset and shows the exact
   snapped landing interval. Left/right handles resize non-primary timed blocks, and optional clip-range
-  snapping aligns starts or ends to source-clip boundaries.
+  snapping aligns starts or ends to source-clip boundaries. Track names drag vertically to reorder the stack;
+  Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
+- **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
+  Effect dialogs can render the selected project frame in a snapped companion window and optionally refresh it
+  after a short debounce while parameters change.
+- **Track-ordered filter composition — Done.** Video filter effects and overlays interleave bottom-to-top, so
+  an overlay below Video blur is filtered and the same overlay above it stays sharp.
 - **Extensible plugin modules — Done.** Versioned media/stage/track contracts, isolated dependency loading,
   persisted parameters, and a portable `plugins` folder support first-party and trusted future modules.
 
@@ -123,7 +129,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.14 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.15 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

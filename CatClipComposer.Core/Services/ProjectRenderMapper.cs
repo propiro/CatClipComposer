@@ -47,7 +47,8 @@ public static class ProjectRenderMapper
                         item.Start,
                         item.Duration,
                         SourcePath: item.SourcePath,
-                        FitMode: item.FitMode));
+                        FitMode: item.FitMode,
+                        TrackOrder: track.Order));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.TextOverlay)
                 {
@@ -59,7 +60,8 @@ public static class ProjectRenderMapper
                         FontPath: item.FontPath,
                         FontFamily: item.FontFamily,
                         FontSize: item.FontSize,
-                        Position: item.Position));
+                        Position: item.Position,
+                        TrackOrder: track.Order));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.ImageOverlay)
                 {
@@ -68,7 +70,8 @@ public static class ProjectRenderMapper
                         item.Start,
                         item.Duration,
                         SourcePath: item.SourcePath,
-                        Position: item.Position));
+                        Position: item.Position,
+                        TrackOrder: track.Order));
                 }
                 else if (track.Kind == ProjectTrackKind.Progress && item.Kind == ProjectItemKind.ProgressBar)
                 {
@@ -79,7 +82,8 @@ public static class ProjectRenderMapper
                         ProgressBarStyle: item.ProgressBarStyle,
                         ProgressBarPosition: item.ProgressBarPosition,
                         ProgressColor: item.ProgressColor,
-                        ProgressHeight: item.ProgressHeight));
+                        ProgressHeight: item.ProgressHeight,
+                        TrackOrder: track.Order));
                 }
             }
         }
@@ -119,7 +123,7 @@ public static class ProjectRenderMapper
             .OrderByDescending(track => track.Order)
             .SelectMany(track => track.Items.Select(item => (Track: track, Item: item)))
             .Where(entry => entry.Item.IsEnabled && entry.Item.Kind == ProjectItemKind.Effect)
-            .Select(entry => CreateVideoEffect(entry.Item, plugins, entry.Track.Kind))
+            .Select(entry => CreateVideoEffect(entry.Item, plugins, entry.Track.Kind, entry.Track.Order))
             .ToList();
 
         return new ProjectRenderPlan(
@@ -171,7 +175,8 @@ public static class ProjectRenderMapper
     private static RenderPluginEffect CreateVideoEffect(
         ProjectTimelineItem item,
         IPluginCatalog plugins,
-        ProjectTrackKind trackKind)
+        ProjectTrackKind trackKind,
+        int trackOrder = 0)
     {
         if (string.IsNullOrWhiteSpace(item.PluginId) ||
             plugins.Find(item.PluginId) is not ICatClipVideoEffectPlugin plugin)
@@ -190,6 +195,7 @@ public static class ProjectRenderMapper
             plugin,
             item.Start,
             item.Duration,
-            new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase));
+            new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase),
+            trackOrder);
     }
 }

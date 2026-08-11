@@ -71,6 +71,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 12. Still-image overlay inputs are trimmed and timestamped to their declared project interval before
     composition. Once that interval ends, the overlay passes the underlying stream through instead of asking
     FFmpeg to repeat an unbounded image source, which keeps Background effects and image overlays composable.
+13. `ProjectRenderMapper` retains visual track order on filter effects and overlays. The filter graph interleaves
+    those operations from the bottom track upward instead of flattening every filter ahead of every overlay.
 
 ### Timeline and parameter editing
 
@@ -81,8 +83,12 @@ The executable modules may reference Core and Infrastructure for composition. Co
 3. Frame/grid snapping always applies. A workspace checkbox additionally aligns either moving edge to primary
    source-clip starts and ends.
 4. Shared WPF range and numeric controls keep validation consistent across layers, clip effects, and plugins.
-   Sliders and arrow buttons use sensible UI bounds and snap steps; finite manual text entry may exceed those
-   convenience bounds when the renderer's hard safety limits permit it.
+   One compact range canvas moves or resizes Start/End together; effect-value sliders and arrow buttons use
+   sensible UI bounds and snap steps, while finite manual text entry may exceed those convenience bounds when
+   the renderer's hard safety limits permit it.
+5. Effect frame preview clones the in-memory project, replaces only the working effect item, renders a 0.1-second
+   H.264 slice at the selected playhead, and never saves the candidate or records export history. The editor
+   owns cancellation/debounce and a snapped non-modal preview window.
 
 ### Plugin discovery and effect rendering
 

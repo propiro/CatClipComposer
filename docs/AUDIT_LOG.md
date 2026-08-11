@@ -1,5 +1,30 @@
 # Audit log
 
+## AUDIT-2026-08-11-002 — Timeline capture, render-order, and frame-preview audit
+
+Scope: reported resize/drag offsets, compact range interaction, track/item gestures, filter/overlay stack order,
+and selected-frame feedback while editing plugin effects.
+
+Findings and remediation:
+
+- `DragStarted` selected an item by rebuilding `TimelineLanes`, removing the Thumb that WPF had just captured.
+  Selection now occurs on committed resize. Dragging likewise measures its local grab point before any selection
+  refresh can detach the source Border.
+- Separate Start and End sliders did not communicate one interval. A compact shared canvas now has a draggable
+  range body and independent boundary handles while retaining exact text/arrow entry.
+- Render mapping discarded track order by applying all filter plugins before all overlays. Both values now carry
+  track order into a single bottom-to-top visual operation sequence.
+- Effect editing had no feedback until the complete project preview was rendered. A cloned project substitutes
+  only the working item and renders a short H.264 slice at the playhead into a snapped companion window; automatic
+  refresh is debounced and cancels obsolete renders.
+
+Verification: Release builds passed after every code batch; the 16-file XAML resource audit resolved all 36
+keys; the UI smoke exercised the real resize event sequence, mini range track, track reordering, render-order
+mapping, and frame-preview controls. Two real 640x360 compositions showed a blurred image below Video blur and
+a sharp image above it. The recovered photo-overlay plus Background blur case still rendered for two seconds
+through native MPEG-4 and Media Foundation H.264, and its working Background effect rendered as an unsaved
+0.1-second selected-frame preview. Dependencies did not change.
+
 ## AUDIT-2026-08-11-001 — Timed-layer interaction and overlay/blur render audit
 
 Scope: effect movement/resizing, range and parameter entry, selected-clip defaults, and the reported JPEG
