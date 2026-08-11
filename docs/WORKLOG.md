@@ -2,6 +2,11 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — Mr. Cat splash-screen disclosure
+
+- Added a prominent README note that the software includes a photo of Mr. Cat as its splash screen.
+- Recorded the completed documentation item and its documentation audit; no application or release files changed.
+
 ## 2026-08-12 — Explicit vibecoding disclosure
 
 - Made the public README open with the requested verbatim statement that Cat Clip Composer is entirely

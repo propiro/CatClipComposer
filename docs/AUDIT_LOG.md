@@ -1,5 +1,15 @@
 # Audit log
 
+## AUDIT-2026-08-12-002 — Splash-screen disclosure audit
+
+Scope: disclose the splash-screen photo included with Cat Clip Composer.
+
+Finding and remediation: the public README now states that the software includes a photo of Mr. Cat as its
+splash screen.
+
+Verification: the change affects documentation only; no application code, image assets, dependencies, build
+outputs, or release assets changed.
+
 ## AUDIT-2026-08-12-001 — Public vibecoding-disclosure audit
 
 Scope: make the project's entirely vibecoded origin and experimental purpose immediately visible to readers.

@@ -40,6 +40,11 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: The README's first prose sentence explicitly states that Cat Clip Composer is entirely
   vibecoded and describes the experiment, while the project goals preserve that positioning.
 
+### `DOC-SPLASH-001` — Disclose the Mr. Cat splash-screen photo
+
+- Priority/status: P0 / Done
+- Acceptance: The public README states that the software includes a photo of Mr. Cat as its splash screen.
+
 ### `BOOT-001` — Share service composition between GUI and CLI
 
 - Priority/status: P0 / Done
