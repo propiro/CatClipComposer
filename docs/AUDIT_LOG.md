@@ -1,5 +1,18 @@
 # Audit log
 
+## AUDIT-2026-08-12-001 — Public vibecoding-disclosure audit
+
+Scope: make the project's entirely vibecoded origin and experimental purpose immediately visible to readers.
+
+Findings and remediation:
+
+- The README previously began with the product description and did not disclose the project's creation method.
+- Its first prose sentence now uses the requested wording verbatim, before the existing description.
+- The project-goal document and TODO register now preserve the same positioning.
+
+Verification: the change affects documentation only; no application code, dependencies, build outputs, or
+release assets changed.
+
 ## AUDIT-2026-08-11-004 — Public binary-release audit
 
 Scope: making Cat Clip Composer installable without a programming environment through GitHub Releases.

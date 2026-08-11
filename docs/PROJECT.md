@@ -1,8 +1,11 @@
 # Project goals and feature status
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-12
 
 ## Product goal
+
+Cat Clip Composer is an entirely vibecoded experiment intended to test how good—or bad—software created
+without manually touching the code can become.
 
 Cat Clip Composer is a deliberately narrow Windows application for cataloging folders of short clips,
 arranging selected clips on a duration-based timeline, adding simple presentation elements, and producing

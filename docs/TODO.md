@@ -1,6 +1,6 @@
 # TODO register
 
-Last audited: 2026-08-11
+Last audited: 2026-08-12
 
 Statuses are `Open`, `In progress`, `Blocked`, `Done`, and `Deferred`.
 
@@ -33,6 +33,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: The public README explains that FFmpeg/FFprobe are required media tools, distinguishes the
   included audited runtime from a local override, gives clone/LFS/build/publish instructions, links official
   and pinned downloads, and accurately summarizes LGPL/GPL/nonfree distribution boundaries.
+
+### `DOC-PROVENANCE-001` — Disclose the entirely vibecoded project origin
+
+- Priority/status: P0 / Done
+- Acceptance: The README's first prose sentence explicitly states that Cat Clip Composer is entirely
+  vibecoded and describes the experiment, while the project goals preserve that positioning.
 
 ### `BOOT-001` — Share service composition between GUI and CLI
 

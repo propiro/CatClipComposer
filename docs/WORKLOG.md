@@ -2,6 +2,12 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — Explicit vibecoding disclosure
+
+- Made the public README open with the requested verbatim statement that Cat Clip Composer is entirely
+  vibecoded and that the project is an experiment in creating software without manually touching code.
+- Mirrored the experiment's positioning in the project goals and recorded the completed documentation item.
+
 ## 2026-08-11 — Public v0.1.15 Windows release
 
 - Published `v0.1.15` from commit `6eb6c21` with the 280,213,770-byte self-contained Windows x64 ZIP and its

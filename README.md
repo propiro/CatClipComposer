@@ -1,5 +1,7 @@
 # Cat Clip Composer
 
+Cat Clip Composer is ENTIRELY vibecoded. This is an experiment to see how good (or bad!) vibecoding without manual touching code can get.
+
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
 Current application and component version: **0.1.15**.
