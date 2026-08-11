@@ -56,25 +56,21 @@ internal static class FfmpegFilterGraphBuilder
                 case RenderOverlayKind.Text when timedTextPaths.TryGetValue(index, out var textPath):
                     currentLabel = AddTextOverlay(
                         graph,
+                        request,
+                        overlay,
                         textPath,
-                        overlay.FontPath,
-                        overlay.FontFamily,
-                        overlay.FontSize,
-                        overlay.Position,
+                        width,
+                        height,
                         currentLabel,
-                        stage++,
-                        overlay.Start,
-                        overlay.Duration);
+                        stage++);
                     break;
                 case RenderOverlayKind.Image:
                     currentLabel = AddImageOverlay(
                         graph,
-                        overlay.Position,
+                        overlay,
                         overlayInputIndexes[index],
                         currentLabel,
-                        stage++,
-                        overlay.Start,
-                        overlay.Duration);
+                        stage++);
                     break;
                 case RenderOverlayKind.Video:
                     currentLabel = AddVideoOverlay(
@@ -328,22 +324,27 @@ internal static class FfmpegFilterGraphBuilder
 
     private static string AddImageOverlay(
         StringBuilder graph,
-        OverlayPosition position,
+        RenderOverlay overlay,
         int inputIndex,
         string currentLabel,
-        int stage,
-        TimeSpan? start,
-        TimeSpan? duration)
+        int stage)
     {
-        var overlayStart = start ?? TimeSpan.Zero;
-        var overlayDuration = duration ?? TimeSpan.FromSeconds(5);
-        graph.Append(CultureInfo.InvariantCulture,
+        var overlayStart = overlay.Start;
+        var overlayDuration = overlay.Duration;
+        var scale = overlay.HasCustomTransform
+            ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
+            : 1;
+        graph.Append(
             $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlayDuration)}," +
             $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
-            $"scale='min(480,iw)':-2,setsar=1,format=yuva420p," +
-            $"colorchannelmixer=aa=0.9[layerimage{stage}];");
-        var (x, y) = GetImageOverlayCoordinates(position);
-        var enable = CreateEnable(start, duration);
+            $"scale='min(480,iw)*{FormatNumber(scale)}':-2,setsar=1,format=yuva420p," +
+            "colorchannelmixer=aa=0.9");
+        AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
+        graph.Append(CultureInfo.InvariantCulture, $"[layerimage{stage}];");
+        var (x, y) = overlay.HasCustomTransform
+            ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
+            : GetImageOverlayCoordinates(overlay.Position);
+        var enable = CreateEnable(overlay.Start, overlay.Duration);
         graph.Append(CultureInfo.InvariantCulture,
             $"[{currentLabel}][layerimage{stage}]overlay=x={x}:y={y}:" +
             $"eof_action=pass:repeatlast=0{enable}[stage{stage}];");
@@ -383,27 +384,60 @@ internal static class FfmpegFilterGraphBuilder
 
     private static string AddTextOverlay(
         StringBuilder graph,
+        RenderRequest request,
+        RenderOverlay overlay,
         string overlayTextPath,
-        string? fontPath,
-        string? fontFamily,
-        int fontSize,
-        OverlayPosition position,
+        int width,
+        int height,
         string currentLabel,
-        int stage,
-        TimeSpan? start,
-        TimeSpan? duration)
+        int stage)
     {
-        var (x, y) = GetTextOverlayCoordinates(position);
-        var fontOption = string.IsNullOrWhiteSpace(fontPath)
-            ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(fontFamily) ? "Segoe UI" : fontFamily)}':"
-            : $"fontfile='{EscapeFilterValue(fontPath)}':";
+        var fontOption = string.IsNullOrWhiteSpace(overlay.FontPath)
+            ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(overlay.FontFamily) ? "Segoe UI" : overlay.FontFamily)}':"
+            : $"fontfile='{EscapeFilterValue(overlay.FontPath)}':";
+        if (!overlay.HasCustomTransform)
+        {
+            var (presetX, presetY) = GetTextOverlayCoordinates(overlay.Position);
+            graph.Append(CultureInfo.InvariantCulture,
+                $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
+            graph.Append(CultureInfo.InvariantCulture,
+                $"fontcolor=white:fontsize={Math.Clamp(overlay.FontSize, 8, 240)}:");
+            graph.Append(CultureInfo.InvariantCulture,
+                $"borderw=3:bordercolor=black@0.72:x={presetX}:y={presetY}" +
+                $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
+            return $"stage{stage}";
+        }
+
+        var scale = OverlayTransformValues.NormalizeScale(overlay.TransformScale);
+        var scaledFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * scale), 1, 2400);
+        var duration = FormatSeconds(overlay.Duration);
+        var start = FormatSeconds(overlay.Start);
+        graph.Append(
+            $"color=c=black@0.0:s={width}x{height}:r={FormatNumber(request.FramesPerSecond)}:d={duration}," +
+            $"format=yuva420p,drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
         graph.Append(CultureInfo.InvariantCulture,
-            $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
+            $"fontcolor=white:fontsize={scaledFontSize}:");
+        graph.Append("borderw=3:bordercolor=black@0.72:x=(w-text_w)/2:y=(h-text_h)/2");
+        AppendRotation(graph, overlay.TransformRotationDegrees, true);
         graph.Append(CultureInfo.InvariantCulture,
-            $"fontcolor=white:fontsize={Math.Clamp(fontSize, 8, 240)}:");
-        graph.Append(CultureInfo.InvariantCulture,
-            $"borderw=3:bordercolor=black@0.72:x={x}:y={y}{CreateEnable(start, duration)}[stage{stage}];");
+            $",setpts=PTS+{start}/TB[layertext{stage}];");
+        var (x, y) = GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY);
+        graph.Append(
+            $"[{currentLabel}][layertext{stage}]overlay=x={x}:y={y}:eof_action=pass:repeatlast=0" +
+            $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
         return $"stage{stage}";
+    }
+
+    private static void AppendRotation(StringBuilder graph, double degrees, bool enabled)
+    {
+        var rotation = enabled ? OverlayTransformValues.NormalizeRotation(degrees) : 0;
+        if (Math.Abs(rotation) < 0.000001)
+        {
+            return;
+        }
+
+        graph.Append(CultureInfo.InvariantCulture,
+            $",rotate={FormatNumber(rotation)}*PI/180:ow=rotw(iw):oh=roth(ih):c=none");
     }
 
     private static string AddTimedProgress(
@@ -504,6 +538,10 @@ internal static class FfmpegFilterGraphBuilder
         OverlayPosition.BottomRight => ("w-text_w-28", "h-text_h-28"),
         _ => ("(w-text_w)/2", "(h-text_h)/2")
     };
+
+    private static (string X, string Y) GetCustomOverlayCoordinates(double x, double y) =>
+        ($"'W*{FormatNumber(OverlayTransformValues.NormalizeCoordinate(x))}-w/2'",
+            $"'H*{FormatNumber(OverlayTransformValues.NormalizeCoordinate(y))}-h/2'");
 
     private static string FormatSeconds(TimeSpan duration) => FormatNumber(duration.TotalSeconds);
 

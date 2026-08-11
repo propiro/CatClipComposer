@@ -96,6 +96,17 @@ public sealed class MainViewModel : ObservableObject
 
     public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
 
+    public IReadOnlyList<ProjectTimelineItem> GetActivePositionableOverlayItems(TimeSpan position) =>
+        _project.Tracks
+            .Where(track => track.IsEnabled && track.Kind == ProjectTrackKind.Overlay)
+            .OrderByDescending(track => track.Order)
+            .SelectMany(track => track.Items)
+            .Where(item => item.IsEnabled &&
+                           item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay &&
+                           position >= item.Start &&
+                           position < item.Start + item.Duration)
+            .ToList();
+
     public (TimeSpan Start, TimeSpan Duration)? GetSelectedVideoRange()
     {
         var selected = _project.Tracks
@@ -1053,6 +1064,40 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Layer item updated";
     }
 
+    public bool UpdateOverlayTransform(
+        Guid itemId,
+        double x,
+        double y,
+        double scale,
+        double rotationDegrees,
+        bool commit)
+    {
+        var item = _project.Tracks
+            .Where(track => track.Kind == ProjectTrackKind.Overlay)
+            .SelectMany(track => track.Items)
+            .FirstOrDefault(candidate => candidate.Id == itemId &&
+                                         candidate.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay);
+        if (item is null)
+        {
+            return false;
+        }
+
+        item.HasCustomOverlayTransform = true;
+        item.OverlayX = OverlayTransformValues.NormalizeCoordinate(x);
+        item.OverlayY = OverlayTransformValues.NormalizeCoordinate(y);
+        item.OverlayScale = OverlayTransformValues.NormalizeScale(scale);
+        item.OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(rotationDegrees);
+        MarkProjectDirty();
+        if (commit)
+        {
+            RefreshProjectLayers(item.Id);
+            _ = SaveRecoverySafelyAsync();
+            StatusText = $"Updated preview transform for {item.Name}";
+        }
+
+        return true;
+    }
+
     public void ApplyProjectSettings(
         string projectName,
         double targetDurationMinutes,
@@ -1146,6 +1191,12 @@ public sealed class MainViewModel : ObservableObject
             }
 
             SelectedProjectLayer = ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId);
+            var selectedGroup = ProjectLayerGroups.FirstOrDefault(group =>
+                group.Items.Any(row => row.Item?.Id == itemId));
+            if (selectedGroup is not null)
+            {
+                selectedGroup.IsExpanded = true;
+            }
         }
         finally
         {

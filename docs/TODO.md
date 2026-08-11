@@ -207,6 +207,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   candidate at the playhead, Auto refresh debounces changes, stale renders cancel, and no recovery/history state
   is changed by the candidate.
 
+### `UX-OVERLAY-001` — Directly manipulate positioned overlays in Project Preview
+
+- Priority/status: P0 / Done
+- Acceptance: Active text/image overlays show selectable content gizmos over the correctly letterboxed project
+  frame; dragging moves, a corner handle scales, and a rotation handle rotates. Selection synchronizes by item ID
+  with the timeline and Layers / Used Clips, transform values appear in the overlay editor, schema-5 and older
+  placement remains compatible, and GUI/CLI FFmpeg renders apply the same persisted transform.
+
 ### `RENDER-ORDER-001` — Apply filter effects and overlays in visual track order
 
 - Priority/status: P0 / Done

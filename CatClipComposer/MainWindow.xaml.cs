@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Core.Plugins;
+using CatClipComposer.Controls;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
 using CatClipComposer.Workspace;
@@ -45,6 +46,7 @@ public partial class MainWindow : Window
     private bool _previewsSplit;
     private bool _projectPreviewSeekDragging;
     private bool _projectPreviewPlaying;
+    private bool _projectOverlayRefreshQueued;
     private TimeSpan _projectPreviewTimelineOffset;
     private TimeSpan _projectPreviewTimelineEnd;
     private bool _timelinePlayheadDragging;
@@ -93,6 +95,26 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         _previewTimer.Tick += PreviewTimer_Tick;
         _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
+        _viewModel.ProjectLayers.CollectionChanged += (_, _) => QueueProjectPreviewOverlayRefresh();
+        _viewModel.Timeline.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(TimelineViewModel.Playhead))
+            {
+                QueueProjectPreviewOverlayRefresh();
+            }
+        };
+        _viewModel.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(MainViewModel.SelectedProjectLayer))
+            {
+                ProjectPreviewOverlayCanvas.Select(_viewModel.SelectedProjectLayer?.Item?.Id);
+            }
+            else if (eventArgs.PropertyName == nameof(MainViewModel.OutputSettings))
+            {
+                QueueProjectPreviewOverlayRefresh();
+            }
+        };
+        Loaded += (_, _) => QueueProjectPreviewOverlayRefresh();
         Closed += (_, _) =>
         {
             _previewTimer.Stop();
@@ -638,6 +660,7 @@ public partial class MainWindow : Window
             _viewModel.Timeline.SetPlayhead(_projectPreviewTimelineOffset);
 
             ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
+            ProjectPreviewOverlayCanvas.MarkPreviewRendered();
             ProjectPreviewPlayer.IsMuted = true;
             UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
             ProjectPreviewStatusText.Text = !rangeStart.HasValue
@@ -699,6 +722,68 @@ public partial class MainWindow : Window
         _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
         ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
         SeekProjectPreview(_projectPreviewTimelineOffset);
+        QueueProjectPreviewOverlayRefresh();
+    }
+
+    private void ProjectPreviewOverlayCanvas_OverlaySelected(
+        object? sender,
+        PreviewOverlaySelectedEventArgs e)
+    {
+        PauseProjectPreviewForOverlayEditing();
+        _viewModel.SelectTimelineItem(e.ItemId);
+        ProjectPreviewOverlayCanvas.Select(e.ItemId);
+    }
+
+    private void ProjectPreviewOverlayCanvas_OverlayTransformChanged(
+        object? sender,
+        PreviewOverlayTransformEventArgs e)
+    {
+        if (!_viewModel.UpdateOverlayTransform(
+                e.ItemId,
+                e.X,
+                e.Y,
+                e.Scale,
+                e.RotationDegrees,
+                e.IsFinal))
+        {
+            return;
+        }
+
+        ProjectPreviewStatusText.Text = e.IsFinal
+            ? "Overlay transform updated — render preview to refresh the composition."
+            : $"Overlay: X {e.X * 100:0.#}% · Y {e.Y * 100:0.#}% · " +
+              $"scale {e.Scale * 100:0.#}% · rotate {e.RotationDegrees:0.#}°";
+        if (e.IsFinal)
+        {
+            QueueProjectPreviewOverlayRefresh();
+        }
+    }
+
+    private void PauseProjectPreviewForOverlayEditing()
+    {
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+    }
+
+    private void QueueProjectPreviewOverlayRefresh()
+    {
+        if (_projectOverlayRefreshQueued)
+        {
+            return;
+        }
+
+        _projectOverlayRefreshQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+        {
+            _projectOverlayRefreshQueued = false;
+            ProjectPreviewOverlayCanvas.Configure(
+                _viewModel.OutputSettings.Width,
+                _viewModel.OutputSettings.Height,
+                _viewModel.GetActivePositionableOverlayItems(_viewModel.Timeline.Playhead),
+                _viewModel.SelectedProjectLayer?.Item?.Id,
+                ProjectPreviewPlayer.Source is not null);
+        }));
     }
 
     private void ProjectPreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)

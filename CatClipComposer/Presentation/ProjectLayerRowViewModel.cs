@@ -54,7 +54,9 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
             ProjectItemKind.Video or ProjectItemKind.StillImage =>
                 $" | {item.FitMode} | fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s",
             ProjectItemKind.TextOverlay =>
-                $" | {item.FontFamily}{(string.IsNullOrWhiteSpace(item.FontPath) ? string.Empty : " | CUSTOM")}",
+                $" | {item.FontFamily}{(string.IsNullOrWhiteSpace(item.FontPath) ? string.Empty : " | CUSTOM")}" +
+                DescribeOverlayTransform(item),
+            ProjectItemKind.ImageOverlay => DescribeOverlayTransform(item),
             ProjectItemKind.Audio => $" | volume {item.Volume:0.##}",
             ProjectItemKind.ProgressBar =>
                 $" | {item.ProgressBarStyle} | {item.ProgressColor} | {item.ProgressHeight}px | {item.ProgressBarPosition}",
@@ -67,4 +69,9 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
             item.Name,
             $"{DurationFormatter.Format(item.Start)} -> {DurationFormatter.Format(item.Start + item.Duration)} | {item.Kind}{details}");
     }
+
+    private static string DescribeOverlayTransform(ProjectTimelineItem item) => item.HasCustomOverlayTransform
+        ? $" | X {item.OverlayX * 100:0.#}% | Y {item.OverlayY * 100:0.#}% | " +
+          $"scale {item.OverlayScale * 100:0.#}% | rotate {item.OverlayRotationDegrees:0.#}°"
+        : $" | {item.Position}";
 }

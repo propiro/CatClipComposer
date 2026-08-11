@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — Direct Project Preview overlay manipulation
+
+- Added active text/image content gizmos over the correctly letterboxed Project Preview frame. Clicking selects
+  the matching timeline/layer item; dragging moves it, the corner handle scales it, and the upper handle rotates it.
+- Added normalized X/Y, uniform scale, and rotation fields to schema 6, overlay dialogs, layer/timeline summaries,
+  shared render mapping, and FFmpeg text/image composition while retaining preset placement for older projects.
+- Passed the Release solution build and XAML resource audit. Real 320x180 MPEG-4/AAC smokes rendered transformed
+  text plus the Mr. Cat image and a legacy schema-3 preset-overlay project; FFprobe confirmed two-second video.
+
 ## 2026-08-12 — Mr. Cat splash-screen disclosure
 
 - Added a prominent README note that the software includes a photo of Mr. Cat as its splash screen.

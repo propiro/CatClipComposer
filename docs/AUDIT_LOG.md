@@ -1,5 +1,30 @@
 # Audit log
 
+## AUDIT-2026-08-12-003 — Direct-overlay manipulation and render audit
+
+Scope: selectable Project Preview content, move/scale/rotate gestures, synchronized item selection, persisted
+overlay transforms, editor exposure, legacy compatibility, and final FFmpeg output.
+
+Findings and remediation:
+
+- Project Preview previously exposed only the flattened rendered video, so an overlay could be positioned only
+  through five presets in a modal editor. A focused transparent canvas now maps the real letterboxed output frame,
+  shows every active text/image overlay, and provides move, uniform-scale, and rotation pointer gestures.
+- Preview clicks select by stable item GUID through `MainViewModel`, expand the matching Layers / Used Clips group,
+  and refresh timeline selection. Manipulation pauses playback, invalidates stale preview coverage immediately,
+  and commits recovery plus row/block summaries when the pointer is released.
+- Schema 6 stores normalized center X/Y, scale, rotation, and an explicit custom-transform flag. Older items keep
+  exact preset rendering until manipulated; finite values receive hard safety normalization when loaded.
+- Shared render records and mapping now carry the transform. Images scale/rotate their alpha layer before overlay;
+  transformed text renders on a transparent timed layer, rotates about its center, and composites at the same
+  normalized coordinates. GUI preview and CLI export therefore use identical FFmpeg behavior.
+
+Verification: required Release build passed with zero warnings/errors; the static XAML resource audit passed for
+36 keys across 16 files. A real two-second 320x180 smoke rendered rotated/scaled text and a rotated/scaled Mr. Cat
+image, and visual frame inspection confirmed both positions and rotations. FFprobe reported MPEG-4 320x180 video
+and AAC audio. A schema-3 project using legacy preset text also rendered successfully with two seconds of video.
+No dependency changed, so no new package-vulnerability audit was required.
+
 ## AUDIT-2026-08-12-002 — Splash-screen disclosure audit
 
 Scope: disclose the splash-screen photo included with Cat Clip Composer.

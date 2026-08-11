@@ -52,14 +52,51 @@
                     <StackPanel x:Name="TextPlacementFields" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <StackPanel>
+                            <StackPanel x:Name="FontSizeField">
                                 <TextBlock Margin="0,0,0,4" Text="Font size" />
                                 <controls:NumericEditorControl x:Name="FontSizeEditor"
                                                                Minimum="8" Maximum="120" Step="1" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Position" />
-                                <ComboBox x:Name="PositionComboBox" />
+                                <TextBlock Margin="0,0,0,4" Text="Position preset (resets transform)" />
+                                <ComboBox x:Name="PositionComboBox"
+                                          SelectionChanged="PositionComboBox_SelectionChanged" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Margin="0,10,0,4" Text="Preview transform" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="X center (%)" />
+                                <controls:NumericEditorControl x:Name="OverlayXEditor"
+                                                               Minimum="0" Maximum="100" Step="1"
+                                                               Edited="TransformEditor_Edited" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Y center (%)" />
+                                <controls:NumericEditorControl x:Name="OverlayYEditor"
+                                                               Minimum="0" Maximum="100" Step="1"
+                                                               Edited="TransformEditor_Edited" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Margin="0,0,0,4" Text="Scale (%)" />
+                                <controls:NumericEditorControl x:Name="OverlayScaleEditor"
+                                                               Minimum="5" Maximum="400" Step="5"
+                                                               Edited="TransformEditor_Edited" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="6">
+                                <TextBlock Margin="0,0,0,4" Text="Rotation (°)" />
+                                <controls:NumericEditorControl x:Name="OverlayRotationEditor"
+                                                               Minimum="-180" Maximum="180" Step="1"
+                                                               Edited="TransformEditor_Edited" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>

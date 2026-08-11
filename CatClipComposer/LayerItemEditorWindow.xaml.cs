@@ -22,6 +22,10 @@ public partial class LayerItemEditorWindow : Window
     private readonly TimeSpan _projectDuration;
     private readonly Guid? _existingId;
     private readonly double _snapSeconds;
+    private bool _loadingTransformFields = true;
+    private bool _existingCustomTransform;
+    private bool _transformEdited;
+    private bool _positionPresetChanged;
 
     public LayerItemEditorWindow(
         LayerEditorKind kind,
@@ -63,6 +67,7 @@ public partial class LayerItemEditorWindow : Window
         ProgressHeightEditor.SetValue(10);
         PositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
         PositionComboBox.SelectedItem = OverlayPosition.Center;
+        SetTransformEditorValues(0.5, 0.5, 1, 0);
         ProgressTimingComboBox.ItemsSource = Enum.GetValues<ProgressTimeMode>();
         ProgressTimingComboBox.SelectedItem = ProgressTimeMode.CustomRange;
         ProgressStyleComboBox.ItemsSource = Enum.GetValues<ProgressBarStyle>();
@@ -86,6 +91,8 @@ public partial class LayerItemEditorWindow : Window
                 ProgressTimingComboBox.SelectedItem = ProgressTimeMode.SourceSegment;
             }
         }
+
+        _loadingTransformFields = false;
     }
 
     public LayerItemEditorWindow(
@@ -96,7 +103,9 @@ public partial class LayerItemEditorWindow : Window
         double framesPerSecond)
         : this(GetEditorKind(item.Kind), projectDuration, customFontFolder, snapMode, framesPerSecond)
     {
+        _loadingTransformFields = true;
         _existingId = item.Id;
+        _existingCustomTransform = item.HasCustomOverlayTransform;
         TitleText.Text = $"Edit {GetDisplayName(_kind)}";
         AddButton.Content = "Apply";
         SourceTextBox.Text = item.SourcePath;
@@ -107,6 +116,14 @@ public partial class LayerItemEditorWindow : Window
         FadeOutEditor.SetValue(item.FadeOutSeconds);
         FontSizeEditor.SetValue(item.FontSize);
         PositionComboBox.SelectedItem = item.Position;
+        var (overlayX, overlayY) = item.HasCustomOverlayTransform
+            ? (item.OverlayX, item.OverlayY)
+            : OverlayTransformValues.GetPresetCenter(item.Position);
+        SetTransformEditorValues(
+            overlayX,
+            overlayY,
+            item.HasCustomOverlayTransform ? item.OverlayScale : 1,
+            item.HasCustomOverlayTransform ? item.OverlayRotationDegrees : 0);
         ProgressTimingComboBox.SelectedItem = item.ProgressTimeMode;
         ProgressStyleComboBox.SelectedItem = item.ProgressBarStyle;
         ProgressPositionComboBox.SelectedItem = item.ProgressBarPosition;
@@ -122,6 +139,8 @@ public partial class LayerItemEditorWindow : Window
                  font.FamilyName.Equals(item.FontFamily, StringComparison.OrdinalIgnoreCase))) ??
                 FontComboBox.SelectedItem;
         }
+
+        _loadingTransformFields = false;
     }
 
     public ProjectTrackKind TrackKind => _kind switch
@@ -139,6 +158,7 @@ public partial class LayerItemEditorWindow : Window
         SourceFields.Visibility = Visible(_kind is LayerEditorKind.Image or LayerEditorKind.Audio);
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
+        FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
         TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
         AudioFields.Visibility = Visible(_kind == LayerEditorKind.Audio);
         ProgressFields.Visibility = Visible(_kind == LayerEditorKind.Progress);
@@ -180,17 +200,39 @@ public partial class LayerItemEditorWindow : Window
         var progressHeightValid = int.TryParse(ProgressHeightEditor.Text, NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var progressHeight) && progressHeight is >= 2 and <= 100;
         var progressColorValid = TryNormalizeColor(ProgressColorTextBox.Text, out var progressColor);
+        var overlayXValid = TryParse(
+            OverlayXEditor.Text,
+            OverlayTransformValues.MinimumCoordinate * 100,
+            OverlayTransformValues.MaximumCoordinate * 100,
+            out var overlayXPercent);
+        var overlayYValid = TryParse(
+            OverlayYEditor.Text,
+            OverlayTransformValues.MinimumCoordinate * 100,
+            OverlayTransformValues.MaximumCoordinate * 100,
+            out var overlayYPercent);
+        var overlayScaleValid = TryParse(
+            OverlayScaleEditor.Text,
+            OverlayTransformValues.MinimumScale * 100,
+            OverlayTransformValues.MaximumScale * 100,
+            out var overlayScalePercent);
+        var overlayRotationValid = TryParse(
+            OverlayRotationEditor.Text,
+            -360000,
+            360000,
+            out var overlayRotation);
 
         if (!TimeRangeEditor.TryGetRange(out var startTime, out var durationTime) ||
             (_kind == LayerEditorKind.Text &&
              (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
             (_kind is LayerEditorKind.Image or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
+            (_kind is LayerEditorKind.Text or LayerEditorKind.Image &&
+             (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid)) ||
             (_kind == LayerEditorKind.Audio && (!volumeValid || !fadeInValid || !fadeOutValid ||
                                                  fadeIn > durationTime.TotalSeconds || fadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
             MessageBox.Show(this,
-                "Check the required source/text, start, positive duration, font size 8–240, audio values, and progress color/height.",
+                "Check the required source/text, start, positive duration, font size 8–240, overlay transform, audio values, and progress color/height.",
                 "Invalid layer item", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -208,6 +250,11 @@ public partial class LayerItemEditorWindow : Window
         }
 
         var font = FontComboBox.SelectedItem as FontChoice;
+        var position = PositionComboBox.SelectedItem is OverlayPosition selectedPosition
+            ? selectedPosition
+            : OverlayPosition.Center;
+        var useCustomTransform = _kind is LayerEditorKind.Text or LayerEditorKind.Image &&
+                                 (_transformEdited || (!_positionPresetChanged && _existingCustomTransform));
         var itemKind = _kind switch
         {
             LayerEditorKind.Text => ProjectItemKind.TextOverlay,
@@ -234,7 +281,12 @@ public partial class LayerItemEditorWindow : Window
             FontPath = _kind == LayerEditorKind.Text ? font?.FilePath ?? string.Empty : string.Empty,
             FontFamily = _kind == LayerEditorKind.Text ? font?.FamilyName ?? "Segoe UI" : "Segoe UI",
             FontSize = _kind == LayerEditorKind.Text ? fontSize : 42,
-            Position = PositionComboBox.SelectedItem is OverlayPosition position ? position : OverlayPosition.Center,
+            Position = position,
+            HasCustomOverlayTransform = useCustomTransform,
+            OverlayX = OverlayTransformValues.NormalizeCoordinate(overlayXPercent / 100),
+            OverlayY = OverlayTransformValues.NormalizeCoordinate(overlayYPercent / 100),
+            OverlayScale = OverlayTransformValues.NormalizeScale(overlayScalePercent / 100),
+            OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(overlayRotation),
             Volume = _kind == LayerEditorKind.Audio ? volume : 1,
             FadeInSeconds = _kind == LayerEditorKind.Audio ? fadeIn : 0,
             FadeOutSeconds = _kind == LayerEditorKind.Audio ? fadeOut : 0,
@@ -247,6 +299,38 @@ public partial class LayerItemEditorWindow : Window
             ProgressHeight = progressHeight
         };
         DialogResult = true;
+    }
+
+    private void PositionComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_loadingTransformFields || PositionComboBox.SelectedItem is not OverlayPosition position)
+        {
+            return;
+        }
+
+        var (x, y) = OverlayTransformValues.GetPresetCenter(position);
+        _loadingTransformFields = true;
+        SetTransformEditorValues(x, y, 1, 0);
+        _loadingTransformFields = false;
+        _positionPresetChanged = true;
+        _transformEdited = false;
+    }
+
+    private void TransformEditor_Edited(object? sender, EventArgs e)
+    {
+        if (!_loadingTransformFields)
+        {
+            _transformEdited = true;
+            _positionPresetChanged = false;
+        }
+    }
+
+    private void SetTransformEditorValues(double x, double y, double scale, double rotation)
+    {
+        OverlayXEditor.SetValue(x * 100);
+        OverlayYEditor.SetValue(y * 100);
+        OverlayScaleEditor.SetValue(scale * 100);
+        OverlayRotationEditor.SetValue(rotation);
     }
 
     private static LayerEditorKind GetEditorKind(ProjectItemKind kind) => kind switch

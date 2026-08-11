@@ -89,7 +89,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   media-block edge marks content outside the current rendered-preview coverage.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
-  fonts or visibly marked TTF/OTF files from the portable custom-font folder.
+  fonts or visibly marked TTF/OTF files from the portable custom-font folder. Active overlays expose their
+  content and move/scale/rotate gizmos over Project Preview; clicking one synchronizes timeline and Layers /
+  Used Clips selection, and direct manipulation updates the same persisted transform shown by the editor.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position.
 - **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, fit/fill/stretch, and

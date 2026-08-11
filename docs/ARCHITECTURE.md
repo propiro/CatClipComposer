@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-12
 
 ## Repository modules
 
@@ -73,6 +73,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
     FFmpeg to repeat an unbounded image source, which keeps Background effects and image overlays composable.
 13. `ProjectRenderMapper` retains visual track order on filter effects and overlays. The filter graph interleaves
     those operations from the bottom track upward instead of flattening every filter ahead of every overlay.
+14. Text/image overlay transforms use normalized center coordinates plus uniform scale and rotation. FFmpeg
+    applies those values at final-output resolution; schema-5 and older items retain their preset placement
+    until a user edits or directly manipulates the overlay.
 
 ### Timeline and parameter editing
 
@@ -89,6 +92,10 @@ The executable modules may reference Core and Infrastructure for composition. Co
 5. Effect frame preview clones the in-memory project, replaces only the working effect item, renders a 0.1-second
    H.264 slice at the selected playhead, and never saves the candidate or records export history. The editor
    owns cancellation/debounce and a snapped non-modal preview window.
+6. `ProjectPreviewOverlayCanvas` maps the project frame into the MediaElement's actual letterboxed viewport,
+   displays active text/image content with selection handles, and owns pointer capture for move, uniform-scale,
+   and rotation gestures. `MainViewModel` owns transform mutation, preview invalidation, recovery persistence,
+   and item-ID selection shared with the timeline and Layers / Used Clips panel.
 
 ### Plugin discovery and effect rendering
 

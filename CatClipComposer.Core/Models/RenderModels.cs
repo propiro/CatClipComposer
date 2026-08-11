@@ -51,7 +51,12 @@ public sealed record RenderOverlay(
     string ProgressColor = "#C8C0B2",
     int ProgressHeight = 10,
     VideoFitMode FitMode = VideoFitMode.Fit,
-    int TrackOrder = 0);
+    int TrackOrder = 0,
+    bool HasCustomTransform = false,
+    double TransformX = 0.5,
+    double TransformY = 0.5,
+    double TransformScale = 1,
+    double TransformRotationDegrees = 0);
 
 public sealed record RenderAudioLayer(
     string SourcePath,

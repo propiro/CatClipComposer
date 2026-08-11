@@ -154,6 +154,10 @@ public sealed class JsonProjectStore : IProjectStore
                     ? item.ProgressColor.ToUpperInvariant()
                     : "#C8C0B2";
                 item.ProgressHeight = Math.Clamp(item.ProgressHeight, 2, 100);
+                item.OverlayX = OverlayTransformValues.NormalizeCoordinate(item.OverlayX);
+                item.OverlayY = OverlayTransformValues.NormalizeCoordinate(item.OverlayY);
+                item.OverlayScale = OverlayTransformValues.NormalizeScale(item.OverlayScale);
+                item.OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(item.OverlayRotationDegrees);
                 item.PluginParameters = item.PluginParameters is null
                     ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase);

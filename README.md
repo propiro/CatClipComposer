@@ -40,6 +40,9 @@ Current application and component version: **0.1.15**.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
+- Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
+  on-canvas gizmos. Preview selection stays synchronized with the timeline and Layers / Used Clips panel,
+  while exact X/Y, scale, rotation, and placement presets remain editable in the overlay dialog.
 - Time effects with Start/End fields (or optional duration entry), set them to the whole timeline in one click,
   adjust the interval on one compact mini timeline, and use bounded sliders/arrows for effect values while
   retaining exact manual numeric entry.

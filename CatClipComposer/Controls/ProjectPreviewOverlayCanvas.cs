@@ -1,0 +1,498 @@
+using System.Globalization;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using CatClipComposer.Core.Models;
+
+namespace CatClipComposer.Controls;
+
+public sealed class PreviewOverlaySelectedEventArgs(Guid itemId) : EventArgs
+{
+    public Guid ItemId { get; } = itemId;
+}
+
+public sealed class PreviewOverlayTransformEventArgs(
+    Guid itemId,
+    double x,
+    double y,
+    double scale,
+    double rotationDegrees,
+    bool isFinal) : EventArgs
+{
+    public Guid ItemId { get; } = itemId;
+
+    public double X { get; } = x;
+
+    public double Y { get; } = y;
+
+    public double Scale { get; } = scale;
+
+    public double RotationDegrees { get; } = rotationDegrees;
+
+    public bool IsFinal { get; } = isFinal;
+}
+
+public sealed class ProjectPreviewOverlayCanvas : Canvas
+{
+    private const double DirectManipulationMinimumScale = 0.05;
+    private readonly Dictionary<string, BitmapSource?> _imageCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<Guid> _staleItemIds = [];
+    private IReadOnlyList<ProjectTimelineItem> _items = [];
+    private Guid? _selectedItemId;
+    private int _outputWidth = 1920;
+    private int _outputHeight = 1080;
+    private bool _hasRenderedPreview;
+    private InteractionState? _interaction;
+
+    public ProjectPreviewOverlayCanvas()
+    {
+        Background = Brushes.Transparent;
+        ClipToBounds = true;
+        SizeChanged += (_, _) => Redraw();
+        PreviewMouseMove += OnPreviewMouseMove;
+        PreviewMouseLeftButtonUp += OnPreviewMouseLeftButtonUp;
+        LostMouseCapture += (_, _) => CompleteInteraction(true);
+    }
+
+    public event EventHandler<PreviewOverlaySelectedEventArgs>? OverlaySelected;
+
+    public event EventHandler<PreviewOverlayTransformEventArgs>? OverlayTransformChanged;
+
+    public void Configure(
+        int outputWidth,
+        int outputHeight,
+        IReadOnlyList<ProjectTimelineItem> items,
+        Guid? selectedItemId,
+        bool hasRenderedPreview)
+    {
+        _outputWidth = Math.Max(1, outputWidth);
+        _outputHeight = Math.Max(1, outputHeight);
+        _items = items;
+        _selectedItemId = selectedItemId;
+        _hasRenderedPreview = hasRenderedPreview;
+        if (_interaction is null)
+        {
+            Redraw();
+        }
+    }
+
+    public void Select(Guid? itemId)
+    {
+        if (_selectedItemId == itemId)
+        {
+            return;
+        }
+
+        _selectedItemId = itemId;
+        Redraw();
+    }
+
+    public void MarkPreviewRendered()
+    {
+        _staleItemIds.Clear();
+        _hasRenderedPreview = true;
+        Redraw();
+    }
+
+    private void Redraw()
+    {
+        Children.Clear();
+        var viewport = GetVideoViewport();
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
+            return;
+        }
+
+        foreach (var item in _items)
+        {
+            var visual = CreateItemVisual(item, viewport);
+            Children.Add(visual.Element);
+            SetLeft(visual.Element, visual.Left);
+            SetTop(visual.Element, visual.Top);
+        }
+    }
+
+    private ItemVisual CreateItemVisual(ProjectTimelineItem item, Rect viewport)
+    {
+        var selected = item.Id == _selectedItemId;
+        var (baseWidth, baseHeight, content) = CreateContent(item, viewport);
+        var transformScale = item.HasCustomOverlayTransform
+            ? OverlayTransformValues.NormalizeScale(item.OverlayScale)
+            : 1;
+        var width = Math.Max(18, baseWidth * transformScale);
+        var height = Math.Max(18, baseHeight * transformScale);
+        var center = ResolveCenter(item, viewport, width, height);
+        var root = new Grid
+        {
+            Width = width,
+            Height = height,
+            Background = Brushes.Transparent,
+            Cursor = Cursors.SizeAll,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new RotateTransform(
+                item.HasCustomOverlayTransform
+                    ? OverlayTransformValues.NormalizeRotation(item.OverlayRotationDegrees)
+                    : 0),
+            ToolTip = selected
+                ? "Drag to move. Drag the lower-right square to scale. Drag the upper-center circle to rotate."
+                : "Click to select this overlay."
+        };
+        var showContentProxy = !_hasRenderedPreview || _staleItemIds.Contains(item.Id);
+        root.Children.Add(new Viewbox
+        {
+            Stretch = Stretch.Fill,
+            Opacity = showContentProxy
+                ? selected ? 0.82 : 0.5
+                : selected ? 0.12 : 0.01,
+            Child = content
+        });
+        root.Children.Add(new Border
+        {
+            BorderBrush = new SolidColorBrush(selected
+                ? Color.FromRgb(255, 204, 102)
+                : Color.FromArgb(130, 200, 192, 178)),
+            BorderThickness = new Thickness(selected ? 2 : 1),
+            Background = Brushes.Transparent,
+            IsHitTestVisible = false
+        });
+        root.MouseLeftButtonDown += (_, e) => BeginInteraction(item, InteractionKind.Move, viewport, e);
+
+        if (selected)
+        {
+            var resizeHandle = CreateHandle(Brushes.White, Cursors.SizeNWSE, "Scale overlay");
+            resizeHandle.HorizontalAlignment = HorizontalAlignment.Right;
+            resizeHandle.VerticalAlignment = VerticalAlignment.Bottom;
+            resizeHandle.MouseLeftButtonDown += (_, e) => BeginInteraction(item, InteractionKind.Scale, viewport, e);
+            root.Children.Add(resizeHandle);
+
+            var rotationHandle = CreateRotationHandle();
+            rotationHandle.HorizontalAlignment = HorizontalAlignment.Center;
+            rotationHandle.VerticalAlignment = VerticalAlignment.Top;
+            rotationHandle.MouseLeftButtonDown += (_, e) => BeginInteraction(item, InteractionKind.Rotate, viewport, e);
+            root.Children.Add(rotationHandle);
+        }
+
+        return new ItemVisual(root, center.X - width / 2, center.Y - height / 2);
+    }
+
+    private (double Width, double Height, FrameworkElement Content) CreateContent(
+        ProjectTimelineItem item,
+        Rect viewport)
+    {
+        var outputScale = viewport.Width / _outputWidth;
+        if (item.Kind == ProjectItemKind.ImageOverlay)
+        {
+            var source = LoadImage(item.SourcePath);
+            var pixelWidth = source?.PixelWidth ?? 480;
+            var pixelHeight = source?.PixelHeight ?? 320;
+            var fittedWidth = Math.Min(480, Math.Max(1, pixelWidth));
+            var fittedHeight = fittedWidth * Math.Max(1, pixelHeight) / Math.Max(1, pixelWidth);
+            return (
+                Math.Max(18, fittedWidth * outputScale),
+                Math.Max(18, fittedHeight * outputScale),
+                new Image
+                {
+                    Source = source,
+                    Stretch = Stretch.Fill,
+                    SnapsToDevicePixels = true
+                });
+        }
+
+        var fontSize = Math.Max(1, item.FontSize * outputScale);
+        var fontFamily = new FontFamily(string.IsNullOrWhiteSpace(item.FontFamily) ? "Segoe UI" : item.FontFamily);
+        var formatted = new FormattedText(
+            string.IsNullOrEmpty(item.Text) ? "Text" : item.Text,
+            CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight,
+            new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+            fontSize,
+            Brushes.White,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        var text = new TextBlock
+        {
+            Text = string.IsNullOrEmpty(item.Text) ? "Text" : item.Text,
+            FontFamily = fontFamily,
+            FontSize = fontSize,
+            Foreground = Brushes.White,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Center,
+            Effect = new DropShadowEffect
+            {
+                BlurRadius = 3,
+                ShadowDepth = 1,
+                Color = Colors.Black,
+                Opacity = 0.9
+            }
+        };
+        return (
+            Math.Max(28, formatted.WidthIncludingTrailingWhitespace + 12),
+            Math.Max(22, formatted.Height + 10),
+            text);
+    }
+
+    private BitmapSource? LoadImage(string path)
+    {
+        if (_imageCache.TryGetValue(path, out var cached))
+        {
+            return cached;
+        }
+
+        BitmapSource? source = null;
+        try
+        {
+            if (File.Exists(path))
+            {
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = new Uri(path, UriKind.Absolute);
+                image.EndInit();
+                image.Freeze();
+                source = image;
+            }
+        }
+        catch
+        {
+            // The renderer reports missing/invalid media. Keep the preview gizmo usable meanwhile.
+        }
+
+        _imageCache[path] = source;
+        return source;
+    }
+
+    private Point ResolveCenter(ProjectTimelineItem item, Rect viewport, double width, double height)
+    {
+        if (item.HasCustomOverlayTransform)
+        {
+            return new Point(
+                viewport.Left + viewport.Width * OverlayTransformValues.NormalizeCoordinate(item.OverlayX),
+                viewport.Top + viewport.Height * OverlayTransformValues.NormalizeCoordinate(item.OverlayY));
+        }
+
+        var margin = 28 * viewport.Width / _outputWidth;
+        return item.Position switch
+        {
+            OverlayPosition.TopLeft => new Point(viewport.Left + margin + width / 2, viewport.Top + margin + height / 2),
+            OverlayPosition.TopRight => new Point(viewport.Right - margin - width / 2, viewport.Top + margin + height / 2),
+            OverlayPosition.BottomLeft => new Point(viewport.Left + margin + width / 2, viewport.Bottom - margin - height / 2),
+            OverlayPosition.BottomRight => new Point(viewport.Right - margin - width / 2, viewport.Bottom - margin - height / 2),
+            _ => new Point(viewport.Left + viewport.Width / 2, viewport.Top + viewport.Height / 2)
+        };
+    }
+
+    private static Border CreateHandle(Brush fill, Cursor cursor, string toolTip) => new()
+    {
+        Width = 12,
+        Height = 12,
+        Margin = new Thickness(2),
+        Background = fill,
+        BorderBrush = Brushes.Black,
+        BorderThickness = new Thickness(1),
+        Cursor = cursor,
+        ToolTip = toolTip
+    };
+
+    private static Ellipse CreateRotationHandle() => new()
+    {
+        Width = 13,
+        Height = 13,
+        Margin = new Thickness(0, 2, 0, 0),
+        Fill = new SolidColorBrush(Color.FromRgb(255, 204, 102)),
+        Stroke = Brushes.Black,
+        StrokeThickness = 1,
+        Cursor = Cursors.Hand,
+        ToolTip = "Rotate overlay"
+    };
+
+    private void BeginInteraction(
+        ProjectTimelineItem item,
+        InteractionKind kind,
+        Rect viewport,
+        MouseButtonEventArgs e)
+    {
+        var visualBounds = ResolveVisualBounds(item, viewport);
+        var pointer = e.GetPosition(this);
+        var center = new Point(visualBounds.Left + visualBounds.Width / 2, visualBounds.Top + visualBounds.Height / 2);
+        var initialX = (center.X - viewport.Left) / viewport.Width;
+        var initialY = (center.Y - viewport.Top) / viewport.Height;
+        _selectedItemId = item.Id;
+        OverlaySelected?.Invoke(this, new PreviewOverlaySelectedEventArgs(item.Id));
+        _interaction = new InteractionState(
+            item.Id,
+            kind,
+            viewport,
+            pointer,
+            center,
+            initialX,
+            initialY,
+            item.HasCustomOverlayTransform ? item.OverlayScale : 1,
+            item.HasCustomOverlayTransform ? item.OverlayRotationDegrees : 0);
+        CaptureMouse();
+        Redraw();
+        e.Handled = true;
+    }
+
+    private Rect ResolveVisualBounds(ProjectTimelineItem item, Rect viewport)
+    {
+        var (baseWidth, baseHeight, _) = CreateContent(item, viewport);
+        var scale = item.HasCustomOverlayTransform ? item.OverlayScale : 1;
+        var width = Math.Max(18, baseWidth * OverlayTransformValues.NormalizeScale(scale));
+        var height = Math.Max(18, baseHeight * OverlayTransformValues.NormalizeScale(scale));
+        var center = ResolveCenter(item, viewport, width, height);
+        return new Rect(center.X - width / 2, center.Y - height / 2, width, height);
+    }
+
+    private void OnPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_interaction is null || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        var pointer = e.GetPosition(this);
+        var dx = pointer.X - _interaction.PointerStart.X;
+        var dy = pointer.Y - _interaction.PointerStart.Y;
+        if (!_interaction.HasChanged && Math.Sqrt(dx * dx + dy * dy) < 1)
+        {
+            return;
+        }
+
+        var x = _interaction.InitialX;
+        var y = _interaction.InitialY;
+        var scale = _interaction.InitialScale;
+        var rotation = _interaction.InitialRotation;
+        switch (_interaction.Kind)
+        {
+            case InteractionKind.Move:
+                x = Math.Clamp(x + dx / _interaction.Viewport.Width, 0, 1);
+                y = Math.Clamp(y + dy / _interaction.Viewport.Height, 0, 1);
+                break;
+            case InteractionKind.Scale:
+                var initialDistance = Distance(_interaction.PointerStart, _interaction.Center);
+                var currentDistance = Distance(pointer, _interaction.Center);
+                scale = Math.Clamp(
+                    _interaction.InitialScale * currentDistance / Math.Max(1, initialDistance),
+                    DirectManipulationMinimumScale,
+                    OverlayTransformValues.MaximumScale);
+                break;
+            case InteractionKind.Rotate:
+                var initialAngle = GetAngle(_interaction.Center, _interaction.PointerStart);
+                var currentAngle = GetAngle(_interaction.Center, pointer);
+                rotation = OverlayTransformValues.NormalizeRotation(
+                    _interaction.InitialRotation + currentAngle - initialAngle);
+                break;
+        }
+
+        _interaction = _interaction with
+        {
+            LastX = x,
+            LastY = y,
+            LastScale = scale,
+            LastRotation = rotation,
+            HasChanged = true
+        };
+        _staleItemIds.Add(_interaction.ItemId);
+        OverlayTransformChanged?.Invoke(
+            this,
+            new PreviewOverlayTransformEventArgs(
+                _interaction.ItemId,
+                x,
+                y,
+                scale,
+                rotation,
+                false));
+        Redraw();
+        e.Handled = true;
+    }
+
+    private void OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        CompleteInteraction(true);
+        e.Handled = true;
+    }
+
+    private void CompleteInteraction(bool commit)
+    {
+        var interaction = _interaction;
+        _interaction = null;
+        if (IsMouseCaptured)
+        {
+            ReleaseMouseCapture();
+        }
+
+        if (commit && interaction is { HasChanged: true })
+        {
+            OverlayTransformChanged?.Invoke(
+                this,
+                new PreviewOverlayTransformEventArgs(
+                    interaction.ItemId,
+                    interaction.LastX,
+                    interaction.LastY,
+                    interaction.LastScale,
+                    interaction.LastRotation,
+                    true));
+        }
+
+        Redraw();
+    }
+
+    private Rect GetVideoViewport()
+    {
+        var scale = Math.Min(ActualWidth / _outputWidth, ActualHeight / _outputHeight);
+        if (!double.IsFinite(scale) || scale <= 0)
+        {
+            return Rect.Empty;
+        }
+
+        var width = _outputWidth * scale;
+        var height = _outputHeight * scale;
+        return new Rect((ActualWidth - width) / 2, (ActualHeight - height) / 2, width, height);
+    }
+
+    private static double Distance(Point first, Point second)
+    {
+        var dx = first.X - second.X;
+        var dy = first.Y - second.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    private static double GetAngle(Point center, Point point) =>
+        Math.Atan2(point.Y - center.Y, point.X - center.X) * 180 / Math.PI;
+
+    private sealed record ItemVisual(FrameworkElement Element, double Left, double Top);
+
+    private sealed record InteractionState(
+        Guid ItemId,
+        InteractionKind Kind,
+        Rect Viewport,
+        Point PointerStart,
+        Point Center,
+        double InitialX,
+        double InitialY,
+        double InitialScale,
+        double InitialRotation)
+    {
+        public double LastX { get; init; } = InitialX;
+
+        public double LastY { get; init; } = InitialY;
+
+        public double LastScale { get; init; } = InitialScale;
+
+        public double LastRotation { get; init; } = InitialRotation;
+
+        public bool HasChanged { get; init; }
+    }
+
+    private enum InteractionKind
+    {
+        Move,
+        Scale,
+        Rotate
+    }
+}

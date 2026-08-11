@@ -61,7 +61,12 @@ public static class ProjectRenderMapper
                         FontFamily: item.FontFamily,
                         FontSize: item.FontSize,
                         Position: item.Position,
-                        TrackOrder: track.Order));
+                        TrackOrder: track.Order,
+                        HasCustomTransform: item.HasCustomOverlayTransform,
+                        TransformX: item.OverlayX,
+                        TransformY: item.OverlayY,
+                        TransformScale: item.OverlayScale,
+                        TransformRotationDegrees: item.OverlayRotationDegrees));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.ImageOverlay)
                 {
@@ -71,7 +76,12 @@ public static class ProjectRenderMapper
                         item.Duration,
                         SourcePath: item.SourcePath,
                         Position: item.Position,
-                        TrackOrder: track.Order));
+                        TrackOrder: track.Order,
+                        HasCustomTransform: item.HasCustomOverlayTransform,
+                        TransformX: item.OverlayX,
+                        TransformY: item.OverlayY,
+                        TransformScale: item.OverlayScale,
+                        TransformRotationDegrees: item.OverlayRotationDegrees));
                 }
                 else if (track.Kind == ProjectTrackKind.Progress && item.Kind == ProjectItemKind.ProgressBar)
                 {

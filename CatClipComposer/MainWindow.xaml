@@ -396,10 +396,15 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Border Background="{StaticResource PreviewBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                                    <MediaElement x:Name="ProjectPreviewPlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
-                                                  IsMuted="True" Volume="0.5" ScrubbingEnabled="True" Stretch="Uniform"
-                                                  MediaOpened="ProjectPreviewPlayer_MediaOpened" MediaEnded="ProjectPreviewPlayer_MediaEnded"
-                                                  MediaFailed="ProjectPreviewPlayer_MediaFailed" />
+                                    <Grid ClipToBounds="True">
+                                        <MediaElement x:Name="ProjectPreviewPlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
+                                                      IsMuted="True" Volume="0.5" ScrubbingEnabled="True" Stretch="Uniform"
+                                                      MediaOpened="ProjectPreviewPlayer_MediaOpened" MediaEnded="ProjectPreviewPlayer_MediaEnded"
+                                                      MediaFailed="ProjectPreviewPlayer_MediaFailed" />
+                                        <controls:ProjectPreviewOverlayCanvas x:Name="ProjectPreviewOverlayCanvas"
+                                                                              OverlaySelected="ProjectPreviewOverlayCanvas_OverlaySelected"
+                                                                              OverlayTransformChanged="ProjectPreviewOverlayCanvas_OverlayTransformChanged" />
+                                    </Grid>
                                 </Border>
                                 <Grid Grid.Row="1" Margin="0,6,0,0">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
