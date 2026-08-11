@@ -27,6 +27,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Native `mpeg4` is the default, `h264_mf` is a non-GPL option, and `libx264` remains an
   explicit GPL opt-in for user-supplied tools only.
 
+### `DOC-INSTALL-001` — Document installation, source builds, and FFmpeg use
+
+- Priority/status: P0 / Done
+- Acceptance: The public README explains that FFmpeg/FFprobe are required media tools, distinguishes the
+  included audited runtime from a local override, gives clone/LFS/build/publish instructions, links official
+  and pinned downloads, and accurately summarizes LGPL/GPL/nonfree distribution boundaries.
+
 ### `BOOT-001` — Share service composition between GUI and CLI
 
 - Priority/status: P0 / Done

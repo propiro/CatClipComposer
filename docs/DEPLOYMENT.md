@@ -1,6 +1,6 @@
 # Portable one-folder deployment
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-11
 
 Cat Clip Composer always deploys its pinned FFmpeg runtime. Both normal builds and portable publishes place
 the tools under `thirdparty\ffmpeg`, separate from the application executables and configuration.
@@ -67,6 +67,24 @@ font files are not embedded in `.nya` documents and remain subject to their own 
 When the INI keeps its default `FfmpegPath=ffmpeg.exe`, GUI and CLI resolve
 `thirdparty\ffmpeg\ffmpeg.exe` beside the application. An explicit configured path remains a local user
 override; the mandatory packaged payload is still included.
+
+## Using another FFmpeg locally
+
+The packaged runtime is the recommended and reproducible default. A user may override it under
+**Preferences > FFmpeg executable** with another compatible local build. Keep that build's `ffmpeg.exe`,
+matching `ffprobe.exe`, and any shared DLLs together; selecting an executable does not copy its files into
+the Cat Clip Composer package.
+
+FFmpeg's [official download page](https://ffmpeg.org/download.html) links Windows binary providers. The
+[BtbN release list](https://github.com/BtbN/FFmpeg-Builds/releases) is the source used for this project's
+pinned payload; a `win64-lgpl-shared-8.1` archive is the closest replacement. Custom builds need `drawtext`,
+native `mpeg4`, and native `aac`; the Media Foundation H.264 preset also needs `h264_mf`.
+
+A local override does not alter the license of the repository's pinned payload. Anyone redistributing a
+different build must audit that binary's reported configuration and satisfy its actual terms. FFmpeg's
+[license details](https://ffmpeg.org/doxygen/trunk/md_LICENSE.html) explain the LGPL/GPL build distinction,
+and its [legal guidance](https://ffmpeg.org/legal.html) states that `--enable-nonfree` builds are not
+redistributable.
 
 ## Pinned FFmpeg payload
 

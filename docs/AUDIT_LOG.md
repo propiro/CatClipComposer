@@ -1,5 +1,31 @@
 # Audit log
 
+## AUDIT-2026-08-11-003 — Public install and FFmpeg documentation audit
+
+Scope: public installation/build instructions and accurate FFmpeg requirement, download, and license
+guidance.
+
+Findings and remediation:
+
+- The README described the bundled runtime and build commands but did not provide a complete clone/LFS flow,
+  portable installation path, or a direct answer about whether FFmpeg is operationally required.
+- The public repository currently has no packaged release asset. The installation section now directs users
+  to Releases when an asset exists and otherwise gives a complete source-build path without claiming that an
+  installer is available.
+- The separate-tool instructions now identify the recommended Windows x64 LGPL shared variant, require the
+  matching FFprobe and DLL set, name the required filter/encoders, and show local validation commands.
+- License wording was checked against FFmpeg's official license and legal pages: FFmpeg is free/open-source,
+  optional GPL components change the binary's license, and `--enable-nonfree` produces an unredistributable
+  binary. The bundled manifest remains the audited LGPL v3 build with no GPL/nonfree flags.
+- The stack inventory's stale application/plugin version references were corrected to the central 0.1.15
+  version. Dependencies and shipped binaries did not change.
+
+Verification: the documented Git LFS inventory listed the complete FFmpeg executable/DLL payload; the CLI
+reported v0.1.15; and the bundled binary reported the pinned build, `drawtext`, `mpeg4`, `aac`, and `h264_mf`
+with no GPL/nonfree configure flags. The required Release solution build completed with zero warnings and
+zero errors; all added relative documentation targets exist; and `git diff --check` passed. Dependencies did
+not change.
+
 ## AUDIT-2026-08-11-002 — Timeline capture, render-order, and frame-preview audit
 
 Scope: reported resize/drag offsets, compact range interaction, track/item gestures, filter/overlay stack order,

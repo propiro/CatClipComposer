@@ -73,29 +73,97 @@ Current application and component version: **0.1.15**.
 - See a Mr Cat startup/rescan splash for at least five seconds. Fast startup-only messages are paced 0.5–0.75
   seconds apart; real configured library rescans report immediately without artificial delay.
 
-## Requirements
+## Is FFmpeg required?
 
-- Windows 10 or later
-- .NET 8 SDK for development, or the .NET 8 Desktop Runtime for a framework-dependent deployment
+**Yes.** Cat Clip Composer is the editor and project manager; FFmpeg and FFprobe are its media engine. The
+application uses them to inspect source files, generate thumbnails and contact sheets, render project
+previews, composite effects and overlays, mix audio, and export the finished video. Windows playback in the
+preview controls does not replace that processing engine.
 
-The repository includes a pinned Windows x64 FFmpeg/FFprobe shared runtime with the required DLLs and
-`drawtext` filter. Normal builds and portable packages copy it automatically under `thirdparty\ffmpeg`.
+Normal builds and portable packages already contain a pinned Windows x64 FFmpeg/FFprobe shared runtime, so
+most users should not install FFmpeg separately. The default `ffmpeg.exe` preference resolves to
+`thirdparty\ffmpeg\ffmpeg.exe` beside the application.
 
-The bundled LGPL v3 build provides native MPEG-4, AAC, and Media Foundation H.264 without GPL/nonfree build
-flags. `libx264` remains an explicitly labeled opt-in for a user-supplied GPL build and is never required.
+## Installation
 
-An explicit `ffmpeg.exe` can still be selected in Preferences as a local override; its matching `ffprobe.exe`
-must sit beside it. See [deployment](docs/DEPLOYMENT.md) for the pinned version, hashes, notices, and upgrade
-procedure.
+### Portable application
 
-## Build and run
+Cat Clip Composer uses a portable, one-folder Windows package rather than an installer. Check the
+[GitHub Releases page](https://github.com/propiro/CatClipComposer/releases) for a Windows x64 package. If no
+release asset is listed yet, use the source-build instructions below.
+
+When a portable package is available:
+
+1. Download and extract the complete archive to a writable folder.
+2. Keep the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside `CatClipComposer.exe`.
+3. Run `CatClipComposer.exe`. The normal self-contained package does not need a separate .NET installation.
+
+Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.
+
+### Build from source
+
+Prerequisites:
+
+- Windows 10 22H2 or later, x64
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Git](https://git-scm.com/download/win) and [Git LFS](https://git-lfs.com/)
+
+Clone the repository and hydrate the FFmpeg binaries stored through Git LFS:
 
 ```powershell
-dotnet build .\CatClipComposer\CatClipComposer.sln
-dotnet run --project .\CatClipComposer\CatClipComposer.csproj
-dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj -- --version
-dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj -- --help
+git lfs install
+git clone https://github.com/propiro/CatClipComposer.git
+Set-Location .\CatClipComposer
+git lfs pull
+git lfs ls-files
 ```
+
+Build and run:
+
+```powershell
+dotnet build .\CatClipComposer\CatClipComposer.sln --configuration Release --nologo
+dotnet run --project .\CatClipComposer\CatClipComposer.csproj --configuration Release
+dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj --configuration Release -- --version
+dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj --configuration Release -- --help
+```
+
+Create the self-contained portable Windows x64 package under `publish\CatClipComposer`:
+
+```powershell
+.\scripts\Publish-Portable.ps1
+```
+
+See [portable deployment](docs/DEPLOYMENT.md) for framework-dependent publishing, package validation, and
+safe replacement of an existing portable folder.
+
+## Using a separately downloaded FFmpeg
+
+A separate download is optional. It is useful when testing another compatible build or restoring a missing
+local tool folder.
+
+- [Official FFmpeg download page](https://ffmpeg.org/download.html) — FFmpeg publishes source and links to
+  third-party providers of ready-to-run Windows executables.
+- [BtbN FFmpeg Windows builds](https://github.com/BtbN/FFmpeg-Builds/releases) — the provider used for Cat
+  Clip Composer's audited bundle.
+- [Exact bundled BtbN release](https://github.com/BtbN/FFmpeg-Builds/releases/tag/autobuild-2026-08-06-13-39)
+  — the reproducible build currently carried by this repository.
+
+For the closest match to the bundled runtime, download a Windows x64 archive whose name contains
+`win64-lgpl-shared-8.1`. Extract the complete archive and keep `ffmpeg.exe`, `ffprobe.exe`, and all supplied
+DLLs together. In Cat Clip Composer, open **Preferences**, find **FFmpeg executable**, select that
+`ffmpeg.exe`, and save. Its matching `ffprobe.exe` must be in the same folder.
+
+The build must provide the `drawtext` filter and the native `mpeg4` and `aac` encoders. The optional
+Media Foundation preset also needs `h264_mf`. A full compatibility check is:
+
+```powershell
+& 'C:\Tools\ffmpeg\bin\ffmpeg.exe' -version
+& 'C:\Tools\ffmpeg\bin\ffmpeg.exe' -filters  | Select-String 'drawtext'
+& 'C:\Tools\ffmpeg\bin\ffmpeg.exe' -encoders | Select-String 'mpeg4|aac|h264_mf'
+& 'C:\Tools\ffmpeg\bin\ffprobe.exe' -version
+```
+
+Replace the example path with the location you extracted.
 
 On the first run:
 
@@ -143,12 +211,22 @@ CatClipComposer.Plugins.BuiltIn/ Built-in dynamically discovered source/effect m
 
 ## License notes
 
-All current runtime components are free to use, but “free” does not mean “without a license or obligations.” See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before distributing the application.
+FFmpeg is free and open-source software: no purchase or subscription is required to download and use it.
+“Free” does not mean public domain or free of license conditions. FFmpeg is normally LGPL software, while
+enabling optional GPL components changes the resulting binary to the GPL; a build made with
+`--enable-nonfree` is not redistributable. See FFmpeg's [license details](https://ffmpeg.org/doxygen/trunk/md_LICENSE.html)
+and [legal/compliance guidance](https://ffmpeg.org/legal.html).
 
-The bundled FFmpeg shared build is licensed under LGPL v3 and ships with its exact license, source location,
-configuration, and hashes. Cat Clip Composer launches it as a separate executable and keeps its replaceable
-DLLs under `thirdparty`. Optional GPL components are absent; `libx264` is only a clearly labeled custom-tool
-opt-in.
+Cat Clip Composer's pinned FFmpeg build is the shared LGPL v3 variant. It reports neither `--enable-gpl` nor
+`--enable-nonfree`, and its replaceable DLLs, exact license, corresponding source location, build
+configuration, and hashes ship under `thirdparty\ffmpeg`. Cat Clip Composer invokes `ffmpeg.exe` and
+`ffprobe.exe` as external programs and does not require `libx264` or another GPL component for normal use.
+
+You may select another compatible FFmpeg for local use. If you redistribute Cat Clip Composer together with
+a different FFmpeg build, inspect that build's `ffmpeg -version` output and comply with its actual license and
+the licenses of its enabled libraries. In particular, do not redistribute a `nonfree` build. This summary is
+not legal advice; preserve [the complete third-party notices](THIRD_PARTY_NOTICES.md) when distributing the
+application.
 
 ## Next refinements
 

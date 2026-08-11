@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-11 — Public installation and FFmpeg guidance
+
+- Reworked the public README into a usable installation page with honest portable-release status, complete
+  Git LFS clone and Release-build commands, first-run guidance, and the supported portable publisher.
+- Explained why FFmpeg and FFprobe are required, when the bundled runtime is sufficient, how to select a
+  separately downloaded compatible build, and how to check its required filters and encoders.
+- Linked the official FFmpeg downloads, BtbN Windows builds, the exact pinned build, and upstream license and
+  compliance pages. Clarified that FFmpeg is free/open-source but LGPL, GPL, and nonfree builds have different
+  redistribution conditions.
+- Corrected the stale central and built-in-plugin version references in the stack inventory to 0.1.15.
+
 ## 2026-08-11 — Direct timeline gestures and selected-frame effect preview
 
 - Corrected two WPF event-order bugs: resize selection rebuilt and destroyed the captured Thumb, while drag
