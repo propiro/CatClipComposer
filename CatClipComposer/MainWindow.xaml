@@ -695,6 +695,7 @@
                             <ColumnDefinition Width="108" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Button Click="TimelineRulerMode_Click" Content="{Binding Timeline.RulerModeButtonText}" />
@@ -740,7 +741,10 @@
                                 Content="Mark start" ToolTip="Set the selection start at the current frame" />
                         <Button Grid.Column="7" Margin="4,0,0,0" Click="MarkRangeEnd_Click"
                                 Content="Mark end" ToolTip="Set the selection end at the current frame" />
-                        <ProgressBar Grid.Column="8" Height="7" Margin="12,0,0,0" VerticalAlignment="Center"
+                        <CheckBox x:Name="SnapToClipRangesCheckBox" Grid.Column="8" Margin="10,0,0,0"
+                                  VerticalAlignment="Center" IsChecked="True" Content="Snap to clip ranges"
+                                  ToolTip="Snap moved or resized layer edges to video clip starts and ends" />
+                        <ProgressBar Grid.Column="9" Height="7" Margin="12,0,0,0" VerticalAlignment="Center"
                                      Maximum="100" Value="{Binding Timeline.Progress, Mode=OneWay}" />
                     </Grid>
 
@@ -829,12 +833,14 @@
                                                 <DataTemplate>
                                                     <Border Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             Tag="{Binding TrackId}" AllowDrop="True"
-                                                            DragOver="TimelineLane_DragOver" Drop="TimelineLane_Drop"
+                                                            DragOver="TimelineLane_DragOver" DragLeave="TimelineLane_DragLeave"
+                                                            Drop="TimelineLane_Drop"
                                                             Background="#191918" BorderBrush="{StaticResource BorderBrush}"
                                                             BorderThickness="1,0,1,1">
-                                                        <ItemsControl Width="{Binding DataContext.Timeline.TimelineWidth, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                      Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                      ItemsSource="{Binding Items}">
+                                                        <Grid>
+                                                          <ItemsControl Width="{Binding DataContext.Timeline.TimelineWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        ItemsSource="{Binding Items}">
                                                             <ItemsControl.ItemsPanel>
                                                                 <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
                                                             </ItemsControl.ItemsPanel>
@@ -849,6 +855,7 @@
                                                                     <Border x:Name="TimelineItemBorder"
                                                                             Width="{Binding Width}" Height="{Binding Height}"
                                                                             Padding="4" Background="{Binding Background}"
+                                                                            Cursor="SizeAll"
                                                                             BorderBrush="{StaticResource StrongBorderBrush}"
                                                                             BorderThickness="1" Tag="{Binding}"
                                                                             ToolTip="{Binding ToolTipText}"
@@ -882,8 +889,34 @@
                                                                                 </StackPanel>
                                                                             </Grid>
                                                                             <Border IsHitTestVisible="False"
-                                                                                    BorderBrush="#C8A95A" BorderThickness="2" Opacity="0.78"
-                                                                                    Visibility="{Binding NeedsProjectPreview, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                     BorderBrush="#C8A95A" BorderThickness="2" Opacity="0.78"
+                                                                                     Visibility="{Binding NeedsProjectPreview, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                            <Thumb Width="7" HorizontalAlignment="Left" Cursor="SizeWE"
+                                                                                    Tag="Start" Panel.ZIndex="5"
+                                                                                    Background="{StaticResource AccentBrush}"
+                                                                                    Visibility="{Binding CanResize, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                                    DragStarted="TimelineItemResize_DragStarted"
+                                                                                    DragDelta="TimelineItemResize_DragDelta"
+                                                                                    DragCompleted="TimelineItemResize_DragCompleted">
+                                                                                 <Thumb.Template>
+                                                                                     <ControlTemplate TargetType="Thumb">
+                                                                                         <Border Background="{TemplateBinding Background}" Opacity="0.82" />
+                                                                                     </ControlTemplate>
+                                                                                 </Thumb.Template>
+                                                                             </Thumb>
+                                                                            <Thumb Width="7" HorizontalAlignment="Right" Cursor="SizeWE"
+                                                                                    Tag="End" Panel.ZIndex="5"
+                                                                                    Background="{StaticResource AccentBrush}"
+                                                                                    Visibility="{Binding CanResize, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                                    DragStarted="TimelineItemResize_DragStarted"
+                                                                                    DragDelta="TimelineItemResize_DragDelta"
+                                                                                    DragCompleted="TimelineItemResize_DragCompleted">
+                                                                                 <Thumb.Template>
+                                                                                     <ControlTemplate TargetType="Thumb">
+                                                                                         <Border Background="{TemplateBinding Background}" Opacity="0.82" />
+                                                                                     </ControlTemplate>
+                                                                                 </Thumb.Template>
+                                                                             </Thumb>
                                                                         </Grid>
                                                                     </Border>
                                                                     <DataTemplate.Triggers>
@@ -894,7 +927,21 @@
                                                                     </DataTemplate.Triggers>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
+                                                          </ItemsControl>
+                                                          <Canvas IsHitTestVisible="False" Panel.ZIndex="8">
+                                                              <Border Canvas.Left="{Binding DropPreviewLeft}"
+                                                                      Width="{Binding DropPreviewWidth}"
+                                                                      Height="{Binding DataContext.Timeline.TrackHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                      Margin="0,2,0,2" Padding="5,2"
+                                                                      Background="#806F6658" BorderBrush="{StaticResource AccentBrush}"
+                                                                      BorderThickness="2"
+                                                                      Visibility="{Binding IsDropPreviewVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                  <TextBlock VerticalAlignment="Top" FontSize="9" FontWeight="SemiBold"
+                                                                             Foreground="{StaticResource TextBrush}"
+                                                                             Text="{Binding DropPreviewText}" />
+                                                              </Border>
+                                                          </Canvas>
+                                                        </Grid>
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>

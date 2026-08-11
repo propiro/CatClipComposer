@@ -44,8 +44,23 @@ public partial class LayerItemEditorWindow : Window
             _ => 1
         };
         SnapDescriptionText.Text = snapMode == TimelineSnapMode.Frame
-            ? $"Times snap to one frame ({framesPerSecond:0.###} fps)."
-            : $"Times snap to {_snapSeconds:0.###} second increments.";
+            ? $"Sliders and ± buttons use one frame ({framesPerSecond:0.###} fps); typed values stay exact."
+            : $"Sliders and ± buttons use {_snapSeconds:0.###} second increments; typed values stay exact.";
+        var defaultDuration = TimeSpan.FromSeconds(Math.Max(
+            _snapSeconds,
+            Math.Min(5, projectDuration.TotalSeconds)));
+        TimeRangeEditor.Configure(TimeSpan.Zero, defaultDuration, projectDuration, _snapSeconds);
+        FontSizeEditor.SetValue(42);
+        VolumeEditor.SetValue(0.35);
+        FadeInEditor.Minimum = 0;
+        FadeInEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
+        FadeInEditor.Step = _snapSeconds;
+        FadeInEditor.SetValue(0);
+        FadeOutEditor.Minimum = 0;
+        FadeOutEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
+        FadeOutEditor.Step = _snapSeconds;
+        FadeOutEditor.SetValue(0);
+        ProgressHeightEditor.SetValue(10);
         PositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
         PositionComboBox.SelectedItem = OverlayPosition.Center;
         ProgressTimingComboBox.ItemsSource = Enum.GetValues<ProgressTimeMode>();
@@ -58,15 +73,18 @@ public partial class LayerItemEditorWindow : Window
         FontComboBox.SelectedItem = ((IEnumerable<FontChoice>)FontComboBox.ItemsSource)
             .FirstOrDefault(font => font.FamilyName.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase)) ??
             ((IEnumerable<FontChoice>)FontComboBox.ItemsSource).FirstOrDefault();
-        DurationTextBox.Text = Math.Max(1, Math.Min(5, projectDuration.TotalSeconds))
-            .ToString("0.###", CultureInfo.InvariantCulture);
         ConfigureFields();
-        if (_kind == LayerEditorKind.Progress &&
-            selectedSegmentStart.HasValue && selectedSegmentDuration > TimeSpan.Zero)
+        if (selectedSegmentStart.HasValue && selectedSegmentDuration > TimeSpan.Zero)
         {
-            ProgressTimingComboBox.SelectedItem = ProgressTimeMode.SourceSegment;
-            StartTextBox.Text = selectedSegmentStart.Value.TotalSeconds.ToString("0.######", CultureInfo.InvariantCulture);
-            DurationTextBox.Text = selectedSegmentDuration.Value.TotalSeconds.ToString("0.######", CultureInfo.InvariantCulture);
+            TimeRangeEditor.Configure(
+                selectedSegmentStart.Value,
+                selectedSegmentDuration.Value,
+                projectDuration,
+                _snapSeconds);
+            if (_kind == LayerEditorKind.Progress)
+            {
+                ProgressTimingComboBox.SelectedItem = ProgressTimeMode.SourceSegment;
+            }
         }
     }
 
@@ -83,18 +101,17 @@ public partial class LayerItemEditorWindow : Window
         AddButton.Content = "Apply";
         SourceTextBox.Text = item.SourcePath;
         OverlayTextBox.Text = item.Text;
-        StartTextBox.Text = item.Start.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        DurationTextBox.Text = item.Duration.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        VolumeTextBox.Text = item.Volume.ToString("0.###", CultureInfo.InvariantCulture);
-        FadeInTextBox.Text = item.FadeInSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        FadeOutTextBox.Text = item.FadeOutSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        FontSizeTextBox.Text = item.FontSize.ToString(CultureInfo.InvariantCulture);
+        TimeRangeEditor.Configure(item.Start, item.Duration, projectDuration, _snapSeconds);
+        VolumeEditor.SetValue(item.Volume);
+        FadeInEditor.SetValue(item.FadeInSeconds);
+        FadeOutEditor.SetValue(item.FadeOutSeconds);
+        FontSizeEditor.SetValue(item.FontSize);
         PositionComboBox.SelectedItem = item.Position;
         ProgressTimingComboBox.SelectedItem = item.ProgressTimeMode;
         ProgressStyleComboBox.SelectedItem = item.ProgressBarStyle;
         ProgressPositionComboBox.SelectedItem = item.ProgressBarPosition;
         ProgressColorTextBox.Text = item.ProgressColor;
-        ProgressHeightTextBox.Text = item.ProgressHeight.ToString(CultureInfo.InvariantCulture);
+        ProgressHeightEditor.SetValue(item.ProgressHeight);
 
         if (_kind == LayerEditorKind.Text && FontComboBox.ItemsSource is IEnumerable<FontChoice> fonts)
         {
@@ -155,22 +172,21 @@ public partial class LayerItemEditorWindow : Window
 
     private void Add_Click(object sender, RoutedEventArgs e)
     {
-        var fontSizeValid = int.TryParse(FontSizeTextBox.Text, NumberStyles.Integer,
+        var fontSizeValid = int.TryParse(FontSizeEditor.Text, NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var fontSize) && fontSize is >= 8 and <= 240;
-        var volumeValid = TryParse(VolumeTextBox.Text, 0, 4, out var volume);
-        var fadeInValid = TryParse(FadeInTextBox.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeIn);
-        var fadeOutValid = TryParse(FadeOutTextBox.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeOut);
-        var progressHeightValid = int.TryParse(ProgressHeightTextBox.Text, NumberStyles.Integer,
+        var volumeValid = TryParse(VolumeEditor.Text, 0, 4, out var volume);
+        var fadeInValid = TryParse(FadeInEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeIn);
+        var fadeOutValid = TryParse(FadeOutEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeOut);
+        var progressHeightValid = int.TryParse(ProgressHeightEditor.Text, NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var progressHeight) && progressHeight is >= 2 and <= 100;
         var progressColorValid = TryNormalizeColor(ProgressColorTextBox.Text, out var progressColor);
 
-        if (!TryParse(StartTextBox.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var start) ||
-            !TryParse(DurationTextBox.Text, _snapSeconds, TimeSpan.MaxValue.TotalSeconds, out var duration) ||
+        if (!TimeRangeEditor.TryGetRange(out var startTime, out var durationTime) ||
             (_kind == LayerEditorKind.Text &&
              (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
             (_kind is LayerEditorKind.Image or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
             (_kind == LayerEditorKind.Audio && (!volumeValid || !fadeInValid || !fadeOutValid ||
-                                                fadeIn > duration || fadeOut > duration)) ||
+                                                 fadeIn > durationTime.TotalSeconds || fadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
             MessageBox.Show(this,
@@ -179,8 +195,8 @@ public partial class LayerItemEditorWindow : Window
             return;
         }
 
-        start = Math.Round(start / _snapSeconds) * _snapSeconds;
-        duration = Math.Max(_snapSeconds, Math.Round(duration / _snapSeconds) * _snapSeconds);
+        var start = startTime.TotalSeconds;
+        var duration = durationTime.TotalSeconds;
 
         var progressMode = ProgressTimingComboBox.SelectedItem is ProgressTimeMode timing
             ? timing

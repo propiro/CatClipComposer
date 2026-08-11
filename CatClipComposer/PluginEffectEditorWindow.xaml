@@ -1,7 +1,8 @@
 <Window x:Class="CatClipComposer.PluginEffectEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Plugin effect" Width="620" Height="650" MinWidth="540" MinHeight="500"
+        xmlns:controls="clr-namespace:CatClipComposer.Controls"
+        Title="Plugin effect" Width="660" Height="720" MinWidth="580" MinHeight="560"
         Background="{StaticResource WindowBrush}" WindowStartupLocation="CenterOwner">
     <Grid Margin="14" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
@@ -18,17 +19,7 @@
                           SelectionChanged="PluginComboBox_SelectionChanged" />
                 <TextBlock x:Name="DescriptionText" Margin="0,5,0,13" TextWrapping="Wrap"
                            Foreground="{StaticResource MutedTextBrush}" />
-                <Grid Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Margin="0,0,0,4" Text="Start (seconds)" />
-                        <TextBox x:Name="StartTextBox" Text="0" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Margin="0,0,0,4" Text="Duration (seconds)" />
-                        <TextBox x:Name="DurationTextBox" Text="5" />
-                    </StackPanel>
-                </Grid>
+                <controls:TimeRangeEditorControl x:Name="TimeRangeEditor" Margin="0,0,0,12" />
                 <TextBlock x:Name="SnapText" Margin="0,-7,0,12" FontSize="10"
                            Foreground="{StaticResource FaintTextBrush}" />
                 <Border Padding="11" Background="{StaticResource PanelBrush}"

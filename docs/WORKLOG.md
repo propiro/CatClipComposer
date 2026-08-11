@@ -2,6 +2,23 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-11 — Predictable effect timing and still-overlay render correction
+
+- Preserved the exact pointer grab offset while dragging timeline blocks and added a translucent preview of
+  the range that the move will commit.
+- Added left/right resize handles to every non-primary timed block and an enabled-by-default option to snap
+  moving or resized edges to primary source-clip boundaries.
+- Standardized layer, plugin, and clip-effect numeric editing with bounded sliders, decrement/increment
+  buttons, and exact finite manual entry. Range editors now default to Start/End, optionally accept duration,
+  offer one-click zero/last-clip bounds, and inherit the outer range of selected Video blocks.
+- Changed Background blur lightness to a human-scale percentage, normalized hue to 0–360 degrees, and added
+  schema-5 migration for older saved parameter values.
+- Reproduced the reported image-overlay plus Background blur failure from a cloned recovery project. Bounded
+  and timestamped still inputs now stop repeating after their item interval instead of producing FFmpeg's
+  invalid-argument failure when composed after a Background effect.
+- Released the work as visible application/component version 0.1.14; verification and exact-folder portable
+  publication are recorded by the commit containing this entry.
+
 ## 2026-08-07 — Grid browser, dynamic timelines, and plugin effects
 
 - Replaced the catalog row list with a recycling virtualized tile grid and retained full-width browser focus

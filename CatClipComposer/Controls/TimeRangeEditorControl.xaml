@@ -1,0 +1,36 @@
+<UserControl x:Class="CatClipComposer.Controls.TimeRangeEditorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CatClipComposer.Controls">
+    <StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Margin="0,0,0,4" Text="Start (seconds)" />
+                <controls:NumericEditorControl x:Name="StartEditor" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock x:Name="EndLabel" Margin="0,0,0,4" Text="End (seconds)" />
+                <controls:NumericEditorControl x:Name="EndEditor" />
+            </StackPanel>
+        </Grid>
+        <Grid Margin="0,7,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Padding="7,2" Click="SetStartZero_Click" Content="Set start to 0" />
+            <Button Grid.Column="1" Margin="5,0,0,0" Padding="7,2"
+                    Click="SetEndProject_Click" Content="Set end to last clip" />
+            <CheckBox x:Name="UseDurationCheckBox" Grid.Column="2" Margin="12,0,0,0"
+                      VerticalAlignment="Center" Content="Enter duration instead of end time"
+                      Checked="UseDurationCheckBox_Changed"
+                      Unchecked="UseDurationCheckBox_Changed" />
+        </Grid>
+    </StackPanel>
+</UserControl>

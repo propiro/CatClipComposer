@@ -1,6 +1,6 @@
 # Project goals and feature status
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-11
 
 ## Product goal
 
@@ -91,7 +91,12 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   or custom timing and per-item style, color, size, and position.
 - **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, fit/fill/stretch, and
   timed modules project through the shared renderer. A Background module fills unused frame space from the
-  active source with configurable saturation, lightness, hue, zoom, and Gaussian blur.
+  active source with configurable saturation, lightness, hue, zoom, and Gaussian blur. Editors default to
+  Start/End, optionally accept duration, provide whole-timeline shortcuts, inherit multi-selected Video ranges,
+  and combine bounded sliders/arrows with unrestricted finite manual values.
+- **Predictable timed-block editing — Done.** Dragging preserves the pointer's grab offset and shows the exact
+  snapped landing interval. Left/right handles resize non-primary timed blocks, and optional clip-range
+  snapping aligns starts or ends to source-clip boundaries.
 - **Extensible plugin modules — Done.** Versioned media/stage/track contracts, isolated dependency loading,
   persisted parameters, and a portable `plugins` folder support first-party and trusted future modules.
 
@@ -106,7 +111,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-4 `.nya` JSON uses stable track/item IDs, optional
+- **Named editable projects — Done.** Versioned schema-5 `.nya` JSON uses stable track/item IDs, optional
   track/item colors, background color, and plugin metadata.
 - **Crash recovery — Done.** Every timeline mutation writes an atomic recovery file under metadata storage.
 - **Headless operation — Done.** Config, catalog metadata, project rendering, and history commands support
@@ -118,7 +123,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
-- **Shared user-visible version — Done.** Version 0.1.13 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.14 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

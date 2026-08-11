@@ -1,5 +1,33 @@
 # Audit log
 
+## AUDIT-2026-08-11-001 — Timed-layer interaction and overlay/blur render audit
+
+Scope: effect movement/resizing, range and parameter entry, selected-clip defaults, and the reported JPEG
+overlay plus Background blur preview failure.
+
+Findings and remediation:
+
+- A move was derived from the pointer itself instead of the original grab position, and WPF showed no landing
+  state. Preview and commit now share one view-model calculation that preserves the group grab offset and
+  exposes the exact snapped interval in the target lane.
+- Timed blocks had no edge interaction. Non-primary items now expose independently draggable left/right
+  handles; the view model validates and persists the resized range. Primary Video edges remain `EDIT-001`
+  source trimming rather than silently changing source content.
+- Range dialogs conflated end time with duration and repeated inconsistent numeric text boxes. Shared controls
+  now use Start/End by default, optionally enter duration, provide whole-timeline bounds, initialize from all
+  selected Video items, and pair bounded slider/arrow controls with unrestricted finite manual text values.
+- The infinite looped still-image input combined `shortest`/EOF repetition with a post-Background stream,
+  causing FFmpeg to reject the filter graph and write no packets. Still overlays are now trimmed, rebased to
+  their project start, and pass through the underlying stream after their own end.
+
+Verification: the Release solution built with zero warnings/errors; all 36 XAML resource keys resolved; the
+UI construction smoke passed range editors, numeric caps/manual values, exact move previews, edge resizing,
+clip-boundary snapping, browser modes, and preview layout. The two-second recovered overlay/blur case rendered
+MPEG-4/AAC and H.264/AAC at 1920x1080, SAR 1:1, exactly 2.000 seconds, and H.264 decoded cleanly. The complete
+89.53546-second cloned recovery composition rendered through Media Foundation H.264 and decoded cleanly.
+The user's recovery/project files were never modified. The NuGet vulnerability audit reported no known
+vulnerable direct or transitive packages; dependencies did not change.
+
 ## AUDIT-2026-08-07-024 — Dynamic timeline and plugin-module pass
 
 Scope: requested grid browser, panel focus, dynamic tracks, background color/blur, plugin architecture,

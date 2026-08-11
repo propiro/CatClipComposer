@@ -1,6 +1,6 @@
 # Project files and crash recovery
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-11
 
 Cat Clip Composer stores editable work as versioned UTF-8 JSON with the `.nya` extension. Project files
 contain references and editing metadata; they do not copy or embed source videos, images, audio, fonts,
@@ -23,12 +23,14 @@ panel can create/remove, collapse, reorder, and color-code tracks and add, edit,
 timed text, image, audio, progress, and plugin effects. Clip effects control fit/fill/stretch, fades, and
 volume. A shared Core mapper projects the enabled track model into both GUI and headless renders.
 
-Schema version 4 adds optional track/item color codes. Schema version 3 added the project background color,
+Schema version 5 records human-scale Background blur lightness percentages and normalized hue angles. Loading
+schema 4 or older converts the former -1..1 lightness convention to -100..100 percent and wraps negative hue
+angles into 0..360 degrees. Schema version 4 added optional track/item color codes. Schema version 3 added the project background color,
 Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older schema-1
-JSON projects remain readable; saving them writes schema 4. The normal Open dialog prefers `.nya`.
+JSON projects remain readable; saving them writes schema 5. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 

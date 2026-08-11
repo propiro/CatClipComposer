@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CatClipComposer.Core.Models;
@@ -119,6 +120,7 @@ public sealed class JsonProjectStore : IProjectStore
 
     private static void Validate(EditorProject project, string path)
     {
+        var loadedSchemaVersion = project.SchemaVersion;
         if (project.SchemaVersion <= 0 ||
             project.SchemaVersion > EditorProject.CurrentSchemaVersion)
         {
@@ -155,6 +157,10 @@ public sealed class JsonProjectStore : IProjectStore
                 item.PluginParameters = item.PluginParameters is null
                     ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase);
+                if (loadedSchemaVersion <= 4 && item.PluginId == BuiltInPluginIds.BackgroundBlur)
+                {
+                    MigrateBackgroundColorControls(item.PluginParameters);
+                }
                 if (item.FitMode == VideoFitMode.BlurBackground)
                 {
                     item.FitMode = VideoFitMode.Fit;
@@ -203,4 +209,22 @@ public sealed class JsonProjectStore : IProjectStore
 
     private static string NormalizeOptionalColor(string? value) =>
         IsHexColor(value) ? value!.ToUpperInvariant() : string.Empty;
+
+    private static void MigrateBackgroundColorControls(IDictionary<string, string> parameters)
+    {
+        if (parameters.TryGetValue("lightness", out var lightnessText) &&
+            double.TryParse(lightnessText, NumberStyles.Float, CultureInfo.InvariantCulture, out var lightness) &&
+            double.IsFinite(lightness))
+        {
+            parameters["lightness"] = (lightness * 100).ToString("0.######", CultureInfo.InvariantCulture);
+        }
+
+        if (parameters.TryGetValue("hue", out var hueText) &&
+            double.TryParse(hueText, NumberStyles.Float, CultureInfo.InvariantCulture, out var hue) &&
+            double.IsFinite(hue))
+        {
+            var normalizedHue = (hue % 360 + 360) % 360;
+            parameters["hue"] = normalizedHue.ToString("0.######", CultureInfo.InvariantCulture);
+        }
+    }
 }

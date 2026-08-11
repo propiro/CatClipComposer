@@ -1,7 +1,8 @@
 <Window x:Class="CatClipComposer.LayerItemEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Layer item" Width="650" Height="680" MinWidth="560" MinHeight="520"
+        xmlns:controls="clr-namespace:CatClipComposer.Controls"
+        Title="Layer item" Width="700" Height="760" MinWidth="620" MinHeight="580"
         Background="{StaticResource WindowBrush}" WindowStartupLocation="CenterOwner">
     <Grid Margin="14" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
@@ -53,7 +54,8 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Margin="0,0,0,4" Text="Font size" />
-                                <TextBox x:Name="FontSizeTextBox" Text="42" />
+                                <controls:NumericEditorControl x:Name="FontSizeEditor"
+                                                               Minimum="8" Maximum="120" Step="1" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Margin="0,0,0,4" Text="Position" />
@@ -62,17 +64,7 @@
                         </Grid>
                     </StackPanel>
 
-                    <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Margin="0,0,0,4" Text="Start (seconds)" />
-                            <TextBox x:Name="StartTextBox" Text="0" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Margin="0,0,0,4" Text="Duration (seconds)" />
-                            <TextBox x:Name="DurationTextBox" Text="5" />
-                        </StackPanel>
-                    </Grid>
+                    <controls:TimeRangeEditorControl x:Name="TimeRangeEditor" Margin="0,0,0,10" />
                     <TextBlock x:Name="SnapDescriptionText" Margin="0,-5,0,10" FontSize="10"
                                Foreground="{StaticResource FaintTextBrush}" />
 
@@ -80,16 +72,17 @@
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="Volume (0–4)" />
-                                <TextBox x:Name="VolumeTextBox" Text="0.35" />
+                                <TextBlock Margin="0,0,0,4" Text="Volume" />
+                                <controls:NumericEditorControl x:Name="VolumeEditor"
+                                                               Minimum="0" Maximum="2" Step="0.05" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Margin="0,0,0,4" Text="Fade in (seconds)" />
-                                <TextBox x:Name="FadeInTextBox" Text="0" />
+                                <controls:NumericEditorControl x:Name="FadeInEditor" />
                             </StackPanel>
                             <StackPanel Grid.Column="4">
                                 <TextBlock Margin="0,0,0,4" Text="Fade out (seconds)" />
-                                <TextBox x:Name="FadeOutTextBox" Text="0" />
+                                <controls:NumericEditorControl x:Name="FadeOutEditor" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -116,7 +109,8 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Margin="0,0,0,4" Text="Height (pixels)" />
-                                <TextBox x:Name="ProgressHeightTextBox" Text="10" />
+                                <controls:NumericEditorControl x:Name="ProgressHeightEditor"
+                                                               Minimum="2" Maximum="50" Step="1" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>

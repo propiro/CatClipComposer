@@ -39,9 +39,16 @@ public partial class ClipEffectsWindow : Window
         FitModeComboBox.SelectedItem = fitMode == VideoFitMode.BlurBackground
             ? VideoFitMode.Fit
             : fitMode;
-        FadeInTextBox.Text = fadeInSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        FadeOutTextBox.Text = fadeOutSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        VolumeTextBox.Text = volume.ToString("0.###", CultureInfo.InvariantCulture);
+        var fadeStep = Math.Max(0.01, Math.Min(0.1, _duration.TotalSeconds / 100));
+        FadeInEditor.Minimum = 0;
+        FadeInEditor.Maximum = Math.Max(fadeStep, _duration.TotalSeconds);
+        FadeInEditor.Step = fadeStep;
+        FadeInEditor.SetValue(fadeInSeconds);
+        FadeOutEditor.Minimum = 0;
+        FadeOutEditor.Maximum = Math.Max(fadeStep, _duration.TotalSeconds);
+        FadeOutEditor.Step = fadeStep;
+        FadeOutEditor.SetValue(fadeOutSeconds);
+        VolumeEditor.SetValue(volume);
     }
 
     public VideoFitMode FitMode { get; private set; }
@@ -55,9 +62,9 @@ public partial class ClipEffectsWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (FitModeComboBox.SelectedItem is not VideoFitMode fitMode ||
-            !TryParse(FadeInTextBox.Text, 0, _duration.TotalSeconds, out var fadeIn) ||
-            !TryParse(FadeOutTextBox.Text, 0, _duration.TotalSeconds, out var fadeOut) ||
-            !TryParse(VolumeTextBox.Text, 0, 4, out var volume))
+            !TryParse(FadeInEditor.Text, 0, _duration.TotalSeconds, out var fadeIn) ||
+            !TryParse(FadeOutEditor.Text, 0, _duration.TotalSeconds, out var fadeOut) ||
+            !TryParse(VolumeEditor.Text, 0, 4, out var volume))
         {
             MessageBox.Show(
                 this,

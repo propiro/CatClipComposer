@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using CatClipComposer.Controls;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Plugins;
 using CatClipComposer.Desktop;
@@ -33,7 +34,7 @@ public partial class PluginEffectEditorWindow : Window
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         TrackText.Text = $"Target timeline: {track.Name} ({track.Kind})";
-        SnapText.Text = $"Typed values snap to {DescribeSnap(snapMode, framesPerSecond)}; timeline dragging also snaps to nearby block edges.";
+        SnapText.Text = $"Sliders and ± buttons use {DescribeSnap(snapMode, framesPerSecond)}; typed values stay exact. Timeline dragging can also snap to clip boundaries.";
         var compatible = plugins.OfType<ICatClipVideoEffectPlugin>()
             .Where(plugin => plugin.Descriptor.CompatibleTracks.Contains(track.Kind))
             .OrderBy(plugin => plugin.Descriptor.Name)
@@ -45,12 +46,13 @@ public partial class PluginEffectEditorWindow : Window
                   initialPluginId,
                   StringComparison.OrdinalIgnoreCase)) ?? compatible.FirstOrDefault()
             : compatible.FirstOrDefault(plugin => plugin.Descriptor.Id.Equals(existing.PluginId, StringComparison.OrdinalIgnoreCase));
-        StartTextBox.Text = (existing?.Start.TotalSeconds ?? initialStart?.TotalSeconds ?? 0)
-            .ToString("0.######", CultureInfo.InvariantCulture);
-        DurationTextBox.Text = (existing?.Duration.TotalSeconds ??
-                                initialDuration?.TotalSeconds ??
-                                (track.Kind == ProjectTrackKind.Background ? Math.Max(1, projectDuration.TotalSeconds) : 5))
-            .ToString("0.######", CultureInfo.InvariantCulture);
+        var start = existing?.Start ?? initialStart ?? TimeSpan.Zero;
+        var duration = existing?.Duration ??
+                       initialDuration ??
+                       TimeSpan.FromSeconds(track.Kind == ProjectTrackKind.Background
+                           ? Math.Max(SnapIncrement, projectDuration.TotalSeconds)
+                           : Math.Max(SnapIncrement, Math.Min(5, projectDuration.TotalSeconds)));
+        TimeRangeEditor.Configure(start, duration, projectDuration, SnapIncrement);
         if (existing is not null)
         {
             TitleText.Text = "Edit plugin effect";
@@ -99,6 +101,7 @@ public partial class PluginEffectEditorWindow : Window
                     SelectedItem = parameter.Choices?.FirstOrDefault(choice =>
                         choice.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? parameter.Choices?.FirstOrDefault()
                 },
+                PluginParameterType.Number => CreateNumberEditor(parameter, value),
                 _ => new TextBox { Text = value }
             };
             _parameterEditors[parameter.Key] = editor;
@@ -109,10 +112,9 @@ public partial class PluginEffectEditorWindow : Window
     private void Apply_Click(object sender, RoutedEventArgs e)
     {
         if (PluginComboBox.SelectedItem is not ICatClipPlugin plugin ||
-            !TryNumber(StartTextBox.Text, out var start) || start < 0 ||
-            !TryNumber(DurationTextBox.Text, out var duration) || duration <= 0)
+            !TimeRangeEditor.TryGetRange(out var start, out var duration))
         {
-            ShowInvalid("Choose a module and enter non-negative start and positive duration values.");
+            ShowInvalid("Choose a module and enter a non-negative start with an end after it.");
             return;
         }
 
@@ -122,11 +124,9 @@ public partial class PluginEffectEditorWindow : Window
             var value = ReadEditorValue(_parameterEditors[definition.Key]);
             if (definition.Type == PluginParameterType.Number)
             {
-                if (!TryNumber(value, out var number) ||
-                    definition.Minimum.HasValue && number < definition.Minimum.Value ||
-                    definition.Maximum.HasValue && number > definition.Maximum.Value)
+                if (!TryNumber(value, out _))
                 {
-                    ShowInvalid($"{definition.DisplayName} is outside its allowed range.");
+                    ShowInvalid($"{definition.DisplayName} must be a finite number.");
                     return;
                 }
             }
@@ -144,8 +144,8 @@ public partial class PluginEffectEditorWindow : Window
             Id = _existing?.Id ?? Guid.NewGuid(),
             Kind = ProjectItemKind.Effect,
             Name = plugin.Descriptor.Name,
-            StartTicks = TimeSpan.FromSeconds(Snap(start)).Ticks,
-            DurationTicks = TimeSpan.FromSeconds(Math.Max(SnapIncrement, Snap(duration))).Ticks,
+            StartTicks = start.Ticks,
+            DurationTicks = duration.Ticks,
             PluginId = plugin.Descriptor.Id,
             PluginParameters = values
         };
@@ -160,15 +160,36 @@ public partial class PluginEffectEditorWindow : Window
         _ => 1
     };
 
-    private double Snap(double value) => Math.Round(value / SnapIncrement) * SnapIncrement;
-
     private static string ReadEditorValue(FrameworkElement editor) => editor switch
     {
+        NumericEditorControl numericEditor => numericEditor.Text.Trim(),
         TextBox textBox => textBox.Text.Trim(),
         CheckBox checkBox => (checkBox.IsChecked == true).ToString().ToLowerInvariant(),
         ComboBox comboBox => comboBox.SelectedItem?.ToString() ?? string.Empty,
         _ => string.Empty
     };
+
+    private static NumericEditorControl CreateNumberEditor(
+        PluginParameterDefinition parameter,
+        string value)
+    {
+        var minimum = parameter.Minimum ?? -100;
+        var maximum = parameter.Maximum ?? 100;
+        if (maximum <= minimum)
+        {
+            maximum = minimum + 1;
+        }
+
+        var range = maximum - minimum;
+        var editor = new NumericEditorControl
+        {
+            Minimum = minimum,
+            Maximum = maximum,
+            Step = range <= 4 ? 0.01 : range <= 20 ? 0.1 : 1,
+            Text = value
+        };
+        return editor;
+    }
 
     private static bool TryNumber(string value, out double number) =>
         double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out number) && double.IsFinite(number);

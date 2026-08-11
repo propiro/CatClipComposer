@@ -6,6 +6,7 @@ using CatClipComposer.Core;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 using CatClipComposer.Core.Plugins;
+using CatClipComposer.Core.Utilities;
 
 namespace CatClipComposer.Presentation;
 
@@ -93,6 +94,23 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<ICatClipPlugin> Plugins => _plugins.Plugins;
 
     public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
+
+    public (TimeSpan Start, TimeSpan Duration)? GetSelectedVideoRange()
+    {
+        var selected = _project.Tracks
+            .SelectMany(track => track.Items)
+            .Where(item => _selectedTimelineItemIds.Contains(item.Id) &&
+                           item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+            .ToList();
+        if (selected.Count == 0)
+        {
+            return null;
+        }
+
+        var start = selected.Min(item => item.Start);
+        var end = selected.Max(item => item.Start + item.Duration);
+        return (start, end - start);
+    }
 
     public bool IsDirty
     {
@@ -1014,7 +1032,12 @@ public sealed class MainViewModel : ObservableObject
         RefreshTimelineLanes();
     }
 
-    public TimeSpan SnapTime(TimeSpan candidate, Guid trackId, IReadOnlyCollection<Guid>? excludedIds = null)
+    public TimeSpan SnapTime(
+        TimeSpan candidate,
+        Guid trackId,
+        IReadOnlyCollection<Guid>? excludedIds = null,
+        TimeSpan? movingDuration = null,
+        bool snapToClipRanges = false)
     {
         var increment = Timeline.SnapIncrement;
         var seconds = Math.Max(0, candidate.TotalSeconds);
@@ -1029,15 +1052,101 @@ public sealed class MainViewModel : ObservableObject
             }
         }
 
+        if (snapToClipRanges)
+        {
+            foreach (var boundary in GetPrimaryVideoTrack().Items
+                         .SelectMany(item => new[] { item.Start, item.Start + item.Duration })
+                         .Append(TimeSpan.Zero)
+                         .Distinct())
+            {
+                candidates.Add(boundary.TotalSeconds);
+                if (movingDuration > TimeSpan.Zero)
+                {
+                    candidates.Add(boundary.TotalSeconds - movingDuration.Value.TotalSeconds);
+                }
+            }
+        }
+
+        var threshold = Math.Max(increment / 2, 8 / Math.Max(0.1, Timeline.PixelsPerSecond));
+        var nearest = candidates.Where(value => value >= 0).OrderBy(value => Math.Abs(value - seconds)).First();
+        return TimeSpan.FromSeconds(Math.Abs(nearest - seconds) <= threshold ? nearest : seconds);
+    }
+
+    public TimeSpan SnapTimelineEdge(TimeSpan candidate, bool snapToClipRanges)
+    {
+        var increment = Timeline.SnapIncrement;
+        var seconds = Math.Max(0, candidate.TotalSeconds);
+        var candidates = new List<double> { Math.Round(seconds / increment) * increment };
+        if (snapToClipRanges)
+        {
+            candidates.AddRange(GetPrimaryVideoTrack().Items
+                .SelectMany(item => new[] { item.Start.TotalSeconds, (item.Start + item.Duration).TotalSeconds }));
+        }
+
         var threshold = Math.Max(increment / 2, 8 / Math.Max(0.1, Timeline.PixelsPerSecond));
         var nearest = candidates.OrderBy(value => Math.Abs(value - seconds)).First();
         return TimeSpan.FromSeconds(Math.Abs(nearest - seconds) <= threshold ? nearest : seconds);
     }
 
+    public TimelineItemMovePreview? GetTimelineMovePreview(
+        IReadOnlyCollection<Guid> itemIds,
+        Guid targetTrackId,
+        TimeSpan targetStart,
+        bool snapToClipRanges)
+    {
+        if (itemIds.Count == 0)
+        {
+            return null;
+        }
+
+        var target = _project.Tracks.FirstOrDefault(track => track.Id == targetTrackId);
+        var sourceTracks = _project.Tracks
+            .Where(track => track.Items.Any(item => itemIds.Contains(item.Id)))
+            .ToList();
+        if (target is null || sourceTracks.Count != 1 || sourceTracks[0].Id != target.Id)
+        {
+            return null;
+        }
+
+        var moving = target.Items.Where(item => itemIds.Contains(item.Id)).OrderBy(item => item.StartTicks).ToList();
+        if (moving.Count == 0)
+        {
+            return null;
+        }
+
+        var selectionStart = moving[0].Start;
+        var selectionEnd = moving.Max(item => item.Start + item.Duration);
+        var selectionDuration = selectionEnd - selectionStart;
+        if (target.Id == GetPrimaryVideoTrack().Id)
+        {
+            selectionDuration = TimeSpan.FromTicks(moving.Sum(item => item.Duration.Ticks));
+            var remaining = target.Items.Where(item => !itemIds.Contains(item.Id)).OrderBy(item => item.StartTicks).ToList();
+            var insertionIndex = 0;
+            var position = TimeSpan.Zero;
+            while (insertionIndex < remaining.Count &&
+                   position + TimeSpan.FromTicks(remaining[insertionIndex].Duration.Ticks / 2) <= targetStart)
+            {
+                position += remaining[insertionIndex].Duration;
+                insertionIndex++;
+            }
+
+            return new TimelineItemMovePreview(position, selectionDuration);
+        }
+
+        var snappedStart = SnapTime(
+            targetStart,
+            target.Id,
+            itemIds,
+            selectionDuration,
+            snapToClipRanges);
+        return new TimelineItemMovePreview(snappedStart, selectionDuration);
+    }
+
     public bool MoveTimelineItems(
         IReadOnlyCollection<Guid> itemIds,
         Guid targetTrackId,
-        TimeSpan targetStart)
+        TimeSpan targetStart,
+        bool snapToClipRanges = false)
     {
         if (itemIds.Count == 0)
         {
@@ -1083,7 +1192,13 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var originalStart = moving[0].Start;
-        var snappedStart = SnapTime(targetStart, target.Id, itemIds);
+        var preview = GetTimelineMovePreview(itemIds, targetTrackId, targetStart, snapToClipRanges);
+        if (preview is null)
+        {
+            return false;
+        }
+
+        var snappedStart = preview.Start;
         var offset = snappedStart - originalStart;
         if (moving.Any(item => item.Start + offset < TimeSpan.Zero))
         {
@@ -1102,6 +1217,28 @@ public sealed class MainViewModel : ObservableObject
         RefreshTimelineLanes();
         _ = SaveRecoverySafelyAsync();
         StatusText = moving.Count == 1 ? "Timeline item moved" : $"Moved {moving.Count} timeline items";
+        return true;
+    }
+
+    public bool ResizeTimelineItem(Guid itemId, TimeSpan start, TimeSpan duration)
+    {
+        var track = _project.Tracks.FirstOrDefault(candidate => candidate.Items.Any(item => item.Id == itemId));
+        var item = track?.Items.FirstOrDefault(candidate => candidate.Id == itemId);
+        if (track is null || item is null || track.Id == GetPrimaryVideoTrack().Id)
+        {
+            return false;
+        }
+
+        var minimumDuration = TimeSpan.FromSeconds(Timeline.SnapIncrement);
+        item.StartTicks = Math.Max(0, start.Ticks);
+        item.DurationTicks = Math.Max(minimumDuration.Ticks, duration.Ticks);
+        MarkProjectDirty();
+        _selectedTimelineItemIds.Clear();
+        _selectedTimelineItemIds.Add(item.Id);
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Resized {item.Name} to {DurationFormatter.Format(item.Start)} – " +
+                     DurationFormatter.Format(item.Start + item.Duration);
         return true;
     }
 
@@ -1342,6 +1479,7 @@ public sealed class MainViewModel : ObservableObject
         var clips = Timeline.Clips.ToDictionary(clip => clip.InstanceId);
         var kindOrdinals = new Dictionary<ProjectTrackKind, int>();
         TimelineLanes.Clear();
+        var primaryVideoTrackId = GetPrimaryVideoTrack().Id;
         foreach (var track in _project.Tracks.OrderBy(track => track.Order))
         {
             kindOrdinals[track.Kind] = kindOrdinals.GetValueOrDefault(track.Kind) + 1;
@@ -1354,7 +1492,8 @@ public sealed class MainViewModel : ObservableObject
                     Timeline.PixelsPerSecond,
                     Timeline.TrackHeight,
                     _selectedTimelineItemIds.Contains(item.Id),
-                    NeedsProjectPreview(item)));
+                    NeedsProjectPreview(item),
+                    track.Id != primaryVideoTrackId));
             TimelineLanes.Add(new TimelineLaneViewModel(track, kindOrdinals[track.Kind], items));
         }
     }

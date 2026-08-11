@@ -8,15 +8,15 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
     public PluginDescriptor Descriptor { get; } = new(
         BuiltInPluginIds.BackgroundBlur,
         "Blur content background",
-        "1.0.0",
+        "1.1.0",
         "Fills unused project space with a zoomed, color-adjusted Gaussian blur of the active visual source.",
         PluginMediaType.Video | PluginMediaType.Image | PluginMediaType.Background,
         PluginRenderStage.Background,
         [ProjectTrackKind.Background],
         [
             new("saturation", "Saturation", PluginParameterType.Number, "1", 0, 3),
-            new("lightness", "Lightness", PluginParameterType.Number, "0", -1, 1),
-            new("hue", "Hue rotation (degrees)", PluginParameterType.Number, "0", -180, 180),
+            new("lightness", "Lightness (%)", PluginParameterType.Number, "0", -100, 100),
+            new("hue", "Hue rotation (degrees)", PluginParameterType.Number, "0", 0, 360),
             new("zoom", "Background zoom", PluginParameterType.Number, "1.15", 1, 3),
             new("blur", "Gaussian blur", PluginParameterType.Number, "32", 0, 100)
         ]);
@@ -25,11 +25,11 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
         PluginVideoFilterContext context,
         IReadOnlyDictionary<string, string> parameters)
     {
-        var saturation = PluginValues.Number(parameters, "saturation", 1, 0, 3);
-        var lightness = PluginValues.Number(parameters, "lightness", 0, -1, 1);
-        var hue = PluginValues.Number(parameters, "hue", 0, -180, 180);
-        var zoom = PluginValues.Number(parameters, "zoom", 1.15, 1, 3);
-        var blur = PluginValues.Number(parameters, "blur", 32, 0, 100);
+        var saturation = PluginValues.Number(parameters, "saturation", 1, -10, 10);
+        var lightness = PluginValues.Number(parameters, "lightness", 0, -1000, 1000) / 100;
+        var hue = PluginValues.Number(parameters, "hue", 0, -36000, 36000);
+        var zoom = PluginValues.Number(parameters, "zoom", 1.15, 1, 10);
+        var blur = PluginValues.Number(parameters, "blur", 32, 0, 1000);
         var backgroundWidth = MakeEven((int)Math.Ceiling(context.Width * zoom));
         var backgroundHeight = MakeEven((int)Math.Ceiling(context.Height * zoom));
         var start = PluginValues.Format(Math.Max(0, context.EffectStart.TotalSeconds));

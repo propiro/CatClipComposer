@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-11
 
 ## Repository modules
 
@@ -68,6 +68,21 @@ The executable modules may reference Core and Infrastructure for composition. Co
 11. After every plugin and overlay stage, the filter graph normalizes the final canvas to the requested width,
     height, square-pixel aspect, and encoder pixel format. This prevents a blur or zoom stage from leaving an
     odd-sized frame that Media Foundation H.264 rejects as an invalid media type.
+12. Still-image overlay inputs are trimmed and timestamped to their declared project interval before
+    composition. Once that interval ends, the overlay passes the underlying stream through instead of asking
+    FFmpeg to repeat an unbounded image source, which keeps Background effects and image overlays composable.
+
+### Timeline and parameter editing
+
+1. `MainViewModel` calculates exact landing ranges for both drag preview and commit, preserving the pointer's
+   offset within the selected block group so a drop cannot jump by a block width.
+2. Timeline lanes expose transient landing-preview geometry. WPF owns pointer capture and edge thumbs; the
+   view model owns snapped movement and non-primary timed-item resizing.
+3. Frame/grid snapping always applies. A workspace checkbox additionally aligns either moving edge to primary
+   source-clip starts and ends.
+4. Shared WPF range and numeric controls keep validation consistent across layers, clip effects, and plugins.
+   Sliders and arrow buttons use sensible UI bounds and snap steps; finite manual text entry may exceed those
+   convenience bounds when the renderer's hard safety limits permit it.
 
 ### Plugin discovery and effect rendering
 
@@ -124,6 +139,8 @@ Each component is listed separately to keep its responsibility and boundary read
 - **SQLite persistence helpers:** Own one schema, connection, conversion, or row-projection task each.
 - **WPF window code-behind:** Own window events, media transport, validation prompts, and dialog flow.
   Explorer launch and exception presentation are delegated; `MOD-004` is closed.
+- **WPF editor controls:** Own reusable Start/End-or-duration entry, whole-timeline shortcuts, and bounded
+  slider/arrow interaction without depending on persistence or FFmpeg.
 - **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
 - **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary panel focus. Focus never
   overwrites durable settings.

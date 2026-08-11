@@ -2,7 +2,7 @@
 
 Cat Clip Composer is a focused Windows desktop application for building YouTube-ready compilations from folders of short video clips. It catalogs clips once, lets you assemble a simple ordered timeline, and renders the result through FFmpeg.
 
-Current application and component version: **0.1.13**.
+Current application and component version: **0.1.14**.
 
 ## Documentation
 
@@ -36,6 +36,8 @@ Current application and component version: **0.1.13**.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
+- Time effects with Start/End fields (or optional duration entry), set them to the whole timeline in one click,
+  and adjust bounded values with sliders/arrows while retaining exact manual numeric entry.
 - Set clip Fit, Fill, or Stretch plus fade-in/out and source volume; add the configurable blur-content
   background module on the Background timeline when vertical media should fill a horizontal project.
 - Render solid, segmented, or tick progress effects over the complete project, a selected segment, or a custom range.
@@ -49,7 +51,9 @@ Current application and component version: **0.1.13**.
 - Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
   composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
   range selection, draggable range edges, Mark start/end controls, fit controls, and usable minus/value/plus
-  controls for time zoom and track height are available.
+  controls for time zoom and track height are available. Timed-block dragging preserves the original grab
+  point and previews the exact landing range; either edge resizes non-primary timed blocks, with optional
+  snapping to source-clip boundaries.
 - Right-click the playhead to preview from that frame or mark either range edge; right-click a selected ruler
   range to preview only that interval. Empty lanes, track headers, and compatible items expose effect actions.
 - Select or double-click an item under Layers / Used Clips to edit its scaling mode, fades, and volume, or add

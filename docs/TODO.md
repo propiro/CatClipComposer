@@ -1,6 +1,6 @@
 # TODO register
 
-Last audited: 2026-08-07
+Last audited: 2026-08-11
 
 Statuses are `Open`, `In progress`, `Blocked`, `Done`, and `Deferred`.
 
@@ -155,6 +155,27 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Selecting a timeline item highlights its Layers / Used Clips row; empty lanes, track headers,
   and items offer only plugins compatible with their resolved target track and preserve item timing.
 
+### `TIMELINE-006` — Make timed-block dragging and resizing predictable
+
+- Priority/status: P0 / Done
+- Acceptance: Dragging preserves the pointer grab offset and shows the exact landing interval before drop;
+  left/right handles resize non-primary timed blocks; an enabled-by-default checkbox additionally snaps either
+  block edge to primary source-clip starts and ends.
+
+### `UX-RANGE-001` — Standardize effect ranges and numeric adjustment
+
+- Priority/status: P1 / Done
+- Acceptance: Editors show Start/End by default with optional duration entry and whole-timeline shortcuts;
+  new effects inherit the enclosing range of all selected Video items; numeric sliders/arrows use documented
+  convenience bounds while exact finite manual entry remains possible beyond them.
+
+### `RENDER-OVERLAY-002` — Compose still overlays safely after Background effects
+
+- Priority/status: P0 / Done
+- Acceptance: Image sources are bounded and timestamped to their item interval, stop repeating afterward, and
+  the recovered real photo-overlay plus Background blur project renders through both native MPEG-4 and Media
+  Foundation H.264; the full H.264 output decodes cleanly.
+
 ### `RENDER-CANVAS-001` — Normalize the post-effect canvas for strict encoders
 
 - Priority/status: P0 / Done
@@ -270,7 +291,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-4 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+- Acceptance: Versioned schema-5 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
   background/module metadata plus optional track/item colors without embedding media; GUI and CLI checks pass.
 
 ### `UX-PROJECT-002` — Separate durable Preferences from frequently changed project settings

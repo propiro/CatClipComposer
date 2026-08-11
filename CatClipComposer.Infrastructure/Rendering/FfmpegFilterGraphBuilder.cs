@@ -203,7 +203,11 @@ internal static class FfmpegFilterGraphBuilder
         // Scale may recalculate SAR to preserve the input display aspect ratio. Concat requires every
         // normalized segment to have identical geometry *and* sample aspect ratio, so reset it after
         // all scale/pad/background-plugin work rather than relying on the earlier input normalization.
-        graph.Append("setsar=1,");
+        // Background plugins can negotiate an alpha-capable intermediate format through their own
+        // overlay filters. Normalize each completed segment before concat so a later image/video
+        // overlay never has to negotiate against plugin-internal alpha state.
+        graph.Append(CultureInfo.InvariantCulture,
+            $"setsar=1,format={GetPixelFormat(request.VideoEncoder)},");
         AddFadeFilters(graph, segment.FadeInSeconds, segment.FadeOutSeconds, segment.Duration);
         graph.Append(CultureInfo.InvariantCulture, $"null[{outputLabel}];");
     }
@@ -332,12 +336,18 @@ internal static class FfmpegFilterGraphBuilder
         TimeSpan? start,
         TimeSpan? duration)
     {
+        var overlayStart = start ?? TimeSpan.Zero;
+        var overlayDuration = duration ?? TimeSpan.FromSeconds(5);
         graph.Append(CultureInfo.InvariantCulture,
-            $"[{inputIndex}:v:0]scale='min(480,iw)':-2,format=rgba,colorchannelmixer=aa=0.9[layerimage{stage}];");
+            $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlayDuration)}," +
+            $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
+            $"scale='min(480,iw)':-2,setsar=1,format=yuva420p," +
+            $"colorchannelmixer=aa=0.9[layerimage{stage}];");
         var (x, y) = GetImageOverlayCoordinates(position);
         var enable = CreateEnable(start, duration);
         graph.Append(CultureInfo.InvariantCulture,
-            $"[{currentLabel}][layerimage{stage}]overlay=x={x}:y={y}:eof_action=repeat:shortest=1{enable}[stage{stage}];");
+            $"[{currentLabel}][layerimage{stage}]overlay=x={x}:y={y}:" +
+            $"eof_action=pass:repeatlast=0{enable}[stage{stage}];");
         return $"stage{stage}";
     }
 

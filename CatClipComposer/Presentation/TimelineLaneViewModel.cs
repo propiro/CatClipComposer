@@ -4,8 +4,13 @@ using CatClipComposer.Core.Utilities;
 
 namespace CatClipComposer.Presentation;
 
-public sealed class TimelineLaneViewModel
+public sealed class TimelineLaneViewModel : ObservableObject
 {
+    private bool _isDropPreviewVisible;
+    private double _dropPreviewLeft;
+    private double _dropPreviewWidth;
+    private string _dropPreviewText = string.Empty;
+
     public TimelineLaneViewModel(
         ProjectTrack track,
         int kindOrdinal,
@@ -38,6 +43,40 @@ public sealed class TimelineLaneViewModel
     public string ShortName { get; }
 
     public ObservableCollection<TimelineLaneItemViewModel> Items { get; }
+
+    public bool IsDropPreviewVisible
+    {
+        get => _isDropPreviewVisible;
+        private set => SetProperty(ref _isDropPreviewVisible, value);
+    }
+
+    public double DropPreviewLeft
+    {
+        get => _dropPreviewLeft;
+        private set => SetProperty(ref _dropPreviewLeft, value);
+    }
+
+    public double DropPreviewWidth
+    {
+        get => _dropPreviewWidth;
+        private set => SetProperty(ref _dropPreviewWidth, value);
+    }
+
+    public string DropPreviewText
+    {
+        get => _dropPreviewText;
+        private set => SetProperty(ref _dropPreviewText, value);
+    }
+
+    public void ShowDropPreview(TimeSpan start, TimeSpan duration, double pixelsPerSecond)
+    {
+        DropPreviewLeft = Math.Max(0, start.TotalSeconds * pixelsPerSecond);
+        DropPreviewWidth = Math.Max(20, duration.TotalSeconds * pixelsPerSecond);
+        DropPreviewText = $"{DurationFormatter.Format(start)} – {DurationFormatter.Format(start + duration)}";
+        IsDropPreviewVisible = true;
+    }
+
+    public void HideDropPreview() => IsDropPreviewVisible = false;
 }
 
 public sealed class TimelineLaneItemViewModel
@@ -49,14 +88,15 @@ public sealed class TimelineLaneItemViewModel
         double pixelsPerSecond,
         double trackHeight,
         bool isSelected,
-        bool needsProjectPreview)
+        bool needsProjectPreview,
+        bool canResize)
     {
         Id = item.Id;
         TrackKind = track.Kind;
         Kind = item.Kind;
         Title = item.Name;
         SourcePath = item.SourcePath;
-        Detail = $"{DurationFormatter.Format(item.Start)} + {DurationFormatter.Format(item.Duration)}";
+        Detail = $"{DurationFormatter.Format(item.Start)} – {DurationFormatter.Format(item.Start + item.Duration)}";
         ThumbnailPath = clip?.ThumbnailPath;
         Left = Math.Max(0, item.Start.TotalSeconds * pixelsPerSecond);
         Width = Math.Max(20, item.Duration.TotalSeconds * pixelsPerSecond);
@@ -64,8 +104,11 @@ public sealed class TimelineLaneItemViewModel
         IsVideo = track.Kind == ProjectTrackKind.Video;
         IsSelected = isSelected;
         TrackId = track.Id;
+        Start = item.Start;
+        Duration = item.Duration;
         ShowClipActions = IsVideo && isSelected;
         NeedsProjectPreview = needsProjectPreview;
+        CanResize = canResize;
         Background = !string.IsNullOrWhiteSpace(item.Color)
             ? item.Color
             : !string.IsNullOrWhiteSpace(track.Color)
@@ -85,6 +128,10 @@ public sealed class TimelineLaneItemViewModel
     public Guid TrackId { get; }
 
     public ProjectTrackKind TrackKind { get; }
+
+    public TimeSpan Start { get; }
+
+    public TimeSpan Duration { get; }
 
     public ProjectItemKind Kind { get; }
 
@@ -110,6 +157,8 @@ public sealed class TimelineLaneItemViewModel
 
     public bool NeedsProjectPreview { get; }
 
+    public bool CanResize { get; }
+
     public string ToolTipText => NeedsProjectPreview
         ? $"{Title}\nNot included in the current Project Preview. Render preview to update it."
         : Title;
@@ -121,3 +170,7 @@ public sealed record TimelineTickViewModel(
     double Left,
     double TickHeight,
     string Label);
+
+public sealed record TimelineItemMovePreview(
+    TimeSpan Start,
+    TimeSpan Duration);
