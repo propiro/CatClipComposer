@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     private TimeSpan _timelineResizeOriginalEnd;
     private TimeSpan _timelineResizePreviewStart;
     private TimeSpan _timelineResizePreviewDuration;
-    private double _timelineResizeDragPixels;
+    private double _timelineResizePointerStartX;
     private WorkspacePanelKind? _expandedPanel;
     private WorkspacePanelKind _focusedPanel = WorkspacePanelKind.ContentBrowser;
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -46,7 +46,9 @@ public partial class MainWindow : Window
     private bool _previewsSplit;
     private bool _projectPreviewSeekDragging;
     private bool _projectPreviewPlaying;
+    private bool _projectPreviewAutoplayPending;
     private bool _projectOverlayRefreshQueued;
+    private Guid? _overlayTransformEditItemId;
     private TimeSpan _projectPreviewTimelineOffset;
     private TimeSpan _projectPreviewTimelineEnd;
     private bool _timelinePlayheadDragging;
@@ -76,6 +78,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
+        ApplyPersistedWindowGeometry(settings);
         _catalog = catalog;
         _viewModel = new MainViewModel(
             settings,
@@ -91,8 +94,14 @@ public partial class MainWindow : Window
             PreviewPanel,
             LayersPanel,
             TimelinePanel);
-        _workspaceLayout.Apply(settings);
+        _expandedPanel = FromSettingsPanel(settings.ExpandedWorkspacePanel);
+        _focusedPanel = FromSettingsPanel(settings.ActiveWorkspacePanel);
+        ApplyPersistedWorkspaceGeometry(settings);
+        _workspaceLayout.Apply(settings, _expandedPanel);
         DataContext = _viewModel;
+        PreviewTabs.SelectedIndex = Math.Clamp(settings.ActivePreviewTab, 0, 1);
+        SetPreviewLayout(settings.PreviewsSplit);
+        UpdateExpandedPanelButton();
         _previewTimer.Tick += PreviewTimer_Tick;
         _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
         _viewModel.ProjectLayers.CollectionChanged += (_, _) => QueueProjectPreviewOverlayRefresh();
@@ -107,7 +116,16 @@ public partial class MainWindow : Window
         {
             if (eventArgs.PropertyName == nameof(MainViewModel.SelectedProjectLayer))
             {
-                ProjectPreviewOverlayCanvas.Select(_viewModel.SelectedProjectLayer?.Item?.Id);
+                var selectedItemId = _viewModel.SelectedProjectLayer?.Item?.Id;
+                if (_overlayTransformEditItemId.HasValue && selectedItemId != _overlayTransformEditItemId)
+                {
+                    var cancelledItemId = _overlayTransformEditItemId.Value;
+                    _overlayTransformEditItemId = null;
+                    _viewModel.CancelOverlayTransformEdit();
+                    ProjectPreviewOverlayCanvas.CompleteEdit(cancelledItemId, accepted: false);
+                }
+
+                ProjectPreviewOverlayCanvas.Select(selectedItemId);
             }
             else if (eventArgs.PropertyName == nameof(MainViewModel.OutputSettings))
             {
@@ -256,7 +274,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
-        if (_allowClose || !_viewModel.IsDirty)
+        if (_allowClose)
         {
             return;
         }
@@ -267,38 +285,47 @@ public partial class MainWindow : Window
             return;
         }
 
-        var choice = MessageBox.Show(
-            this,
-            "Save changes to the current project before closing?",
-            "Unsaved project changes",
-            MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Warning,
-            MessageBoxResult.Yes);
-        if (choice == MessageBoxResult.Cancel)
-        {
-            return;
-        }
-
-        if (choice == MessageBoxResult.No)
-        {
-            _allowClose = true;
-            Close();
-            return;
-        }
-
         _closeSaveInProgress = true;
         try
         {
-            if (await SaveProjectWithDialogAsync())
+            CancelActiveOverlayTransformEdit();
+            if (_viewModel.IsDirty)
             {
-                _allowClose = true;
-                Close();
+                var prompt = new UnsavedChangesWindow(_viewModel.ProjectName) { Owner = this };
+                prompt.ShowDialog();
+                if (prompt.Choice == UnsavedProjectChoice.Cancel ||
+                    (prompt.Choice == UnsavedProjectChoice.Save && !await SaveProjectWithDialogAsync()))
+                {
+                    return;
+                }
             }
+
+            await _viewModel.ApplySettingsAsync(CaptureWorkspaceSettings());
+            _allowClose = true;
+            Close();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not save the workspace layout.", exception);
         }
         finally
         {
             _closeSaveInProgress = false;
         }
+    }
+
+    private bool CancelActiveOverlayTransformEdit()
+    {
+        if (!_overlayTransformEditItemId.HasValue)
+        {
+            return false;
+        }
+
+        var itemId = _overlayTransformEditItemId.Value;
+        _overlayTransformEditItemId = null;
+        _viewModel.CancelOverlayTransformEdit();
+        ProjectPreviewOverlayCanvas.CompleteEdit(itemId, accepted: false);
+        return true;
     }
 
     private void OutputSettings_Click(object sender, RoutedEventArgs e)
@@ -575,9 +602,12 @@ public partial class MainWindow : Window
     private static string FormatPreviewTime(TimeSpan value) =>
         value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
 
-    private void PreviewLayout_Click(object sender, RoutedEventArgs e)
+    private void PreviewLayout_Click(object sender, RoutedEventArgs e) =>
+        SetPreviewLayout(!_previewsSplit);
+
+    private void SetPreviewLayout(bool split)
     {
-        _previewsSplit = !_previewsSplit;
+        _previewsSplit = split;
 
         if (_previewsSplit)
         {
@@ -629,16 +659,60 @@ public partial class MainWindow : Window
 
     private async void ProjectPreview_Click(object sender, RoutedEventArgs e)
     {
-        var rangeStart = _viewModel.Timeline.HasRangeSelection
-            ? _viewModel.Timeline.RangeStart
-            : (TimeSpan?)null;
-        var rangeEnd = _viewModel.Timeline.HasRangeSelection
-            ? _viewModel.Timeline.RangeEnd
-            : (TimeSpan?)null;
-        await RenderAndPlayProjectPreviewAsync(rangeStart, rangeEnd);
+        if (_viewModel.Timeline.HasRangeSelection)
+        {
+            await RenderAndPlayProjectPreviewAsync(
+                _viewModel.Timeline.RangeStart,
+                _viewModel.Timeline.RangeEnd);
+            return;
+        }
+
+        await PrerenderSelectedFrameAsync();
     }
 
-    private async Task RenderAndPlayProjectPreviewAsync(TimeSpan? rangeStart, TimeSpan? rangeEnd)
+    private async void PrerenderFrame_Click(object sender, RoutedEventArgs e) =>
+        await PrerenderSelectedFrameAsync();
+
+    private async void PrerenderAll_Click(object sender, RoutedEventArgs e) =>
+        await RenderAndPlayProjectPreviewAsync(null, null);
+
+    private async Task PrerenderSelectedFrameAsync()
+    {
+        var duration = _viewModel.Timeline.Duration;
+        if (duration <= TimeSpan.Zero)
+        {
+            MessageBox.Show(
+                this,
+                "Add at least one video or image clip before prerendering a frame.",
+                "Nothing to prerender",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var frameDuration = TimeSpan.FromSeconds(Math.Max(
+            0.1,
+            1 / Math.Clamp(_viewModel.OutputSettings.FramesPerSecond, 1, 240)));
+        var start = _viewModel.Timeline.Playhead;
+        if (start >= duration)
+        {
+            start = duration > frameDuration ? duration - frameDuration : TimeSpan.Zero;
+        }
+
+        var end = start + frameDuration;
+        if (end > duration)
+        {
+            end = duration;
+        }
+
+        await RenderAndPlayProjectPreviewAsync(start, end, autoplay: false, isFrame: true);
+    }
+
+    private async Task RenderAndPlayProjectPreviewAsync(
+        TimeSpan? rangeStart,
+        TimeSpan? rangeEnd,
+        bool autoplay = true,
+        bool isFrame = false)
     {
         if (_viewModel.IsBusy)
         {
@@ -647,7 +721,9 @@ public partial class MainWindow : Window
 
         try
         {
-            ProjectPreviewStatusText.Text = "Rendering layered project preview…";
+            ProjectPreviewStatusText.Text = isFrame
+                ? "Prerendering selected frame…"
+                : "Prerendering layered project preview…";
             PreviewTabs.SelectedItem = ProjectPreviewTab;
             ProjectPreviewPlayer.Stop();
             _projectPreviewTimer.Stop();
@@ -659,19 +735,25 @@ public partial class MainWindow : Window
             _viewModel.MarkProjectPreviewRendered(rangeStart, rangeEnd);
             _viewModel.Timeline.SetPlayhead(_projectPreviewTimelineOffset);
 
+            _projectPreviewAutoplayPending = autoplay;
             ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
             ProjectPreviewOverlayCanvas.MarkPreviewRendered();
             ProjectPreviewPlayer.IsMuted = true;
             UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
-            ProjectPreviewStatusText.Text = !rangeStart.HasValue
-                ? "Full project preview ready"
-                : _viewModel.Timeline.HasRangeSelection &&
-                  rangeStart == _viewModel.Timeline.RangeStart && rangeEnd == _viewModel.Timeline.RangeEnd
-                    ? $"Selected range rendered: {_viewModel.Timeline.RangeText}"
-                    : $"Preview rendered from {FormatPreviewTime(rangeStart.Value)}";
+            ProjectPreviewStatusText.Text = isFrame
+                ? $"Frame prerendered at {FormatPreviewTime(_projectPreviewTimelineOffset)}"
+                : !rangeStart.HasValue
+                    ? "Full project prerender ready"
+                    : _viewModel.Timeline.HasRangeSelection &&
+                      rangeStart == _viewModel.Timeline.RangeStart && rangeEnd == _viewModel.Timeline.RangeEnd
+                        ? $"Selected range prerendered: {_viewModel.Timeline.RangeText}"
+                        : $"Preview prerendered from {FormatPreviewTime(rangeStart.Value)}";
             ProjectPreviewPlayer.Play();
-            _projectPreviewTimer.Start();
-            SetProjectPlaybackState(true);
+            if (autoplay)
+            {
+                _projectPreviewTimer.Start();
+                SetProjectPlaybackState(true);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -722,6 +804,13 @@ public partial class MainWindow : Window
         _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
         ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
         SeekProjectPreview(_projectPreviewTimelineOffset);
+        if (!_projectPreviewAutoplayPending)
+        {
+            ProjectPreviewPlayer.Pause();
+            _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
+        }
+
         QueueProjectPreviewOverlayRefresh();
     }
 
@@ -730,6 +819,20 @@ public partial class MainWindow : Window
         PreviewOverlaySelectedEventArgs e)
     {
         PauseProjectPreviewForOverlayEditing();
+        if (_overlayTransformEditItemId.HasValue && _overlayTransformEditItemId != e.ItemId)
+        {
+            var cancelledItemId = _overlayTransformEditItemId.Value;
+            _overlayTransformEditItemId = null;
+            _viewModel.CancelOverlayTransformEdit();
+            ProjectPreviewOverlayCanvas.CompleteEdit(cancelledItemId, accepted: false);
+        }
+
+        if (!_viewModel.BeginOverlayTransformEdit(e.ItemId))
+        {
+            return;
+        }
+
+        _overlayTransformEditItemId = e.ItemId;
         _viewModel.SelectTimelineItem(e.ItemId);
         ProjectPreviewOverlayCanvas.Select(e.ItemId);
     }
@@ -738,25 +841,48 @@ public partial class MainWindow : Window
         object? sender,
         PreviewOverlayTransformEventArgs e)
     {
-        if (!_viewModel.UpdateOverlayTransform(
+        if (!_viewModel.PreviewOverlayTransform(
                 e.ItemId,
                 e.X,
                 e.Y,
                 e.Scale,
-                e.RotationDegrees,
-                e.IsFinal))
+                e.RotationDegrees))
         {
             return;
         }
 
-        ProjectPreviewStatusText.Text = e.IsFinal
-            ? "Overlay transform updated — render preview to refresh the composition."
-            : $"Overlay: X {e.X * 100:0.#}% · Y {e.Y * 100:0.#}% · " +
-              $"scale {e.Scale * 100:0.#}% · rotate {e.RotationDegrees:0.#}°";
-        if (e.IsFinal)
+        ProjectPreviewStatusText.Text =
+            $"Overlay: X {e.X * 100:0.#}% · Y {e.Y * 100:0.#}% · " +
+            $"scale {e.Scale * 100:0.#}% · rotate {e.RotationDegrees:0.#}° — press OK/Enter to apply.";
+    }
+
+    private void ProjectPreviewOverlayCanvas_OverlayEditAccepted(
+        object? sender,
+        PreviewOverlayEditEventArgs e)
+    {
+        if (_viewModel.CommitOverlayTransformEdit(e.ItemId))
         {
+            _overlayTransformEditItemId = null;
+            ProjectPreviewOverlayCanvas.CompleteEdit(e.ItemId, accepted: true);
+            ProjectPreviewStatusText.Text = "Overlay transform applied — prerender to refresh the composition.";
             QueueProjectPreviewOverlayRefresh();
         }
+    }
+
+    private void ProjectPreviewOverlayCanvas_OverlayEditCanceled(
+        object? sender,
+        PreviewOverlayEditEventArgs e)
+    {
+        if (_overlayTransformEditItemId != e.ItemId)
+        {
+            return;
+        }
+
+        _overlayTransformEditItemId = null;
+        _viewModel.CancelOverlayTransformEdit();
+        ProjectPreviewOverlayCanvas.CompleteEdit(e.ItemId, accepted: false);
+        ProjectPreviewStatusText.Text = "Overlay transform cancelled.";
+        QueueProjectPreviewOverlayRefresh();
     }
 
     private void PauseProjectPreviewForOverlayEditing()
@@ -1569,6 +1695,39 @@ public partial class MainWindow : Window
         }
 
         var lane = _viewModel.TimelineLanes[laneIndex];
+        AddTimelineLaneEffectItems(menu, lane, position.X);
+    }
+
+    private void TimelineLane_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.Handled ||
+            e.ClickCount != 1 ||
+            sender is not Border { DataContext: TimelineLaneViewModel lane } laneBorder ||
+            HasTimelineItemAncestor(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        var pointer = e.GetPosition(laneBorder);
+        var menu = new ContextMenu
+        {
+            Placement = PlacementMode.RelativePoint,
+            PlacementTarget = laneBorder,
+            HorizontalOffset = pointer.X,
+            VerticalOffset = pointer.Y
+        };
+        AddTimelineLaneEffectItems(menu, lane, pointer.X);
+        if (menu.Items.Count == 0)
+        {
+            return;
+        }
+
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private void AddTimelineLaneEffectItems(ContextMenu menu, TimelineLaneViewModel lane, double pointerX)
+    {
         var row = _viewModel.ProjectLayers.FirstOrDefault(candidate =>
             candidate.IsTrackHeader && candidate.Track.Id == lane.TrackId);
         var targetTrack = ResolveEffectTargetTrack(row, allowDefaultEffectsTrack: false);
@@ -1577,7 +1736,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        var start = TimeSpan.FromSeconds(Math.Max(0, position.X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
+        var rawStart = TimeSpan.FromSeconds(Math.Max(
+            0,
+            pointerX / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
+        var maximumStart = _viewModel.Timeline.Duration -
+                           TimeSpan.FromSeconds(_viewModel.Timeline.SnapIncrement);
+        var start = _viewModel.SnapTime(
+            maximumStart > TimeSpan.Zero && rawStart > maximumStart ? maximumStart : rawStart,
+            targetTrack.Id,
+            snapToClipRanges: SnapToClipRangesCheckBox.IsChecked == true);
         var compatible = _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>()
             .Where(plugin => plugin.Descriptor.CompatibleTracks.Contains(targetTrack.Kind))
             .OrderBy(plugin => plugin.Descriptor.Name)
@@ -1588,9 +1755,15 @@ public partial class MainWindow : Window
             item.Click += (_, _) =>
             {
                 _viewModel.SelectedProjectLayer = row;
+                var remaining = _viewModel.Timeline.Duration - start;
                 var duration = targetTrack.Kind == ProjectTrackKind.Background
-                    ? TimeSpan.FromSeconds(Math.Max(1, _viewModel.Timeline.Duration.TotalSeconds - start.TotalSeconds))
-                    : TimeSpan.FromSeconds(5);
+                    ? remaining
+                    : remaining < TimeSpan.FromSeconds(5) ? remaining : TimeSpan.FromSeconds(5);
+                if (duration <= TimeSpan.Zero)
+                {
+                    duration = TimeSpan.FromSeconds(_viewModel.Timeline.SnapIncrement);
+                }
+
                 OpenCompatibleEffectEditor(
                     row,
                     useSelectedItemTiming: false,
@@ -1844,7 +2017,7 @@ public partial class MainWindow : Window
         _timelineResizeOriginalEnd = item.Start + item.Duration;
         _timelineResizePreviewStart = item.Start;
         _timelineResizePreviewDuration = item.Duration;
-        _timelineResizeDragPixels = 0;
+        _timelineResizePointerStartX = Mouse.GetPosition(TimelineCanvas).X;
         ShowTimelineDropPreview(item.TrackId, item.Start, item.Duration);
         e.Handled = true;
     }
@@ -1856,9 +2029,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        _timelineResizeDragPixels += e.HorizontalChange;
+        var dragPixels = Mouse.GetPosition(TimelineCanvas).X - _timelineResizePointerStartX;
         var delta = TimeSpan.FromSeconds(
-            _timelineResizeDragPixels / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
+            dragPixels / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
         var minimumDuration = TimeSpan.FromSeconds(_viewModel.Timeline.SnapIncrement);
         var snapToClips = SnapToClipRangesCheckBox.IsChecked == true;
         if (_timelineResizeMovesStart)
@@ -2263,9 +2436,26 @@ public partial class MainWindow : Window
         }
     }
 
-    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Space || IsEditingControl(Keyboard.FocusedElement as DependencyObject))
+        var editingControl = IsEditingControl(Keyboard.FocusedElement as DependencyObject);
+        if (!editingControl && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
+            (e.Key == Key.Z || e.Key == Key.Y))
+        {
+            if (e.Key == Key.Y || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                await PerformRedoAsync();
+            }
+            else
+            {
+                await PerformUndoAsync();
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key != Key.Space || editingControl)
         {
             return;
         }
@@ -2275,6 +2465,43 @@ public partial class MainWindow : Window
         {
             TogglePanelExpansion(panel);
             e.Handled = true;
+        }
+    }
+
+    private async void Undo_Click(object sender, RoutedEventArgs e) =>
+        await PerformUndoAsync();
+
+    private async void Redo_Click(object sender, RoutedEventArgs e) =>
+        await PerformRedoAsync();
+
+    private async Task PerformUndoAsync()
+    {
+        if (CancelActiveOverlayTransformEdit())
+        {
+            ProjectPreviewStatusText.Text = "Overlay transform cancelled.";
+            return;
+        }
+
+        try
+        {
+            await _viewModel.UndoAsync();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "The project was restored, but its recovery file could not be updated.", exception);
+        }
+    }
+
+    private async Task PerformRedoAsync()
+    {
+        CancelActiveOverlayTransformEdit();
+        try
+        {
+            await _viewModel.RedoAsync();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "The project was restored, but its recovery file could not be updated.", exception);
         }
     }
 
@@ -2317,6 +2544,11 @@ public partial class MainWindow : Window
     {
         _expandedPanel = _expandedPanel == panel ? null : panel;
         _workspaceLayout.Apply(_viewModel.Settings, _expandedPanel);
+        UpdateExpandedPanelButton();
+    }
+
+    private void UpdateExpandedPanelButton()
+    {
         var browserExpanded = _expandedPanel == WorkspacePanelKind.ContentBrowser;
         BrowserExpandButton.Content = browserExpanded ? "←" : "→";
         BrowserExpandButton.ToolTip = browserExpanded
@@ -2326,6 +2558,87 @@ public partial class MainWindow : Window
             BrowserExpandButton,
             browserExpanded ? "Restore compact content browser" : "Expand content browser");
     }
+
+    private void ApplyPersistedWindowGeometry(ApplicationSettings settings)
+    {
+        Width = settings.WindowWidth;
+        Height = settings.WindowHeight;
+        var hasSavedPosition = settings.WindowLeft != -1 || settings.WindowTop != -1;
+        var hasPosition = hasSavedPosition &&
+                          settings.WindowLeft >= SystemParameters.VirtualScreenLeft - settings.WindowWidth &&
+                          settings.WindowLeft <= SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth &&
+                          settings.WindowTop >= SystemParameters.VirtualScreenTop - settings.WindowHeight &&
+                          settings.WindowTop <= SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight;
+        if (hasPosition)
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Left = settings.WindowLeft;
+            Top = settings.WindowTop;
+        }
+
+        if (settings.WindowMaximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void ApplyPersistedWorkspaceGeometry(ApplicationSettings settings)
+    {
+        WorkspaceGrid.ColumnDefinitions[0].Width = new GridLength(settings.WorkspaceLeftWidth);
+        WorkspaceGrid.ColumnDefinitions[4].Width = new GridLength(settings.WorkspaceRightWidth);
+        WorkspaceGrid.RowDefinitions[2].Height = new GridLength(settings.WorkspaceBottomHeight);
+        PreviewSplitGrid.ColumnDefinitions[0].Width = new GridLength(settings.PreviewSplitRatio, GridUnitType.Star);
+        PreviewSplitGrid.ColumnDefinitions[2].Width = new GridLength(1 - settings.PreviewSplitRatio, GridUnitType.Star);
+    }
+
+    private ApplicationSettings CaptureWorkspaceSettings()
+    {
+        var settings = _viewModel.Settings.Copy();
+        var bounds = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, ActualWidth, ActualHeight)
+            : RestoreBounds;
+        settings.WindowWidth = Math.Max(MinWidth, bounds.Width);
+        settings.WindowHeight = Math.Max(MinHeight, bounds.Height);
+        settings.WindowLeft = bounds.Left;
+        settings.WindowTop = bounds.Top;
+        settings.WindowMaximized = WindowState == WindowState.Maximized;
+        settings.WorkspaceLeftWidth = WorkspaceGrid.ColumnDefinitions[0].ActualWidth;
+        settings.WorkspaceRightWidth = WorkspaceGrid.ColumnDefinitions[4].ActualWidth;
+        settings.WorkspaceBottomHeight = WorkspaceGrid.RowDefinitions[2].ActualHeight;
+        var previewLeft = PreviewSplitGrid.ColumnDefinitions[0];
+        var previewRight = PreviewSplitGrid.ColumnDefinitions[2];
+        var previewWidth = previewLeft.ActualWidth + previewRight.ActualWidth;
+        var previewGridUnits = previewLeft.Width.Value + previewRight.Width.Value;
+        settings.PreviewSplitRatio = previewWidth > 0
+            ? previewLeft.ActualWidth / previewWidth
+            : previewGridUnits > 0 ? previewLeft.Width.Value / previewGridUnits : 0.5;
+        settings.PreviewsSplit = _previewsSplit;
+        settings.ActivePreviewTab = Math.Clamp(PreviewTabs.SelectedIndex, 0, 1);
+        settings.ActiveWorkspacePanel = ToSettingsPanel(_focusedPanel);
+        settings.ExpandedWorkspacePanel = _expandedPanel.HasValue
+            ? ToSettingsPanel(_expandedPanel.Value)
+            : null;
+        return settings;
+    }
+
+    private static WorkspacePanelKind FromSettingsPanel(WorkspacePanelSelection panel) => panel switch
+    {
+        WorkspacePanelSelection.Preview => WorkspacePanelKind.Preview,
+        WorkspacePanelSelection.Layers => WorkspacePanelKind.Layers,
+        WorkspacePanelSelection.Timeline => WorkspacePanelKind.Timeline,
+        _ => WorkspacePanelKind.ContentBrowser
+    };
+
+    private static WorkspacePanelKind? FromSettingsPanel(WorkspacePanelSelection? panel) =>
+        panel.HasValue ? FromSettingsPanel(panel.Value) : null;
+
+    private static WorkspacePanelSelection ToSettingsPanel(WorkspacePanelKind panel) => panel switch
+    {
+        WorkspacePanelKind.Preview => WorkspacePanelSelection.Preview,
+        WorkspacePanelKind.Layers => WorkspacePanelSelection.Layers,
+        WorkspacePanelKind.Timeline => WorkspacePanelSelection.Timeline,
+        _ => WorkspacePanelSelection.ContentBrowser
+    };
 
     private static bool IsEditingControl(DependencyObject? element)
     {

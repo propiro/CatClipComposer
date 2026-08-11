@@ -1,6 +1,6 @@
 # Project settings, output presets, and render layers
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-12
 
 Output settings belong to each `.nya`, so changing Preferences never silently changes a saved project's
 delivery format. **Project settings** edits the project name, target duration, preset, dimensions, frame
@@ -50,7 +50,8 @@ top/bottom position. Music loops when its layer duration exceeds its source and 
 
 Text effects can use an installed Windows font family or a TTF/OTF from the configured portable font
 folder. Custom-folder fonts are visibly marked in the chooser. Multiple text and image effects are applied
-in timeline order.
+in timeline order. Every text/image overlay can independently fade from transparency at its start and fade
+back to transparency at its end; both values are clamped to that overlay's own duration.
 
 FFmpeg's documented `fade`, `afade`, `drawtext`, `overlay`, `gblur`, `drawgrid`, `concat`, and `amix`
 filters provide the implementation: <https://ffmpeg.org/ffmpeg-filters.html>.

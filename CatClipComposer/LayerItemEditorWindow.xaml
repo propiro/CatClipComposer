@@ -105,6 +105,24 @@
                     <TextBlock x:Name="SnapDescriptionText" Margin="0,-5,0,10" FontSize="10"
                                Foreground="{StaticResource FaintTextBrush}" />
 
+                    <StackPanel x:Name="OverlayFadeFields" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Margin="0,0,0,4" Text="Fade in to visible (seconds)" />
+                                <controls:NumericEditorControl x:Name="OverlayFadeInEditor" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Margin="0,0,0,4" Text="Fade out to transparent (seconds)" />
+                                <controls:NumericEditorControl x:Name="OverlayFadeOutEditor" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
                     <StackPanel x:Name="AudioFields" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>

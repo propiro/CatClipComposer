@@ -20,6 +20,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IVideoRenderer _videoRenderer;
     private readonly ICompositionExporter _compositionExporter;
     private readonly IPluginCatalog _plugins;
+    private readonly ProjectUndoHistory _projectHistory = new();
     private CancellationTokenSource? _operationCancellation;
     private ApplicationSettings _settings;
     private MediaCardViewModel? _selectedMedia;
@@ -37,6 +38,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _projectPreviewCurrent;
     private TimeSpan _projectPreviewCoverageStart;
     private TimeSpan _projectPreviewCoverageEnd;
+    private OverlayTransformDraft? _overlayTransformDraft;
 
     public MainViewModel(
         ApplicationSettings settings,
@@ -58,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         _plugins = plugins;
         Timeline = new TimelineViewModel(15);
         _project = EditorProject.Create("Untitled project", CreateOutputSettings());
+        _projectHistory.Reset(_project, isSaved: true);
         Timeline.Changed += Timeline_Changed;
         Timeline.DisplaySettingsChanged += Timeline_DisplaySettingsChanged;
         Timeline.SelectionChanged += Timeline_SelectionChanged;
@@ -84,9 +87,11 @@ public sealed class MainViewModel : ObservableObject
 
     public string ApplicationVersion => ProductInfo.DisplayVersion;
 
-    public string WindowTitle => ProductInfo.WindowTitle;
+    public string WindowTitle => $"{ProductInfo.WindowTitle} — {ProjectDisplayName}";
 
     public string ProjectName => _project.Name;
+
+    public string ProjectDisplayName => $"{_project.Name}{(IsDirty ? " *" : string.Empty)}";
 
     public string? ProjectFilePath => _project.ProjectFilePath;
 
@@ -127,8 +132,18 @@ public sealed class MainViewModel : ObservableObject
     public bool IsDirty
     {
         get => _isDirty;
-        private set => SetProperty(ref _isDirty, value);
+        private set
+        {
+            if (SetProperty(ref _isDirty, value))
+            {
+                NotifyProjectIdentityChanged();
+            }
+        }
     }
+
+    public bool CanUndo => _projectHistory.CanUndo;
+
+    public bool CanRedo => _projectHistory.CanRedo;
 
     public double TargetDurationMinutes => _project.TargetDurationMinutes;
 
@@ -296,6 +311,8 @@ public sealed class MainViewModel : ObservableObject
         if (recovery is not null)
         {
             ApplyProject(recovery);
+            _projectHistory.Reset(recovery, isSaved: false);
+            NotifyHistoryStateChanged();
             IsDirty = true;
             StatusText = $"Recovered autosave: {recovery.Name}";
         }
@@ -313,7 +330,7 @@ public sealed class MainViewModel : ObservableObject
             Timeline.SetTargetDuration(_project.TargetDurationMinutes);
             Timeline.SetFrameRate(_project.Output.FramesPerSecond);
             Timeline.SetDisplaySettings(_project.TimelineRulerMode, _project.TimelineSnapMode);
-            OnPropertyChanged(nameof(ProjectName));
+            NotifyProjectIdentityChanged();
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
             OnPropertyChanged(nameof(TargetDurationMinutes));
@@ -329,6 +346,8 @@ public sealed class MainViewModel : ObservableObject
 
         await _projectStore.ClearRecoveryAsync(cancellationToken);
         await SaveRecoveryNowAsync(cancellationToken);
+        _projectHistory.Reset(_project, isSaved: true);
+        NotifyHistoryStateChanged();
         IsDirty = false;
         StatusText = "New project";
     }
@@ -340,6 +359,8 @@ public sealed class MainViewModel : ObservableObject
         var project = await _projectStore.LoadAsync(projectPath, cancellationToken);
         ApplyProject(project);
         await SaveRecoveryNowAsync(cancellationToken);
+        _projectHistory.Reset(_project, isSaved: true);
+        NotifyHistoryStateChanged();
         IsDirty = false;
         StatusText = $"Opened project: {project.Name}";
     }
@@ -358,10 +379,12 @@ public sealed class MainViewModel : ObservableObject
 
         await _projectStore.SaveAsync(_project, fullPath, cancellationToken);
         await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
-        OnPropertyChanged(nameof(ProjectName));
+        NotifyProjectIdentityChanged();
         OnPropertyChanged(nameof(ProjectFilePath));
         OnPropertyChanged(nameof(OutputSettings));
         OnPropertyChanged(nameof(ProjectSettingsSummary));
+        _projectHistory.MarkSaved(_project);
+        NotifyHistoryStateChanged();
         IsDirty = false;
         StatusText = $"Saved project: {_project.Name}";
     }
@@ -370,6 +393,30 @@ public sealed class MainViewModel : ObservableObject
     {
         SynchronizeProjectFromTimeline();
         await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+    }
+
+    public async Task<bool> UndoAsync(CancellationToken cancellationToken = default) =>
+        await RestoreHistoryAsync(undo: true, cancellationToken);
+
+    public async Task<bool> RedoAsync(CancellationToken cancellationToken = default) =>
+        await RestoreHistoryAsync(undo: false, cancellationToken);
+
+    private async Task<bool> RestoreHistoryAsync(bool undo, CancellationToken cancellationToken)
+    {
+        CancelOverlayTransformEdit();
+        var restored = undo ? _projectHistory.Undo() : _projectHistory.Redo();
+        if (restored is null)
+        {
+            return false;
+        }
+
+        restored.ProjectFilePath = _project.ProjectFilePath;
+        ApplyProject(restored);
+        IsDirty = !_projectHistory.IsAtSavePoint;
+        NotifyHistoryStateChanged();
+        await SaveRecoveryNowAsync(cancellationToken);
+        StatusText = undo ? "Undid project change" : "Redid project change";
+        return true;
     }
 
     public async Task ApplySettingsAsync(
@@ -1064,19 +1111,44 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Layer item updated";
     }
 
-    public bool UpdateOverlayTransform(
+    public bool BeginOverlayTransformEdit(Guid itemId)
+    {
+        if (_overlayTransformDraft?.ItemId == itemId)
+        {
+            return true;
+        }
+
+        CancelOverlayTransformEdit();
+        var item = FindPositionableOverlay(itemId);
+        if (item is null)
+        {
+            return false;
+        }
+
+        _overlayTransformDraft = new OverlayTransformDraft(
+            item.Id,
+            item.HasCustomOverlayTransform,
+            item.OverlayX,
+            item.OverlayY,
+            item.OverlayScale,
+            item.OverlayRotationDegrees);
+        StatusText = $"Editing preview transform for {item.Name}";
+        return true;
+    }
+
+    public bool PreviewOverlayTransform(
         Guid itemId,
         double x,
         double y,
         double scale,
-        double rotationDegrees,
-        bool commit)
+        double rotationDegrees)
     {
-        var item = _project.Tracks
-            .Where(track => track.Kind == ProjectTrackKind.Overlay)
-            .SelectMany(track => track.Items)
-            .FirstOrDefault(candidate => candidate.Id == itemId &&
-                                         candidate.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay);
+        if (_overlayTransformDraft?.ItemId != itemId && !BeginOverlayTransformEdit(itemId))
+        {
+            return false;
+        }
+
+        var item = FindPositionableOverlay(itemId);
         if (item is null)
         {
             return false;
@@ -1087,16 +1159,66 @@ public sealed class MainViewModel : ObservableObject
         item.OverlayY = OverlayTransformValues.NormalizeCoordinate(y);
         item.OverlayScale = OverlayTransformValues.NormalizeScale(scale);
         item.OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(rotationDegrees);
-        MarkProjectDirty();
-        if (commit)
-        {
-            RefreshProjectLayers(item.Id);
-            _ = SaveRecoverySafelyAsync();
-            StatusText = $"Updated preview transform for {item.Name}";
-        }
-
         return true;
     }
+
+    public bool CommitOverlayTransformEdit(Guid itemId)
+    {
+        var item = FindPositionableOverlay(itemId);
+        var draft = _overlayTransformDraft;
+        if (item is null || draft?.ItemId != itemId)
+        {
+            return false;
+        }
+
+        _overlayTransformDraft = null;
+        var changed = item.HasCustomOverlayTransform != draft.HasCustomTransform ||
+                      item.OverlayX != draft.X || item.OverlayY != draft.Y ||
+                      item.OverlayScale != draft.Scale ||
+                      item.OverlayRotationDegrees != draft.RotationDegrees;
+        if (!changed)
+        {
+            StatusText = $"Preview transform unchanged for {item.Name}";
+            return true;
+        }
+
+        MarkProjectDirty();
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"Applied preview transform for {item.Name}";
+        return true;
+    }
+
+    public bool CancelOverlayTransformEdit()
+    {
+        var draft = _overlayTransformDraft;
+        _overlayTransformDraft = null;
+        if (draft is null)
+        {
+            return false;
+        }
+
+        var item = FindPositionableOverlay(draft.ItemId);
+        if (item is null)
+        {
+            return false;
+        }
+
+        item.HasCustomOverlayTransform = draft.HasCustomTransform;
+        item.OverlayX = draft.X;
+        item.OverlayY = draft.Y;
+        item.OverlayScale = draft.Scale;
+        item.OverlayRotationDegrees = draft.RotationDegrees;
+        RefreshProjectLayers(item.Id);
+        StatusText = $"Cancelled preview transform for {item.Name}";
+        return true;
+    }
+
+    private ProjectTimelineItem? FindPositionableOverlay(Guid itemId) => _project.Tracks
+        .Where(track => track.Kind == ProjectTrackKind.Overlay)
+        .SelectMany(track => track.Items)
+        .FirstOrDefault(candidate => candidate.Id == itemId &&
+                                     candidate.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay);
 
     public void ApplyProjectSettings(
         string projectName,
@@ -1111,7 +1233,7 @@ public sealed class MainViewModel : ObservableObject
         MarkProjectDirty();
         Timeline.SetTargetDuration(targetDurationMinutes);
         Timeline.SetFrameRate(settings.FramesPerSecond);
-        OnPropertyChanged(nameof(ProjectName));
+        NotifyProjectIdentityChanged();
         OnPropertyChanged(nameof(OutputSettings));
         OnPropertyChanged(nameof(TargetDurationMinutes));
         OnPropertyChanged(nameof(BackgroundColor));
@@ -1144,14 +1266,24 @@ public sealed class MainViewModel : ObservableObject
             .OrderByDescending(track => track.Order)
             .First();
         var primaryIds = selected.Where(id => primary.Items.Any(item => item.Id == id)).ToHashSet();
-        if (primaryIds.Count > 0)
+        _suppressProjectAutosave = true;
+        try
         {
-            Timeline.Remove(primaryIds);
-        }
+            if (primaryIds.Count > 0)
+            {
+                Timeline.Remove(primaryIds);
+            }
 
-        foreach (var track in _project.Tracks.Where(track => track.Id != primary.Id))
+            foreach (var track in _project.Tracks.Where(track => track.Id != primary.Id))
+            {
+                track.Items.RemoveAll(item => selected.Contains(item.Id));
+            }
+
+            SynchronizeProjectFromTimeline();
+        }
+        finally
         {
-            track.Items.RemoveAll(item => selected.Contains(item.Id));
+            _suppressProjectAutosave = false;
         }
 
         _selectedTimelineItemIds.Clear();
@@ -1484,8 +1616,8 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            MarkProjectDirty();
             SynchronizeProjectFromTimeline();
+            MarkProjectDirty();
             RefreshProjectLayers();
             await SaveRecoveryNowAsync();
         }
@@ -1559,7 +1691,7 @@ public sealed class MainViewModel : ObservableObject
             Timeline.SetFrameRate(project.Output.FramesPerSecond);
             Timeline.SetDisplaySettings(project.TimelineRulerMode, project.TimelineSnapMode);
             Timeline.ReplaceProjectItems(videoItems, mediaById, mediaByPath);
-            OnPropertyChanged(nameof(ProjectName));
+            NotifyProjectIdentityChanged();
             OnPropertyChanged(nameof(ProjectFilePath));
             OnPropertyChanged(nameof(OutputSettings));
             OnPropertyChanged(nameof(TargetDurationMinutes));
@@ -1692,8 +1824,23 @@ public sealed class MainViewModel : ObservableObject
     private void MarkProjectDirty()
     {
         _project.ModifiedUtc = DateTime.UtcNow;
-        IsDirty = true;
+        _projectHistory.Capture(_project);
+        NotifyHistoryStateChanged();
+        IsDirty = !_projectHistory.IsAtSavePoint;
         _projectPreviewCurrent = false;
+    }
+
+    private void NotifyHistoryStateChanged()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+    }
+
+    private void NotifyProjectIdentityChanged()
+    {
+        OnPropertyChanged(nameof(ProjectName));
+        OnPropertyChanged(nameof(ProjectDisplayName));
+        OnPropertyChanged(nameof(WindowTitle));
     }
 
     private RenderRequest CreateRenderRequest(
@@ -1761,5 +1908,13 @@ public sealed class MainViewModel : ObservableObject
     }
 
     private static ProjectOutputSettings CreateOutputSettings() => new();
+
+    private sealed record OverlayTransformDraft(
+        Guid ItemId,
+        bool HasCustomTransform,
+        double X,
+        double Y,
+        double Scale,
+        double RotationDegrees);
 
 }

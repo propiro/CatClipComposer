@@ -80,6 +80,26 @@ internal static class ApplicationSettingsIniMapper
             "Workspace",
             "TimelineDock",
             settings.TimelineDock);
+        settings.WindowWidth = ReadDouble(ini, "Workspace", "WindowWidth", settings.WindowWidth);
+        settings.WindowHeight = ReadDouble(ini, "Workspace", "WindowHeight", settings.WindowHeight);
+        settings.WindowLeft = ReadDouble(ini, "Workspace", "WindowLeft", settings.WindowLeft);
+        settings.WindowTop = ReadDouble(ini, "Workspace", "WindowTop", settings.WindowTop);
+        settings.WindowMaximized = ReadBool(ini, "Workspace", "WindowMaximized", settings.WindowMaximized);
+        settings.WorkspaceLeftWidth = ReadDouble(
+            ini, "Workspace", "WorkspaceLeftWidth", settings.WorkspaceLeftWidth);
+        settings.WorkspaceRightWidth = ReadDouble(
+            ini, "Workspace", "WorkspaceRightWidth", settings.WorkspaceRightWidth);
+        settings.WorkspaceBottomHeight = ReadDouble(
+            ini, "Workspace", "WorkspaceBottomHeight", settings.WorkspaceBottomHeight);
+        settings.PreviewsSplit = ReadBool(ini, "Workspace", "PreviewsSplit", settings.PreviewsSplit);
+        settings.PreviewSplitRatio = ReadDouble(
+            ini, "Workspace", "PreviewSplitRatio", settings.PreviewSplitRatio);
+        settings.ActivePreviewTab = ReadInt(
+            ini, "Workspace", "ActivePreviewTab", settings.ActivePreviewTab);
+        settings.ActiveWorkspacePanel = ReadEnum(
+            ini, "Workspace", "ActiveWorkspacePanel", settings.ActiveWorkspacePanel);
+        settings.ExpandedWorkspacePanel = ReadNullableEnum<WorkspacePanelSelection>(
+            ini, "Workspace", "ExpandedWorkspacePanel");
         return Normalize(settings);
     }
 
@@ -121,6 +141,20 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewDock={settings.PreviewDock}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"LayersDock={settings.LayersDock}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"TimelineDock={settings.TimelineDock}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WindowWidth={settings.WindowWidth:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WindowHeight={settings.WindowHeight:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WindowLeft={settings.WindowLeft:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WindowTop={settings.WindowTop:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WindowMaximized={settings.WindowMaximized.ToString().ToLowerInvariant()}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceLeftWidth={settings.WorkspaceLeftWidth:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceRightWidth={settings.WorkspaceRightWidth:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceBottomHeight={settings.WorkspaceBottomHeight:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewsSplit={settings.PreviewsSplit.ToString().ToLowerInvariant()}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewSplitRatio={settings.PreviewSplitRatio:0.######}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"ActivePreviewTab={settings.ActivePreviewTab}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"ActiveWorkspacePanel={settings.ActiveWorkspacePanel}");
+        builder.AppendLine(CultureInfo.InvariantCulture,
+            $"ExpandedWorkspacePanel={settings.ExpandedWorkspacePanel?.ToString() ?? string.Empty}");
         return builder.ToString();
     }
 
@@ -164,6 +198,19 @@ internal static class ApplicationSettingsIniMapper
         settings.CustomFontFolder = string.IsNullOrWhiteSpace(settings.CustomFontFolder)
             ? Path.Combine(AppContext.BaseDirectory, "fonts")
             : settings.CustomFontFolder.Trim();
+        settings.WindowWidth = Math.Clamp(settings.WindowWidth, 1040, 10000);
+        settings.WindowHeight = Math.Clamp(settings.WindowHeight, 680, 10000);
+        settings.WindowLeft = double.IsFinite(settings.WindowLeft)
+            ? Math.Clamp(settings.WindowLeft, -100000, 100000)
+            : -1;
+        settings.WindowTop = double.IsFinite(settings.WindowTop)
+            ? Math.Clamp(settings.WindowTop, -100000, 100000)
+            : -1;
+        settings.WorkspaceLeftWidth = Math.Clamp(settings.WorkspaceLeftWidth, 190, 3000);
+        settings.WorkspaceRightWidth = Math.Clamp(settings.WorkspaceRightWidth, 190, 3000);
+        settings.WorkspaceBottomHeight = Math.Clamp(settings.WorkspaceBottomHeight, 150, 3000);
+        settings.PreviewSplitRatio = Math.Clamp(settings.PreviewSplitRatio, 0.15, 0.85);
+        settings.ActivePreviewTab = Math.Clamp(settings.ActivePreviewTab, 0, 1);
         NormalizeWorkspace(settings);
         return settings;
     }
@@ -196,11 +243,23 @@ internal static class ApplicationSettingsIniMapper
             ? value
             : fallback;
 
-    private static TEnum ReadEnum<TEnum>(IniFile ini, string section, string key, TEnum fallback)
-        where TEnum : struct, Enum =>
-        Enum.TryParse<TEnum>(ini.Get(section, key), ignoreCase: true, out var value)
+    private static double ReadDouble(IniFile ini, string section, string key, double fallback) =>
+        double.TryParse(ini.Get(section, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) &&
+        double.IsFinite(value)
             ? value
             : fallback;
+
+    private static TEnum ReadEnum<TEnum>(IniFile ini, string section, string key, TEnum fallback)
+        where TEnum : struct, Enum =>
+        Enum.TryParse<TEnum>(ini.Get(section, key), ignoreCase: true, out var value) && Enum.IsDefined(value)
+            ? value
+            : fallback;
+
+    private static TEnum? ReadNullableEnum<TEnum>(IniFile ini, string section, string key)
+        where TEnum : struct, Enum =>
+        Enum.TryParse<TEnum>(ini.Get(section, key), ignoreCase: true, out var value) && Enum.IsDefined(value)
+            ? value
+            : null;
 
     private static int ParseFolderIndex(string key) =>
         int.TryParse(key["Folder".Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var index)

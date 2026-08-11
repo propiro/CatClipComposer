@@ -2,6 +2,21 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — Session restoration, undo, contextual prerender, and transactional overlays
+
+- Persisted normal/maximized window geometry, workspace splitter sizes, preview split/tab state, focused panel,
+  and expanded panel in `CatClipComposer.ini`; off-screen/default positioning remains safe.
+- Corrected nonlinear timed-block edge resizing by measuring the pointer once from drag start. Added left-click
+  compatible-effect menus on empty lanes, bounded project undo/redo with toolbar/keyboard actions, an asterisk
+  dirty marker, and a literal Save / Don't save / Cancel close dialog.
+- Changed the main prerender action to the active range or current frame and added explicit Frame and All actions.
+  Project-frame prerenders pause after loading rather than playing a whole composition.
+- Made Project Preview overlay manipulation transactional with on-canvas OK/Cancel and Enter/Escape, while live
+  movement avoids flooding undo history. Added schema-7 text/image alpha fade-in/out fields and FFmpeg rendering.
+- Passed the Release build and 17-file XAML audit. Workspace INI values parsed exactly; schema 6 still loaded;
+  a real two-second 320x180 MPEG-4/AAC render visually confirmed transformed text/image overlays transparent at
+  both edges and opaque in the middle. No dependency changed.
+
 ## 2026-08-12 — Direct Project Preview overlay manipulation
 
 - Added active text/image content gizmos over the correctly letterboxed Project Preview frame. Clicking selects

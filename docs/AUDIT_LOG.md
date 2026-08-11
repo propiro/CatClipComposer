@@ -1,5 +1,38 @@
 # Audit log
 
+## AUDIT-2026-08-12-004 — Editing-session interaction and persistence audit
+
+Scope: session workspace restoration, linear timeline resizing, undo/redo and unsaved state, contextual project
+prerendering, direct compatible-effect entry, transactional overlay gizmos, and overlay transparency fades.
+
+Findings and remediation:
+
+- Only dock-slot choices persisted; every launch reset the window, splitters, preview arrangement/tab, focus, and
+  panel expansion. Those runtime values now round-trip through bounded Workspace INI keys. A saved position is
+  applied manually only when it still intersects the Windows virtual screen.
+- Edge resize summed WPF Thumb-relative deltas even though each event already described movement from a changing
+  control state, producing accelerating overshoot. Preview now converts the pointer's single absolute displacement
+  since DragStarted through `PixelsPerSecond`, then applies the existing frame and optional clip-boundary snap.
+- Project changes had recovery autosave but no interactive history or visible saved-state boundary. A bounded
+  serialized history captures logical mutations after timeline synchronization; Ctrl+Z/Ctrl+Y and toolbar arrows
+  restore through the normal projection. Exact save-point comparison drives an asterisk in both project label and
+  title. A dedicated close prompt provides Save, Don't save, and Cancel; failed/cancelled saves keep the window open.
+- Project Preview's main render action defaulted to the complete composition without a range. It now prerenders the
+  selected range or current frame, while explicit Frame and All actions remove ambiguity. Frame output is loaded
+  paused. Left-clicking an empty compatible timeline lane opens the same plugin-filtered add menu as context actions.
+- Overlay manipulation committed continuously and lacked an explicit edit boundary. The canvas now retains a draft,
+  displays OK/Cancel beside active gizmos, maps Enter/Escape, and captures one history entry only on acceptance.
+  Schema 7 adds independently configurable text/image alpha fade-in/out values. Core render mapping carries them
+  into timed transparent FFmpeg layers without changing source/video/audio fade semantics.
+
+Verification: the required Release solution build passed repeatedly with zero warnings/errors; the static XAML
+resource audit passed for 36 keys across 17 files. An isolated INI read returned exact decimal window/splitter
+geometry, maximized state, 0.625 preview split, active Project Preview tab, Preview focus, and Timeline expansion.
+The CLI loaded an existing schema-6 transformed-overlay project unchanged. A real schema-7 two-second 320x180
+MPEG-4/AAC composition rendered rotated/scaled text and Mr. Cat image overlays; frames at 0.05, 1.0, and 1.9 seconds
+visually confirmed both overlays faded at the boundaries and opaque in the middle. No direct or transitive package
+changed, so a new vulnerability audit was not required.
+
 ## AUDIT-2026-08-12-003 — Direct-overlay manipulation and render audit
 
 Scope: selectable Project Preview content, move/scale/rotate gestures, synchronized item selection, persisted

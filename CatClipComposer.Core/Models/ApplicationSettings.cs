@@ -30,6 +30,14 @@ public enum WorkspaceDockSlot
     Bottom
 }
 
+public enum WorkspacePanelSelection
+{
+    ContentBrowser,
+    Preview,
+    Layers,
+    Timeline
+}
+
 public enum ContentBrowserViewMode
 {
     List,
@@ -73,6 +81,32 @@ public sealed class ApplicationSettings
 
     public WorkspaceDockSlot TimelineDock { get; set; } = WorkspaceDockSlot.Bottom;
 
+    public double WindowWidth { get; set; } = 1440;
+
+    public double WindowHeight { get; set; } = 900;
+
+    public double WindowLeft { get; set; } = -1;
+
+    public double WindowTop { get; set; } = -1;
+
+    public bool WindowMaximized { get; set; }
+
+    public double WorkspaceLeftWidth { get; set; } = 310;
+
+    public double WorkspaceRightWidth { get; set; } = 270;
+
+    public double WorkspaceBottomHeight { get; set; } = 270;
+
+    public bool PreviewsSplit { get; set; }
+
+    public double PreviewSplitRatio { get; set; } = 0.5;
+
+    public int ActivePreviewTab { get; set; }
+
+    public WorkspacePanelSelection ActiveWorkspacePanel { get; set; } = WorkspacePanelSelection.ContentBrowser;
+
+    public WorkspacePanelSelection? ExpandedWorkspacePanel { get; set; }
+
     public ApplicationSettings Copy() => new()
     {
         SourceFolders = [.. SourceFolders],
@@ -91,6 +125,19 @@ public sealed class ApplicationSettings
         ContentBrowserDock = ContentBrowserDock,
         PreviewDock = PreviewDock,
         LayersDock = LayersDock,
-        TimelineDock = TimelineDock
+        TimelineDock = TimelineDock,
+        WindowWidth = WindowWidth,
+        WindowHeight = WindowHeight,
+        WindowLeft = WindowLeft,
+        WindowTop = WindowTop,
+        WindowMaximized = WindowMaximized,
+        WorkspaceLeftWidth = WorkspaceLeftWidth,
+        WorkspaceRightWidth = WorkspaceRightWidth,
+        WorkspaceBottomHeight = WorkspaceBottomHeight,
+        PreviewsSplit = PreviewsSplit,
+        PreviewSplitRatio = PreviewSplitRatio,
+        ActivePreviewTab = ActivePreviewTab,
+        ActiveWorkspacePanel = ActiveWorkspacePanel,
+        ExpandedWorkspacePanel = ExpandedWorkspacePanel
     };
 }

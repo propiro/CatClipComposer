@@ -21,8 +21,7 @@ public sealed class PreviewOverlayTransformEventArgs(
     double x,
     double y,
     double scale,
-    double rotationDegrees,
-    bool isFinal) : EventArgs
+    double rotationDegrees) : EventArgs
 {
     public Guid ItemId { get; } = itemId;
 
@@ -34,7 +33,11 @@ public sealed class PreviewOverlayTransformEventArgs(
 
     public double RotationDegrees { get; } = rotationDegrees;
 
-    public bool IsFinal { get; } = isFinal;
+}
+
+public sealed class PreviewOverlayEditEventArgs(Guid itemId) : EventArgs
+{
+    public Guid ItemId { get; } = itemId;
 }
 
 public sealed class ProjectPreviewOverlayCanvas : Canvas
@@ -44,6 +47,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     private readonly HashSet<Guid> _staleItemIds = [];
     private IReadOnlyList<ProjectTimelineItem> _items = [];
     private Guid? _selectedItemId;
+    private Guid? _editingItemId;
     private int _outputWidth = 1920;
     private int _outputHeight = 1080;
     private bool _hasRenderedPreview;
@@ -53,15 +57,21 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     {
         Background = Brushes.Transparent;
         ClipToBounds = true;
+        Focusable = true;
         SizeChanged += (_, _) => Redraw();
         PreviewMouseMove += OnPreviewMouseMove;
         PreviewMouseLeftButtonUp += OnPreviewMouseLeftButtonUp;
-        LostMouseCapture += (_, _) => CompleteInteraction(true);
+        PreviewKeyDown += OnPreviewKeyDown;
+        LostMouseCapture += (_, _) => CompleteInteraction();
     }
 
     public event EventHandler<PreviewOverlaySelectedEventArgs>? OverlaySelected;
 
     public event EventHandler<PreviewOverlayTransformEventArgs>? OverlayTransformChanged;
+
+    public event EventHandler<PreviewOverlayEditEventArgs>? OverlayEditAccepted;
+
+    public event EventHandler<PreviewOverlayEditEventArgs>? OverlayEditCanceled;
 
     public void Configure(
         int outputWidth,
@@ -114,12 +124,23 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             Children.Add(visual.Element);
             SetLeft(visual.Element, visual.Left);
             SetTop(visual.Element, visual.Top);
+            if (item.Id == _editingItemId)
+            {
+                var actionPanel = CreateActionPanel(item.Id);
+                Children.Add(actionPanel);
+                SetLeft(actionPanel, Math.Clamp(visual.Left, 2, Math.Max(2, ActualWidth - 116)));
+                SetTop(actionPanel, Math.Clamp(
+                    visual.Top + visual.Height + 4,
+                    2,
+                    Math.Max(2, ActualHeight - 30)));
+            }
         }
     }
 
     private ItemVisual CreateItemVisual(ProjectTimelineItem item, Rect viewport)
     {
         var selected = item.Id == _selectedItemId;
+        var editing = item.Id == _editingItemId;
         var (baseWidth, baseHeight, content) = CreateContent(item, viewport);
         var transformScale = item.HasCustomOverlayTransform
             ? OverlayTransformValues.NormalizeScale(item.OverlayScale)
@@ -138,7 +159,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
                 item.HasCustomOverlayTransform
                     ? OverlayTransformValues.NormalizeRotation(item.OverlayRotationDegrees)
                     : 0),
-            ToolTip = selected
+            ToolTip = editing
                 ? "Drag to move. Drag the lower-right square to scale. Drag the upper-center circle to rotate."
                 : "Click to select this overlay."
         };
@@ -162,7 +183,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         });
         root.MouseLeftButtonDown += (_, e) => BeginInteraction(item, InteractionKind.Move, viewport, e);
 
-        if (selected)
+        if (editing)
         {
             var resizeHandle = CreateHandle(Brushes.White, Cursors.SizeNWSE, "Scale overlay");
             resizeHandle.HorizontalAlignment = HorizontalAlignment.Right;
@@ -177,7 +198,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             root.Children.Add(rotationHandle);
         }
 
-        return new ItemVisual(root, center.X - width / 2, center.Y - height / 2);
+        return new ItemVisual(root, center.X - width / 2, center.Y - height / 2, height);
     }
 
     private (double Width, double Height, FrameworkElement Content) CreateContent(
@@ -310,6 +331,43 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         ToolTip = "Rotate overlay"
     };
 
+    private StackPanel CreateActionPanel(Guid itemId)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Background = new SolidColorBrush(Color.FromArgb(220, 28, 28, 27))
+        };
+        var accept = new Button
+        {
+            Content = "OK",
+            MinWidth = 50,
+            Padding = new Thickness(7, 2, 7, 2),
+            ToolTip = "Apply overlay transform (Enter)"
+        };
+        accept.Click += (_, e) =>
+        {
+            OverlayEditAccepted?.Invoke(this, new PreviewOverlayEditEventArgs(itemId));
+            e.Handled = true;
+        };
+        var cancel = new Button
+        {
+            Content = "Cancel",
+            MinWidth = 58,
+            Margin = new Thickness(3, 0, 0, 0),
+            Padding = new Thickness(7, 2, 7, 2),
+            ToolTip = "Cancel overlay transform (Esc)"
+        };
+        cancel.Click += (_, e) =>
+        {
+            OverlayEditCanceled?.Invoke(this, new PreviewOverlayEditEventArgs(itemId));
+            e.Handled = true;
+        };
+        panel.Children.Add(accept);
+        panel.Children.Add(cancel);
+        return panel;
+    }
+
     private void BeginInteraction(
         ProjectTimelineItem item,
         InteractionKind kind,
@@ -322,6 +380,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         var initialX = (center.X - viewport.Left) / viewport.Width;
         var initialY = (center.Y - viewport.Top) / viewport.Height;
         _selectedItemId = item.Id;
+        _editingItemId = item.Id;
         OverlaySelected?.Invoke(this, new PreviewOverlaySelectedEventArgs(item.Id));
         _interaction = new InteractionState(
             item.Id,
@@ -334,6 +393,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             item.HasCustomOverlayTransform ? item.OverlayScale : 1,
             item.HasCustomOverlayTransform ? item.OverlayRotationDegrees : 0);
         CaptureMouse();
+        Focus();
         Redraw();
         e.Handled = true;
     }
@@ -405,38 +465,62 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
                 x,
                 y,
                 scale,
-                rotation,
-                false));
+                rotation));
         Redraw();
         e.Handled = true;
     }
 
     private void OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        CompleteInteraction(true);
+        if (_interaction is null)
+        {
+            return;
+        }
+
+        CompleteInteraction();
         e.Handled = true;
     }
 
-    private void CompleteInteraction(bool commit)
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        var interaction = _interaction;
+        if (!_editingItemId.HasValue)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            OverlayEditAccepted?.Invoke(this, new PreviewOverlayEditEventArgs(_editingItemId.Value));
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            OverlayEditCanceled?.Invoke(this, new PreviewOverlayEditEventArgs(_editingItemId.Value));
+            e.Handled = true;
+        }
+    }
+
+    private void CompleteInteraction()
+    {
         _interaction = null;
         if (IsMouseCaptured)
         {
             ReleaseMouseCapture();
         }
 
-        if (commit && interaction is { HasChanged: true })
+        Redraw();
+    }
+
+    public void CompleteEdit(Guid itemId, bool accepted)
+    {
+        if (_editingItemId == itemId)
         {
-            OverlayTransformChanged?.Invoke(
-                this,
-                new PreviewOverlayTransformEventArgs(
-                    interaction.ItemId,
-                    interaction.LastX,
-                    interaction.LastY,
-                    interaction.LastScale,
-                    interaction.LastRotation,
-                    true));
+            _editingItemId = null;
+        }
+
+        if (!accepted)
+        {
+            _staleItemIds.Remove(itemId);
         }
 
         Redraw();
@@ -465,7 +549,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     private static double GetAngle(Point center, Point point) =>
         Math.Atan2(point.Y - center.Y, point.X - center.X) * 180 / Math.PI;
 
-    private sealed record ItemVisual(FrameworkElement Element, double Left, double Top);
+    private sealed record ItemVisual(FrameworkElement Element, double Left, double Top, double Height);
 
     private sealed record InteractionState(
         Guid ItemId,

@@ -66,7 +66,9 @@ public static class ProjectRenderMapper
                         TransformX: item.OverlayX,
                         TransformY: item.OverlayY,
                         TransformScale: item.OverlayScale,
-                        TransformRotationDegrees: item.OverlayRotationDegrees));
+                        TransformRotationDegrees: item.OverlayRotationDegrees,
+                        FadeInSeconds: item.FadeInSeconds,
+                        FadeOutSeconds: item.FadeOutSeconds));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.ImageOverlay)
                 {
@@ -81,7 +83,9 @@ public static class ProjectRenderMapper
                         TransformX: item.OverlayX,
                         TransformY: item.OverlayY,
                         TransformScale: item.OverlayScale,
-                        TransformRotationDegrees: item.OverlayRotationDegrees));
+                        TransformRotationDegrees: item.OverlayRotationDegrees,
+                        FadeInSeconds: item.FadeInSeconds,
+                        FadeOutSeconds: item.FadeOutSeconds));
                 }
                 else if (track.Kind == ProjectTrackKind.Progress && item.Kind == ProjectItemKind.ProgressBar)
                 {

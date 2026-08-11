@@ -66,7 +66,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 

@@ -23,7 +23,14 @@ panel can create/remove, collapse, reorder, and color-code tracks and add, edit,
 timed text, image, audio, progress, and plugin effects. Clip effects control fit/fill/stretch, fades, and
 volume. A shared Core mapper projects the enabled track model into both GUI and headless renders.
 
-Schema version 6 adds backward-compatible text/image overlay transforms: normalized X/Y center coordinates,
+The desktop editor keeps up to 100 in-memory undo snapshots. Ctrl+Z/Ctrl+Y and the toolbar arrows move through
+those logical project changes; recovery autosave follows the restored state. The title and project label show
+an asterisk whenever the current snapshot differs from the last normal save. Undo history is session-only and
+is not embedded into `.nya` or recovery files.
+
+Schema version 7 adds optional per-text/image-overlay fade-in and fade-out seconds. These alpha fades are
+bounded to the item's duration and remain independent from source/audio fades. Schema version 6 added
+backward-compatible text/image overlay transforms: normalized X/Y center coordinates,
 uniform scale, rotation in degrees, and a flag distinguishing direct placement from the five legacy presets.
 Schema version 5 records human-scale Background blur lightness percentages and normalized hue angles. Loading
 schema 4 or older converts the former -1..1 lightness convention to -100..100 percent and wraps negative hue
@@ -32,7 +39,7 @@ Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older schema-1
-JSON projects remain readable; saving them writes schema 6. The normal Open dialog prefers `.nya`.
+JSON projects remain readable; saving them writes schema 7. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 
@@ -59,6 +66,10 @@ Timeline mutations write an atomic recovery document at:
 Startup loads recovery after the catalog so source media can be resolved. Creating a new project clears the
 previous recovery before writing the new empty state. A normal save also refreshes recovery, so later
 unsaved timeline changes can be restored without overwriting the named project.
+
+Closing a dirty project opens a dedicated Save / Don't save / Cancel dialog. A cancelled file dialog or failed
+save keeps the editor open. Window/workspace preferences are saved only after that project decision permits the
+close; they remain application INI values rather than project data.
 
 The recovery document preserves the normal project path when one exists. Its own recovery location is never
 treated as the normal save destination.

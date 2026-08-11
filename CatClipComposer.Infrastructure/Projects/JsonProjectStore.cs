@@ -154,6 +154,9 @@ public sealed class JsonProjectStore : IProjectStore
                     ? item.ProgressColor.ToUpperInvariant()
                     : "#C8C0B2";
                 item.ProgressHeight = Math.Clamp(item.ProgressHeight, 2, 100);
+                var itemDurationSeconds = Math.Max(0, item.Duration.TotalSeconds);
+                item.FadeInSeconds = NormalizeFade(item.FadeInSeconds, itemDurationSeconds);
+                item.FadeOutSeconds = NormalizeFade(item.FadeOutSeconds, itemDurationSeconds);
                 item.OverlayX = OverlayTransformValues.NormalizeCoordinate(item.OverlayX);
                 item.OverlayY = OverlayTransformValues.NormalizeCoordinate(item.OverlayY);
                 item.OverlayScale = OverlayTransformValues.NormalizeScale(item.OverlayScale);
@@ -213,6 +216,9 @@ public sealed class JsonProjectStore : IProjectStore
 
     private static string NormalizeOptionalColor(string? value) =>
         IsHexColor(value) ? value!.ToUpperInvariant() : string.Empty;
+
+    private static double NormalizeFade(double value, double durationSeconds) =>
+        double.IsFinite(value) ? Math.Clamp(value, 0, durationSeconds) : 0;
 
     private static void MigrateBackgroundColorControls(IDictionary<string, string> parameters)
     {

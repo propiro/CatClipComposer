@@ -98,6 +98,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: All panels have default XAML grid coordinates and margins matching application defaults;
   runtime preferences continue to override them.
 
+### `WORKSPACE-003` — Restore the complete runtime workspace between sessions
+
+- Priority/status: P0 / Done
+- Acceptance: Normal/maximized window bounds, three workspace splitter sizes, preview join/split and divider,
+  active preview tab, focused panel, and optional expanded panel round-trip through the executable-directory
+  INI; missing/off-screen geometry falls back safely.
+
 ### `BROWSER-001` — Make the content browser safe for very large libraries and support drag/drop
 
 - Priority/status: P0 / Done
@@ -170,8 +177,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `TIMELINE-005` — Synchronize selection and expose compatible lane effects
 
 - Priority/status: P0 / Done
-- Acceptance: Selecting a timeline item highlights its Layers / Used Clips row; empty lanes, track headers,
-  and items offer only plugins compatible with their resolved target track and preserve item timing.
+- Acceptance: Selecting a timeline item highlights its Layers / Used Clips row; left-clicking empty lanes plus
+  track-header/item actions offer only plugins compatible with their resolved target track and preserve the
+  clicked or selected timing.
 
 ### `TIMELINE-006` — Make timed-block dragging and resizing predictable
 
@@ -186,6 +194,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Resize capture survives lane selection updates; drag grab coordinates are measured before lane
   projection changes; track names drag vertically; Video track double-click brings Project Preview forward;
   timed effect and overlay double-click opens the matching editor.
+
+### `TIMELINE-008` — Keep edge resizing linear
+
+- Priority/status: P0 / Done
+- Acceptance: Each resize preview is derived from the pointer's displacement from DragStarted rather than a
+  sum of repeated relative Thumb deltas; 50, 100, and 200 pixels therefore map linearly at every zoom level,
+  with the existing frame/clip snapping applied once to the resulting edge.
 
 ### `UX-RANGE-001` — Standardize effect ranges and numeric adjustment
 
@@ -207,6 +222,12 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   candidate at the playhead, Auto refresh debounces changes, stale renders cancel, and no recovery/history state
   is changed by the candidate.
 
+### `PROJECT-PREVIEW-006` — Add contextual frame/range/all prerender actions
+
+- Priority/status: P0 / Done
+- Acceptance: Prerender Preview renders the active timeline range or, without one, a short slice at the current
+  frame and pauses on it; adjacent Frame and All controls force their named scope, and none records export history.
+
 ### `UX-OVERLAY-001` — Directly manipulate positioned overlays in Project Preview
 
 - Priority/status: P0 / Done
@@ -214,6 +235,20 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   frame; dragging moves, a corner handle scales, and a rotation handle rotates. Selection synchronizes by item ID
   with the timeline and Layers / Used Clips, transform values appear in the overlay editor, schema-5 and older
   placement remains compatible, and GUI/CLI FFmpeg renders apply the same persisted transform.
+
+### `UX-OVERLAY-002` — Make preview transforms transactional and add overlay alpha fades
+
+- Priority/status: P0 / Done
+- Acceptance: A preview click activates move/scale/rotation controls and adjacent OK/Cancel; Enter/Escape are
+  equivalent, live movement does not flood undo history, cancellation restores the draft, and text/image editors
+  persist per-item fade-in/out that real GUI/CLI renders apply to transparency.
+
+### `UX-HISTORY-001` — Add project undo/redo and visible dirty state
+
+- Priority/status: P0 / Done
+- Acceptance: Ctrl+Z/Ctrl+Y and toolbar arrows navigate a bounded project history; undoing back to and redoing
+  onto the save point updates the title/project asterisk; closing dirty work offers literal Save, Don't save,
+  and Cancel choices and never closes after a cancelled or failed save.
 
 ### `RENDER-ORDER-001` — Apply filter effects and overlays in visual track order
 
@@ -357,8 +392,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-5 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
-  background/module metadata plus optional track/item colors without embedding media; GUI and CLI checks pass.
+- Acceptance: Versioned schema-7 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+  background/module metadata, optional track/item colors, and overlay transforms/fades without embedding media;
+  older schema projects remain readable and GUI/CLI checks pass.
 
 ### `UX-PROJECT-002` — Separate durable Preferences from frequently changed project settings
 

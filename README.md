@@ -34,15 +34,16 @@ Current application and component version: **0.1.15**.
   Preferences, and single or mass tag edits are available from the context menu.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
-  resizable left/right viewports. The centered Project Preview action renders all enabled layers to a
-  Windows-compatible temporary H.264 preview; an active range renders only that interval. Both previews use
-  merged play/pause and icon mute controls, and neither action records an export.
+  resizable left/right viewports. Prerender Preview renders the selected timeline range when one exists and
+  otherwise renders only the current frame; adjacent Frame and All actions are explicit. Temporary previews
+  use Windows-compatible H.264, and neither preview action records an export.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
-  on-canvas gizmos. Preview selection stays synchronized with the timeline and Layers / Used Clips panel,
-  while exact X/Y, scale, rotation, and placement presets remain editable in the overlay dialog.
+  on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
+  synchronized with the timeline and Layers / Used Clips panel, while exact X/Y, scale, rotation, placement
+  presets, and transparency fade-in/out remain editable in the overlay dialog.
 - Time effects with Start/End fields (or optional duration entry), set them to the whole timeline in one click,
   adjust the interval on one compact mini timeline, and use bounded sliders/arrows for effect values while
   retaining exact manual numeric entry.
@@ -53,9 +54,11 @@ Current application and component version: **0.1.15**.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Browse export history and per-clip completed-project use, including project name/path, date, and final output.
-- Create, save, reopen, and automatically recover versioned `.nya` project timelines.
+- Create, save, reopen, automatically recover, undo, and redo versioned `.nya` project timelines. Unsaved
+  projects show an asterisk and closing offers literal Save, Don't save, and Cancel choices.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
-- Work in a compact, high-contrast monochrome four-panel editor workspace with resizable splitters and persisted panel docking.
+- Work in a compact, high-contrast monochrome four-panel editor workspace. Panel docking, window geometry,
+  splitter sizes, preview split/join state, active preview tab, focused panel, and expanded panel persist.
 - Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
   composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
   range selection, draggable range edges, Mark start/end controls, fit controls, and usable minus/value/plus
@@ -64,7 +67,8 @@ Current application and component version: **0.1.15**.
   snapping to source-clip boundaries. Drag track names vertically to reorder the render stack; double-click a
   Video track name to bring Project Preview forward, or double-click a timed effect/overlay to edit it.
 - Right-click the playhead to preview from that frame or mark either range edge; right-click a selected ruler
-  range to preview only that interval. Empty lanes, track headers, and compatible items expose effect actions.
+  range to preview only that interval. Left-clicking an empty compatible lane opens its add-effect menu;
+  track headers and compatible items expose the same filtered effect actions.
 - Select or double-click an item under Layers / Used Clips to edit its scaling mode, fades, and volume, or add
   a plugin effect pre-timed to that item's exact project interval. Timeline and Used Clips selections remain
   synchronized, and a muted-yellow block edge identifies media not covered by the current rendered preview.

@@ -1,6 +1,6 @@
 # INI configuration
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-12
 
 ## Location
 
@@ -49,6 +49,19 @@ ContentBrowserDock=Left
 PreviewDock=Center
 LayersDock=Right
 TimelineDock=Bottom
+WindowWidth=1440
+WindowHeight=900
+WindowLeft=-1
+WindowTop=-1
+WindowMaximized=false
+WorkspaceLeftWidth=310
+WorkspaceRightWidth=270
+WorkspaceBottomHeight=270
+PreviewsSplit=false
+PreviewSplitRatio=0.5
+ActivePreviewTab=0
+ActiveWorkspacePanel=ContentBrowser
+ExpandedWorkspacePanel=
 ```
 
 Preferences intentionally contain long-lived application behavior: library folders and scanning, metadata
@@ -80,6 +93,14 @@ offers a button to open the current compatible Windows LGPL-build download page.
 Workspace dock values are `Left`, `Center`, `Right`, and `Bottom`. All four values must be unique. Moving a
 panel into an occupied slot swaps the panels and saves the layout; invalid or duplicate values recover to
 browser-left, preview-center, layers-right, and timeline-bottom.
+
+The remaining Workspace values are captured when the main window closes. Window width/height are clamped to
+the application's minimum size; a position is reused only when it still intersects the Windows virtual screen.
+`WindowLeft=-1` and `WindowTop=-1` mean use normal centered first-run placement. The three workspace sizes
+preserve the left, right, and bottom splitters. `PreviewsSplit` and `PreviewSplitRatio` restore joined tabs or
+side-by-side previews and their divider. `ActivePreviewTab` is 0 for Clip Preview or 1 for Project Preview.
+`ActiveWorkspacePanel` and optional `ExpandedWorkspacePanel` accept `ContentBrowser`, `Preview`, `Layers`, or
+`Timeline`. Invalid numeric values and ratios are normalized before use.
 
 ## Parsing and recovery
 

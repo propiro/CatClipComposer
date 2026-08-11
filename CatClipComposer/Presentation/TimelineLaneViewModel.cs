@@ -99,6 +99,10 @@ public sealed class TimelineLaneItemViewModel
         Detail = $"{DurationFormatter.Format(item.Start)} – {DurationFormatter.Format(item.Start + item.Duration)}" +
                  (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay && item.HasCustomOverlayTransform
                      ? $" | {item.OverlayScale * 100:0.#}% / {item.OverlayRotationDegrees:0.#}°"
+                     : string.Empty) +
+                 (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay &&
+                  (item.FadeInSeconds > 0 || item.FadeOutSeconds > 0)
+                     ? $" | fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s"
                      : string.Empty);
         ThumbnailPath = clip?.ThumbnailPath;
         Left = Math.Max(0, item.Start.TotalSeconds * pixelsPerSecond);

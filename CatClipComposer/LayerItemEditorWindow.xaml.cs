@@ -64,6 +64,14 @@ public partial class LayerItemEditorWindow : Window
         FadeOutEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
         FadeOutEditor.Step = _snapSeconds;
         FadeOutEditor.SetValue(0);
+        OverlayFadeInEditor.Minimum = 0;
+        OverlayFadeInEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
+        OverlayFadeInEditor.Step = _snapSeconds;
+        OverlayFadeInEditor.SetValue(0);
+        OverlayFadeOutEditor.Minimum = 0;
+        OverlayFadeOutEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
+        OverlayFadeOutEditor.Step = _snapSeconds;
+        OverlayFadeOutEditor.SetValue(0);
         ProgressHeightEditor.SetValue(10);
         PositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
         PositionComboBox.SelectedItem = OverlayPosition.Center;
@@ -114,6 +122,8 @@ public partial class LayerItemEditorWindow : Window
         VolumeEditor.SetValue(item.Volume);
         FadeInEditor.SetValue(item.FadeInSeconds);
         FadeOutEditor.SetValue(item.FadeOutSeconds);
+        OverlayFadeInEditor.SetValue(item.FadeInSeconds);
+        OverlayFadeOutEditor.SetValue(item.FadeOutSeconds);
         FontSizeEditor.SetValue(item.FontSize);
         PositionComboBox.SelectedItem = item.Position;
         var (overlayX, overlayY) = item.HasCustomOverlayTransform
@@ -160,6 +170,7 @@ public partial class LayerItemEditorWindow : Window
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
         TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
+        OverlayFadeFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
         AudioFields.Visibility = Visible(_kind == LayerEditorKind.Audio);
         ProgressFields.Visibility = Visible(_kind == LayerEditorKind.Progress);
         if (_kind == LayerEditorKind.Audio)
@@ -197,6 +208,16 @@ public partial class LayerItemEditorWindow : Window
         var volumeValid = TryParse(VolumeEditor.Text, 0, 4, out var volume);
         var fadeInValid = TryParse(FadeInEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeIn);
         var fadeOutValid = TryParse(FadeOutEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeOut);
+        var overlayFadeInValid = TryParse(
+            OverlayFadeInEditor.Text,
+            0,
+            TimeSpan.MaxValue.TotalSeconds,
+            out var overlayFadeIn);
+        var overlayFadeOutValid = TryParse(
+            OverlayFadeOutEditor.Text,
+            0,
+            TimeSpan.MaxValue.TotalSeconds,
+            out var overlayFadeOut);
         var progressHeightValid = int.TryParse(ProgressHeightEditor.Text, NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var progressHeight) && progressHeight is >= 2 and <= 100;
         var progressColorValid = TryNormalizeColor(ProgressColorTextBox.Text, out var progressColor);
@@ -226,13 +247,15 @@ public partial class LayerItemEditorWindow : Window
              (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
             (_kind is LayerEditorKind.Image or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
             (_kind is LayerEditorKind.Text or LayerEditorKind.Image &&
-             (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid)) ||
+             (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid ||
+              !overlayFadeInValid || !overlayFadeOutValid ||
+              overlayFadeIn > durationTime.TotalSeconds || overlayFadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Audio && (!volumeValid || !fadeInValid || !fadeOutValid ||
                                                  fadeIn > durationTime.TotalSeconds || fadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
             MessageBox.Show(this,
-                "Check the required source/text, start, positive duration, font size 8–240, overlay transform, audio values, and progress color/height.",
+                "Check the required source/text, start, positive duration, font size 8–240, overlay transform/fades, audio values, and progress color/height.",
                 "Invalid layer item", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -288,8 +311,12 @@ public partial class LayerItemEditorWindow : Window
             OverlayScale = OverlayTransformValues.NormalizeScale(overlayScalePercent / 100),
             OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(overlayRotation),
             Volume = _kind == LayerEditorKind.Audio ? volume : 1,
-            FadeInSeconds = _kind == LayerEditorKind.Audio ? fadeIn : 0,
-            FadeOutSeconds = _kind == LayerEditorKind.Audio ? fadeOut : 0,
+            FadeInSeconds = _kind == LayerEditorKind.Audio
+                ? fadeIn
+                : _kind is LayerEditorKind.Text or LayerEditorKind.Image ? overlayFadeIn : 0,
+            FadeOutSeconds = _kind == LayerEditorKind.Audio
+                ? fadeOut
+                : _kind is LayerEditorKind.Text or LayerEditorKind.Image ? overlayFadeOut : 0,
             ProgressTimeMode = progressMode,
             ProgressBarStyle = ProgressStyleComboBox.SelectedItem is ProgressBarStyle style ? style : ProgressBarStyle.Solid,
             ProgressBarPosition = ProgressPositionComboBox.SelectedItem is ProgressBarPosition barPosition

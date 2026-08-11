@@ -58,6 +58,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   slots. Clip and Project Preview can be joined as tabs or split into resizable side-by-side viewports.
 - **Repositionable docking — Done.** Every panel can swap into left, center, right, or bottom and persists
   its slot in the INI.
+- **Session workspace restoration — Done.** Window position/size/maximized state, splitter dimensions,
+  joined/split previews, preview divider, selected preview tab, focused panel, and expanded panel persist in
+  the portable INI and recover safely when a monitor layout changes.
 - **Complete Visual Studio designer layout — Done.** Default coordinates live in XAML; runtime settings can
   replace them.
 - **Compact monochrome theme — Done.** Dark surfaces, warm neutral colors, square controls, reduced spacing,
@@ -80,18 +83,20 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
   Shift/Ctrl drag paints a frame-snapped range, Mark start/end creates one from the playhead, and either edge
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
-  double-clicks. Project Preview renders only an active range after composition, maps local playback back onto
-  project time, and uses Windows-compatible H.264 without recording export history. Project Settings is a
-  compact rollout at the bottom-left of Project Preview rather than consuming Used Clips space.
+  double-clicks. Prerender Preview defaults to that active range or the current frame, while adjacent Frame
+  and All actions are explicit. Project preview maps local playback back onto project time and uses
+  Windows-compatible H.264 without recording export history. Project Settings is a compact rollout at the
+  bottom-left of Project Preview rather than consuming Used Clips space.
 - **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
-  marks range boundaries; the selected-range menu renders only that interval. Empty lanes, track headers, and
-  items list only compatible plugin effects. Timeline selection mirrors Layers / Used Clips, and a yellow
-  media-block edge marks content outside the current rendered-preview coverage.
+  marks range boundaries; the selected-range menu renders only that interval. Left-clicking empty lanes,
+  plus track-header and item menus, lists only compatible plugin effects. Timeline selection mirrors Layers /
+  Used Clips, and a yellow media-block edge marks content outside the current rendered-preview coverage.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder. Active overlays expose their
   content and move/scale/rotate gizmos over Project Preview; clicking one synchronizes timeline and Layers /
-  Used Clips selection, and direct manipulation updates the same persisted transform shown by the editor.
+  Used Clips selection. OK/Enter commits the draft and Cancel/Escape restores it. The same editor exposes the
+  persisted transform plus optional fade-in from and fade-out to transparency.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position.
 - **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, fit/fill/stretch, and
@@ -101,7 +106,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   and combine bounded sliders/arrows with unrestricted finite manual values.
 - **Predictable timed-block editing — Done.** Dragging preserves the pointer's grab offset and shows the exact
   snapped landing interval. Left/right handles resize non-primary timed blocks, and optional clip-range
-  snapping aligns starts or ends to source-clip boundaries. Track names drag vertically to reorder the stack;
+  snapping aligns starts or ends to source-clip boundaries. Resize movement uses one absolute pointer delta,
+  so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
   Effect dialogs can render the selected project frame in a snapped companion window and optionally refresh it
@@ -122,8 +128,11 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-5 `.nya` JSON uses stable track/item IDs, optional
-  track/item colors, background color, and plugin metadata.
+- **Named editable projects — Done.** Versioned schema-7 `.nya` JSON uses stable track/item IDs, optional
+  track/item colors and overlay fades/transforms, background color, and plugin metadata.
+- **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore bounded project
+  snapshots, the project/title shows an asterisk away from the last save point, and closing offers Save,
+  Don't save, or Cancel without losing the window on a failed/cancelled save.
 - **Crash recovery — Done.** Every timeline mutation writes an atomic recovery file under metadata storage.
 - **Headless operation — Done.** Config, catalog metadata, project rendering, and history commands support
   JSON and stable exit codes.

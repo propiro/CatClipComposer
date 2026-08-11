@@ -56,7 +56,9 @@ public sealed record RenderOverlay(
     double TransformX = 0.5,
     double TransformY = 0.5,
     double TransformScale = 1,
-    double TransformRotationDegrees = 0);
+    double TransformRotationDegrees = 0,
+    double FadeInSeconds = 0,
+    double FadeOutSeconds = 0);
 
 public sealed record RenderAudioLayer(
     string SourcePath,

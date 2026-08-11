@@ -76,13 +76,18 @@ The executable modules may reference Core and Infrastructure for composition. Co
 14. Text/image overlay transforms use normalized center coordinates plus uniform scale and rotation. FFmpeg
     applies those values at final-output resolution; schema-5 and older items retain their preset placement
     until a user edits or directly manipulates the overlay.
+15. Text/image fade values become alpha fades on each transparent overlay stream at its absolute project
+    interval. They do not fade the composed video or reuse audio/source fade semantics.
+16. The primary Project Preview action sends either the active range or a short slice at the playhead; explicit
+    Frame and All actions share the same render path. A frame result is loaded and paused instead of playing.
 
 ### Timeline and parameter editing
 
 1. `MainViewModel` calculates exact landing ranges for both drag preview and commit, preserving the pointer's
    offset within the selected block group so a drop cannot jump by a block width.
 2. Timeline lanes expose transient landing-preview geometry. WPF owns pointer capture and edge thumbs; the
-   view model owns snapped movement and non-primary timed-item resizing.
+   view model owns snapped movement and non-primary timed-item resizing. Resize preview derives time from the
+   pointer's absolute displacement since capture, avoiding nonlinear accumulation of relative Thumb deltas.
 3. Frame/grid snapping always applies. A workspace checkbox additionally aligns either moving edge to primary
    source-clip starts and ends.
 4. Shared WPF range and numeric controls keep validation consistent across layers, clip effects, and plugins.
@@ -94,8 +99,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    owns cancellation/debounce and a snapped non-modal preview window.
 6. `ProjectPreviewOverlayCanvas` maps the project frame into the MediaElement's actual letterboxed viewport,
    displays active text/image content with selection handles, and owns pointer capture for move, uniform-scale,
-   and rotation gestures. `MainViewModel` owns transform mutation, preview invalidation, recovery persistence,
-   and item-ID selection shared with the timeline and Layers / Used Clips panel.
+   and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
+   creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
+   the original transform. Item-ID selection remains shared with the timeline and Layers / Used Clips panel.
 
 ### Plugin discovery and effect rendering
 
@@ -120,6 +126,11 @@ The executable modules may reference Core and Infrastructure for composition. Co
 5. Startup shows progress, optionally rescans the catalog, then loads recovery so media IDs/paths can be
    resolved into timeline view models.
 6. A successful render carries project identity into history; editing and autosave alone never update catalog usage.
+7. `ProjectUndoHistory` holds up to 100 serialized in-memory snapshots. Every logical project mutation captures
+   after synchronization, undo/redo reapplies through the normal project projection, and the exact saved
+   snapshot determines the dirty marker even when navigating backward and forward.
+8. Closing first resolves unsaved project state through Save / Don't save / Cancel, then atomically persists
+   window geometry, workspace splitter dimensions, preview layout/tab, focus, and expansion to the INI.
 
 ## Responsibility audit
 
@@ -156,7 +167,7 @@ Each component is listed separately to keep its responsibility and boundary read
   slider/arrow interaction without depending on persistence or FFmpeg.
 - **WPF desktop helpers:** Own shell launch and consistent exception presentation only.
 - **`WorkspaceLayoutController`:** Map panels to dock slots and apply temporary panel focus. Focus never
-  overwrites durable settings.
+  overwrites durable settings; the window captures the runtime geometry and current focus/expansion on close.
 - **Content browser:** Search cached metadata and recycle one virtualized surface across list, small-grid, and
   large-grid presentation. It does not eagerly decode video; full-width focus retains the timeline drop target.
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.

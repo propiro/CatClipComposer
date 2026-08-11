@@ -46,7 +46,20 @@ internal static class ConfigCommand
                     contentBrowserDock = settings.ContentBrowserDock.ToString(),
                     previewDock = settings.PreviewDock.ToString(),
                     layersDock = settings.LayersDock.ToString(),
-                    timelineDock = settings.TimelineDock.ToString()
+                    timelineDock = settings.TimelineDock.ToString(),
+                    settings.WindowWidth,
+                    settings.WindowHeight,
+                    settings.WindowLeft,
+                    settings.WindowTop,
+                    settings.WindowMaximized,
+                    settings.WorkspaceLeftWidth,
+                    settings.WorkspaceRightWidth,
+                    settings.WorkspaceBottomHeight,
+                    settings.PreviewsSplit,
+                    settings.PreviewSplitRatio,
+                    settings.ActivePreviewTab,
+                    activeWorkspacePanel = settings.ActiveWorkspacePanel.ToString(),
+                    expandedWorkspacePanel = settings.ExpandedWorkspacePanel?.ToString()
                 }
             }
         };
@@ -94,6 +107,12 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync(
             $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
             $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");
+        await context.Output.WriteLineAsync(
+            $"Window: {settings.WindowWidth:0.#}x{settings.WindowHeight:0.#} at " +
+            $"{settings.WindowLeft:0.#},{settings.WindowTop:0.#}; maximized={settings.WindowMaximized}");
+        await context.Output.WriteLineAsync(
+            $"Workspace sizes: left={settings.WorkspaceLeftWidth:0.#}, right={settings.WorkspaceRightWidth:0.#}, " +
+            $"bottom={settings.WorkspaceBottomHeight:0.#}; previewsSplit={settings.PreviewsSplit}");
         return CliExitCodes.Success;
     }
 }

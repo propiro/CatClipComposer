@@ -339,6 +339,7 @@ internal static class FfmpegFilterGraphBuilder
             $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
             $"scale='min(480,iw)*{FormatNumber(scale)}':-2,setsar=1,format=yuva420p," +
             "colorchannelmixer=aa=0.9");
+        AppendOverlayAlphaFades(graph, overlay);
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
         graph.Append(CultureInfo.InvariantCulture, $"[layerimage{stage}];");
         var (x, y) = overlay.HasCustomTransform
@@ -395,7 +396,8 @@ internal static class FfmpegFilterGraphBuilder
         var fontOption = string.IsNullOrWhiteSpace(overlay.FontPath)
             ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(overlay.FontFamily) ? "Segoe UI" : overlay.FontFamily)}':"
             : $"fontfile='{EscapeFilterValue(overlay.FontPath)}':";
-        if (!overlay.HasCustomTransform)
+        var hasFade = overlay.FadeInSeconds > 0 || overlay.FadeOutSeconds > 0;
+        if (!overlay.HasCustomTransform && !hasFade)
         {
             var (presetX, presetY) = GetTextOverlayCoordinates(overlay.Position);
             graph.Append(CultureInfo.InvariantCulture,
@@ -408,20 +410,30 @@ internal static class FfmpegFilterGraphBuilder
             return $"stage{stage}";
         }
 
-        var scale = OverlayTransformValues.NormalizeScale(overlay.TransformScale);
+        var scale = overlay.HasCustomTransform
+            ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
+            : 1;
         var scaledFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * scale), 1, 2400);
         var duration = FormatSeconds(overlay.Duration);
         var start = FormatSeconds(overlay.Start);
+        var (drawX, drawY) = overlay.HasCustomTransform
+            ? ("(w-text_w)/2", "(h-text_h)/2")
+            : GetTextOverlayCoordinates(overlay.Position);
         graph.Append(
             $"color=c=black@0.0:s={width}x{height}:r={FormatNumber(request.FramesPerSecond)}:d={duration}," +
             $"format=yuva420p,drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
         graph.Append(CultureInfo.InvariantCulture,
             $"fontcolor=white:fontsize={scaledFontSize}:");
-        graph.Append("borderw=3:bordercolor=black@0.72:x=(w-text_w)/2:y=(h-text_h)/2");
-        AppendRotation(graph, overlay.TransformRotationDegrees, true);
         graph.Append(CultureInfo.InvariantCulture,
-            $",setpts=PTS+{start}/TB[layertext{stage}];");
-        var (x, y) = GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY);
+            $"borderw=3:bordercolor=black@0.72:x={drawX}:y={drawY}");
+        AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
+        graph.Append(CultureInfo.InvariantCulture,
+            $",setpts=PTS+{start}/TB");
+        AppendOverlayAlphaFades(graph, overlay);
+        graph.Append(CultureInfo.InvariantCulture, $"[layertext{stage}];");
+        var (x, y) = overlay.HasCustomTransform
+            ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
+            : ("0", "0");
         graph.Append(
             $"[{currentLabel}][layertext{stage}]overlay=x={x}:y={y}:eof_action=pass:repeatlast=0" +
             $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
@@ -438,6 +450,24 @@ internal static class FfmpegFilterGraphBuilder
 
         graph.Append(CultureInfo.InvariantCulture,
             $",rotate={FormatNumber(rotation)}*PI/180:ow=rotw(iw):oh=roth(ih):c=none");
+    }
+
+    private static void AppendOverlayAlphaFades(StringBuilder graph, RenderOverlay overlay)
+    {
+        var fadeIn = Math.Clamp(overlay.FadeInSeconds, 0, overlay.Duration.TotalSeconds);
+        var fadeOut = Math.Clamp(overlay.FadeOutSeconds, 0, overlay.Duration.TotalSeconds);
+        if (fadeIn > 0)
+        {
+            graph.Append(CultureInfo.InvariantCulture,
+                $",fade=t=in:st={FormatSeconds(overlay.Start)}:d={FormatNumber(fadeIn)}:alpha=1");
+        }
+
+        if (fadeOut > 0)
+        {
+            var fadeOutStart = overlay.Start + overlay.Duration - TimeSpan.FromSeconds(fadeOut);
+            graph.Append(CultureInfo.InvariantCulture,
+                $",fade=t=out:st={FormatSeconds(fadeOutStart)}:d={FormatNumber(fadeOut)}:alpha=1");
+        }
     }
 
     private static string AddTimedProgress(

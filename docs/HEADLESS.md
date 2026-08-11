@@ -36,8 +36,9 @@ All commands except help/version initialize the selected SQLite catalog. Human-r
 ### `config`
 
 Shows the resolved INI path, whether the file exists, the resolved data/database paths, loaded plugin
-modules/diagnostics, and all effective settings, including the content-browser mode and both thumbnail sizes.
-A missing INI is valid and displays normalized defaults.
+modules/diagnostics, and all effective settings, including content-browser mode, thumbnail sizes, panel docks,
+window/workspace dimensions, preview layout/tab, and focused/expanded panels. A missing INI is valid and
+displays normalized defaults.
 
 ```powershell
 CatClipComposer.Cli.exe config

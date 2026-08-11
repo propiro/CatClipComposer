@@ -54,11 +54,15 @@
                     <Button Click="NewProject_Click" Content="New" />
                     <Button Margin="4,0,0,0" Click="OpenProject_Click" Content="Open" />
                     <Button Margin="4,0,0,0" Click="SaveProject_Click" Content="Save" />
+                    <Button Margin="8,0,0,0" Padding="8,3" Click="Undo_Click" Content="↶"
+                            IsEnabled="{Binding CanUndo}" ToolTip="Undo project change (Ctrl+Z)" />
+                    <Button Margin="3,0,0,0" Padding="8,3" Click="Redo_Click" Content="↷"
+                            IsEnabled="{Binding CanRedo}" ToolTip="Redo project change (Ctrl+Y)" />
                     <Button Margin="4,0,0,0" Click="OutputSettings_Click" Content="Project settings" />
                     <TextBlock Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{StaticResource MutedTextBrush}"
-                               Text="{Binding ProjectName}" />
+                               Text="{Binding ProjectDisplayName}" />
                 </StackPanel>
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Margin="0,0,4,0" Click="History_Click" Content="History" />
@@ -292,6 +296,8 @@
             </Border>
 
             <Border x:Name="PreviewPanel"
+                    Tag="Preview"
+                    PreviewMouseDown="WorkspacePanel_PreviewMouseDown"
                     Grid.Row="0"
                     Grid.Column="2"
                     Margin="0,0,4,0"
@@ -403,7 +409,9 @@
                                                       MediaFailed="ProjectPreviewPlayer_MediaFailed" />
                                         <controls:ProjectPreviewOverlayCanvas x:Name="ProjectPreviewOverlayCanvas"
                                                                               OverlaySelected="ProjectPreviewOverlayCanvas_OverlaySelected"
-                                                                              OverlayTransformChanged="ProjectPreviewOverlayCanvas_OverlayTransformChanged" />
+                                                                              OverlayTransformChanged="ProjectPreviewOverlayCanvas_OverlayTransformChanged"
+                                                                              OverlayEditAccepted="ProjectPreviewOverlayCanvas_OverlayEditAccepted"
+                                                                              OverlayEditCanceled="ProjectPreviewOverlayCanvas_OverlayEditCanceled" />
                                     </Grid>
                                 </Border>
                                 <Grid Grid.Row="1" Margin="0,6,0,0">
@@ -434,9 +442,15 @@
                                         <Button x:Name="ProjectPreviewMuteButton" Margin="4,0,0,0" Click="ProjectPreviewMute_Click"
                                                 FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
                                     </WrapPanel>
-                                    <Button Grid.Column="1" Padding="18,5" Click="ProjectPreview_Click"
-                                            Style="{StaticResource PrimaryButtonStyle}" Content="RENDER PREVIEW"
-                                            ToolTip="Render the whole composition, or only the selected timeline range" />
+                                    <WrapPanel Grid.Column="1" HorizontalAlignment="Center">
+                                        <Button Padding="14,5" Click="ProjectPreview_Click"
+                                                Style="{StaticResource PrimaryButtonStyle}" Content="PRERENDER PREVIEW"
+                                                ToolTip="Prerender the selected timeline range, or the selected frame when there is no range" />
+                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrame_Click"
+                                                Content="Frame" ToolTip="Prerender only the selected project frame" />
+                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderAll_Click"
+                                                Content="All" ToolTip="Prerender the complete project" />
+                                    </WrapPanel>
                                     <TextBlock x:Name="ProjectPreviewStatusText" Grid.Column="2" Margin="8,0,0,0"
                                                VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
                                                FontSize="10" Foreground="{StaticResource MutedTextBrush}"
@@ -846,6 +860,7 @@
                                                             Tag="{Binding TrackId}" AllowDrop="True"
                                                             DragOver="TimelineLane_DragOver" DragLeave="TimelineLane_DragLeave"
                                                             Drop="TimelineLane_Drop"
+                                                            MouseLeftButtonUp="TimelineLane_MouseLeftButtonUp"
                                                             Background="#191918" BorderBrush="{StaticResource BorderBrush}"
                                                             BorderThickness="1,0,1,1">
                                                         <Grid>
