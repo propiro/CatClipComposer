@@ -1011,6 +1011,15 @@ public partial class MainWindow : Window
             $"scale {e.Scale * 100:0.#}% · rotate {e.RotationDegrees:0.#}° — press OK/Enter to apply.";
     }
 
+    private void ProjectPreviewOverlayCanvas_OverlayOpenEditorRequested(
+        object? sender,
+        PreviewOverlayOpenEditorEventArgs e)
+    {
+        CancelActiveOverlayTransformEdit();
+        _viewModel.SelectTimelineItem(e.ItemId);
+        EditLayer_Click(ProjectPreviewOverlayCanvas, new RoutedEventArgs());
+    }
+
     private void ProjectPreviewOverlayCanvas_OverlayEditAccepted(
         object? sender,
         PreviewOverlayEditEventArgs e)
@@ -2898,7 +2907,8 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        var editingControl = IsEditingControl(Keyboard.FocusedElement as DependencyObject);
+        var focusedElement = Keyboard.FocusedElement as DependencyObject;
+        var editingControl = IsEditingControl(focusedElement);
         if (!editingControl && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
             (e.Key == Key.Z || e.Key == Key.Y))
         {
@@ -2915,12 +2925,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.Key != Key.Space || editingControl)
+        if (e.Key != Key.Space)
         {
             return;
         }
 
-        var panel = ResolveFocusedPanel(Keyboard.FocusedElement as DependencyObject) ?? _focusedPanel;
+        var panel = ResolveFocusedPanel(focusedElement) ?? _focusedPanel;
+        if (editingControl && !IsSpaceShortcutButton(focusedElement))
+        {
+            return;
+        }
+
         if (panel is WorkspacePanelKind.ContentBrowser or WorkspacePanelKind.Layers or WorkspacePanelKind.Timeline)
         {
             TogglePanelExpansion(panel);
@@ -3109,6 +3124,26 @@ public partial class MainWindow : Window
             if (element is TextBoxBase or ComboBox or ButtonBase or Slider)
             {
                 return true;
+            }
+
+            element = GetParent(element);
+        }
+
+        return false;
+    }
+
+    private static bool IsSpaceShortcutButton(DependencyObject? element)
+    {
+        while (element is not null)
+        {
+            if (element is ButtonBase)
+            {
+                return true;
+            }
+
+            if (element is TextBoxBase or ComboBox or Slider)
+            {
+                return false;
             }
 
             element = GetParent(element);

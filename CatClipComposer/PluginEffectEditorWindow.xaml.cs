@@ -280,6 +280,7 @@ public partial class PluginEffectEditorWindow : Window
             _framePreviewCancellation?.Dispose();
             _framePreviewCancellation = new CancellationTokenSource();
             _framePreviewWindow.SetLoading(_previewFrame.Value);
+            await Dispatcher.Yield(DispatcherPriority.Render);
             try
             {
                 var progress = new Progress<RenderProgress>(update => _framePreviewWindow?.ReportProgress(update));

@@ -22,6 +22,7 @@ PreviewSlideCount=12
 BrowserViewMode=SmallGrid
 SmallThumbnailSize=120
 LargeThumbnailSize=220
+ExtraLargeThumbnailSize=420
 
 [Output]
 Folder=

@@ -75,6 +75,11 @@ internal static class ApplicationSettingsIniMapper
             "Library",
             "LargeThumbnailSize",
             settings.LargeThumbnailSize);
+        settings.ExtraLargeThumbnailSize = ReadInt(
+            ini,
+            "Library",
+            "ExtraLargeThumbnailSize",
+            settings.ExtraLargeThumbnailSize);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
@@ -165,6 +170,7 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"BrowserViewMode={settings.BrowserViewMode}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"SmallThumbnailSize={settings.SmallThumbnailSize}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"LargeThumbnailSize={settings.LargeThumbnailSize}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"ExtraLargeThumbnailSize={settings.ExtraLargeThumbnailSize}");
 
         builder.AppendLine();
         builder.AppendLine("[Output]");
@@ -233,6 +239,8 @@ internal static class ApplicationSettingsIniMapper
         settings.SmallThumbnailSize = Math.Clamp(settings.SmallThumbnailSize, 80, 200);
         settings.LargeThumbnailSize = Math.Clamp(settings.LargeThumbnailSize, 140, 360);
         settings.LargeThumbnailSize = Math.Max(settings.LargeThumbnailSize, settings.SmallThumbnailSize + 20);
+        settings.ExtraLargeThumbnailSize = Math.Clamp(settings.ExtraLargeThumbnailSize, 240, 640);
+        settings.ExtraLargeThumbnailSize = Math.Max(settings.ExtraLargeThumbnailSize, settings.LargeThumbnailSize + 40);
         settings.RecentProjectPaths = settings.RecentProjectPaths
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => path.Trim())

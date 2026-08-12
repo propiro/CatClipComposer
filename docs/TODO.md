@@ -312,6 +312,33 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Background blur selects between complete normal/blurred compositions using segment-relative
   absolute time, and the same saved project visibly applies it in Frame, selected-range, All, and final renders.
 
+### `UX-PREVIEW-005` — Keep effect-frame progress visible through preparation
+
+- Priority/status: P0 / Done
+- Acceptance: The companion preview paints an initial five-percent bar before heavy project cloning, advances
+  through named preparation stages without moving backward, then maps FFmpeg progress over the remaining range
+  while elapsed time remains visible until the frame replaces the loading presentation.
+
+### `UX-OVERLAY-004` — Make overlay opacity explicit and lock state visually distinct
+
+- Priority/status: P0 / Done
+- Acceptance: Schema 9 persists 0–100% opacity for image and text overlays, 100% PNG rendering adds no hidden
+  attenuation, the editor preview follows the setting, and transparent gray open/closed lock glyphs communicate
+  state without black button tiles. Double-clicking an overlay proxy opens that item's preferences.
+
+### `BROWSER-006` — Add extra-large cards and reliable panel keyboard focus
+
+- Priority/status: P1 / Done
+- Acceptance: The view selector cycles List/Small/Large/Extra large; the fourth bounded width persists in INI
+  and CLI output. Space expands/restores Browser, Layers, or Timeline even after one of its buttons had focus,
+  without reactivating that button or stealing text/dropdown/slider input.
+
+### `UX-SHELL-001` — Correct compact menus and proportional scrollbars
+
+- Priority/status: P1 / Done
+- Acceptance: Context menus cap and ellipsize long labels without the prior empty width, and custom horizontal
+  and vertical scrollbar tracks bind min/max/value/viewport so their thumbs represent the visible fraction.
+
 ### `PROJECT-OPEN-001` — Offer disk and recent-project choices from Open
 
 - Priority/status: P1 / Done
@@ -480,7 +507,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-8 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+- Acceptance: Versioned schema-9 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
   background/module metadata, optional track/item colors, and overlay transforms/fades without embedding media;
   older schema projects remain readable and GUI/CLI checks pass.
 

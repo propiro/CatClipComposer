@@ -57,6 +57,7 @@ public sealed record RenderOverlay(
     double TransformY = 0.5,
     double TransformScale = 1,
     double TransformRotationDegrees = 0,
+    double Opacity = 1,
     double FadeInSeconds = 0,
     double FadeOutSeconds = 0);
 

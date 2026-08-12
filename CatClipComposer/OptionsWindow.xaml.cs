@@ -30,6 +30,7 @@ public partial class OptionsWindow : Window
         PreviewSlideCountTextBox.Text = _workingSettings.PreviewSlideCount.ToString(CultureInfo.CurrentCulture);
         SmallThumbnailSizeTextBox.Text = _workingSettings.SmallThumbnailSize.ToString(CultureInfo.CurrentCulture);
         LargeThumbnailSizeTextBox.Text = _workingSettings.LargeThumbnailSize.ToString(CultureInfo.CurrentCulture);
+        ExtraLargeThumbnailSizeTextBox.Text = _workingSettings.ExtraLargeThumbnailSize.ToString(CultureInfo.CurrentCulture);
         FfmpegPathTextBox.Text = _workingSettings.FfmpegPath;
         CustomFontFolderTextBox.Text = _workingSettings.CustomFontFolder;
         IncludeSubfoldersCheckBox.IsChecked = _workingSettings.IncludeSubfolders;
@@ -118,11 +119,14 @@ public partial class OptionsWindow : Window
                 out var smallThumbnailSize) || smallThumbnailSize is < 80 or > 200 ||
             !int.TryParse(LargeThumbnailSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
                 out var largeThumbnailSize) || largeThumbnailSize is < 140 or > 360 ||
-            largeThumbnailSize < smallThumbnailSize + 20)
+            largeThumbnailSize < smallThumbnailSize + 20 ||
+            !int.TryParse(ExtraLargeThumbnailSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
+                out var extraLargeThumbnailSize) || extraLargeThumbnailSize is < 240 or > 640 ||
+            extraLargeThumbnailSize < largeThumbnailSize + 40)
         {
             MessageBox.Show(this,
                 "Choose the output, project, and metadata folders; use 1–24 contact-sheet slides; and choose " +
-                "thumbnail widths in range with Large at least 20 px wider than Small.",
+                "thumbnail widths in range, with Large at least 20 px wider than Small and Extra large at least 40 px wider than Large.",
                 "Invalid preferences", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -134,6 +138,7 @@ public partial class OptionsWindow : Window
         _workingSettings.PreviewSlideCount = previewSlideCount;
         _workingSettings.SmallThumbnailSize = smallThumbnailSize;
         _workingSettings.LargeThumbnailSize = largeThumbnailSize;
+        _workingSettings.ExtraLargeThumbnailSize = extraLargeThumbnailSize;
         _workingSettings.FfmpegPath = string.IsNullOrWhiteSpace(FfmpegPathTextBox.Text)
             ? "ffmpeg.exe"
             : FfmpegPathTextBox.Text.Trim();

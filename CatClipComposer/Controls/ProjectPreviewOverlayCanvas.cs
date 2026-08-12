@@ -40,6 +40,11 @@ public sealed class PreviewOverlayEditEventArgs(Guid itemId) : EventArgs
     public Guid ItemId { get; } = itemId;
 }
 
+public sealed class PreviewOverlayOpenEditorEventArgs(Guid itemId) : EventArgs
+{
+    public Guid ItemId { get; } = itemId;
+}
+
 public sealed class ProjectPreviewOverlayCanvas : Canvas
 {
     private const double DirectManipulationMinimumScale = 0.05;
@@ -59,6 +64,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         ClipToBounds = true;
         Focusable = true;
         SizeChanged += (_, _) => Redraw();
+        PreviewMouseLeftButtonDown += OnPreviewMouseLeftButtonDown;
         PreviewMouseMove += OnPreviewMouseMove;
         PreviewMouseLeftButtonUp += OnPreviewMouseLeftButtonUp;
         PreviewKeyDown += OnPreviewKeyDown;
@@ -72,6 +78,23 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     public event EventHandler<PreviewOverlayEditEventArgs>? OverlayEditAccepted;
 
     public event EventHandler<PreviewOverlayEditEventArgs>? OverlayEditCanceled;
+
+    public event EventHandler<PreviewOverlayOpenEditorEventArgs>? OverlayOpenEditorRequested;
+
+    private void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2 || _interaction is null)
+        {
+            return;
+        }
+
+        var itemId = _interaction.ItemId;
+        CompleteInteraction();
+        _selectedItemId = itemId;
+        OverlaySelected?.Invoke(this, new PreviewOverlaySelectedEventArgs(itemId));
+        OverlayOpenEditorRequested?.Invoke(this, new PreviewOverlayOpenEditorEventArgs(itemId));
+        e.Handled = true;
+    }
 
     public void Configure(
         int outputWidth,
@@ -170,7 +193,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         {
             Stretch = Stretch.Fill,
             Opacity = showContentProxy
-                ? selected ? 0.82 : 0.5
+                ? (selected ? 0.82 : 0.5) * Math.Clamp(item.OverlayOpacity, 0, 1)
                 : selected ? 0.12 : 0.01,
             Child = content
         });
@@ -185,6 +208,15 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         });
         root.MouseLeftButtonDown += (_, e) =>
         {
+            if (e.ClickCount == 2)
+            {
+                _selectedItemId = item.Id;
+                OverlaySelected?.Invoke(this, new PreviewOverlaySelectedEventArgs(item.Id));
+                OverlayOpenEditorRequested?.Invoke(this, new PreviewOverlayOpenEditorEventArgs(item.Id));
+                e.Handled = true;
+                return;
+            }
+
             if (item.IsTransformLocked)
             {
                 _selectedItemId = item.Id;

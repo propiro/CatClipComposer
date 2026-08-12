@@ -142,7 +142,7 @@
                                     Click="BrowserViewMode_Click"
                                     Style="{StaticResource HeaderButtonStyle}"
                                     Content="{Binding BrowserViewModeText}"
-                                    ToolTip="Cycle list, small-grid, and large-grid views" />
+                                    ToolTip="Cycle list, small-grid, large-grid, and extra-large-grid views" />
                             <Button Grid.Column="3"
                                     Tag="ContentBrowser"
                                     Click="PanelDock_Click"
@@ -457,7 +457,8 @@
                                                                               OverlaySelected="ProjectPreviewOverlayCanvas_OverlaySelected"
                                                                               OverlayTransformChanged="ProjectPreviewOverlayCanvas_OverlayTransformChanged"
                                                                               OverlayEditAccepted="ProjectPreviewOverlayCanvas_OverlayEditAccepted"
-                                                                              OverlayEditCanceled="ProjectPreviewOverlayCanvas_OverlayEditCanceled" />
+                                                                              OverlayEditCanceled="ProjectPreviewOverlayCanvas_OverlayEditCanceled"
+                                                                              OverlayOpenEditorRequested="ProjectPreviewOverlayCanvas_OverlayOpenEditorRequested" />
                                     </Grid>
                                 </Border>
                                 <Grid Grid.Row="1" Margin="0,6,0,0">
@@ -675,9 +676,11 @@
                                                         </Border.ContextMenu>
                                                         <StackPanel Opacity="{Binding ContentOpacity}">
                                                             <DockPanel>
-                                                                <Button DockPanel.Dock="Right" Width="25" Height="23" Margin="4,0,0,0" Padding="0"
+                                                                <Button DockPanel.Dock="Right" Margin="4,0,0,0"
                                                                         CommandParameter="{Binding}" Click="LayerTransformLockButton_Click"
-                                                                        Content="{Binding TransformLockIcon}" ToolTip="{Binding TransformLockActionText}"
+                                                                        Content="{Binding}" ContentTemplate="{StaticResource OverlayLockIconTemplate}"
+                                                                        Style="{StaticResource OverlayLockButtonStyle}"
+                                                                        ToolTip="{Binding TransformLockActionText}"
                                                                         Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                 <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
                                                                            TextTrimming="CharacterEllipsis" Text="{Binding Title}" />
@@ -964,10 +967,11 @@
                                                                                    Stretch="UniformToFill"
                                                                                    Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                             <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                                                    Width="23" Height="21" Margin="0,1,8,0" Padding="0"
+                                                                                    Margin="0,1,8,0"
                                                                                     Panel.ZIndex="4" CommandParameter="{Binding}"
                                                                                     Click="TimelineTransformLockButton_Click"
-                                                                                    Content="{Binding TransformLockIcon}"
+                                                                                    Content="{Binding}" ContentTemplate="{StaticResource OverlayLockIconTemplate}"
+                                                                                    Style="{StaticResource OverlayLockButtonStyle}"
                                                                                     ToolTip="{Binding TransformLockActionText}"
                                                                                     Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                             <Grid>

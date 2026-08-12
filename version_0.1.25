@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.25
+
+- Kept staged effect-frame rendering progress visible throughout preparation and FFmpeg work.
+- Added explicit 0-100% overlay opacity with truly opaque 100% PNG rendering.
+- Added transparent gray lock-state icons and Project Preview double-click editing.
+- Added Extra large browser thumbnails, reliable Space panel expansion, compact menus, and proportional scrollbars.

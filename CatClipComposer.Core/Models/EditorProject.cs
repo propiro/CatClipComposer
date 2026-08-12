@@ -66,7 +66,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -177,6 +177,8 @@ public sealed class ProjectTimelineItem
     public double OverlayScale { get; set; } = 1;
 
     public double OverlayRotationDegrees { get; set; }
+
+    public double OverlayOpacity { get; set; } = 1;
 
     public ProgressTimeMode ProgressTimeMode { get; set; } = ProgressTimeMode.WholeProject;
 

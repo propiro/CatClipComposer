@@ -251,6 +251,7 @@ public sealed class MainViewModel : ObservableObject
     {
         ContentBrowserViewMode.List => "View: list",
         ContentBrowserViewMode.LargeGrid => "View: large",
+        ContentBrowserViewMode.ExtraLargeGrid => "View: extra large",
         _ => "View: small"
     };
 
@@ -261,6 +262,7 @@ public sealed class MainViewModel : ObservableObject
     public double BrowserItemWidth => _settings.BrowserViewMode switch
     {
         ContentBrowserViewMode.LargeGrid => _settings.LargeThumbnailSize + 8,
+        ContentBrowserViewMode.ExtraLargeGrid => _settings.ExtraLargeThumbnailSize + 8,
         _ => _settings.SmallThumbnailSize + 8
     };
 
@@ -268,20 +270,27 @@ public sealed class MainViewModel : ObservableObject
     {
         ContentBrowserViewMode.List => 76,
         ContentBrowserViewMode.LargeGrid => Math.Round(_settings.LargeThumbnailSize * 0.68) + 58,
+        ContentBrowserViewMode.ExtraLargeGrid => Math.Round(_settings.ExtraLargeThumbnailSize * 0.68) + 58,
         _ => Math.Round(_settings.SmallThumbnailSize * 0.65) + 58
     };
 
     public double BrowserCardWidth => IsBrowserListView
         ? double.NaN
-        : _settings.BrowserViewMode == ContentBrowserViewMode.LargeGrid
-            ? _settings.LargeThumbnailSize + 2
-            : _settings.SmallThumbnailSize + 2;
+        : _settings.BrowserViewMode switch
+        {
+            ContentBrowserViewMode.LargeGrid => _settings.LargeThumbnailSize + 2,
+            ContentBrowserViewMode.ExtraLargeGrid => _settings.ExtraLargeThumbnailSize + 2,
+            _ => _settings.SmallThumbnailSize + 2
+        };
 
     public double BrowserCardHeight => BrowserItemHeight - 6;
 
-    public double BrowserThumbnailHeight => _settings.BrowserViewMode == ContentBrowserViewMode.LargeGrid
-        ? Math.Round(_settings.LargeThumbnailSize * 0.68)
-        : Math.Round(_settings.SmallThumbnailSize * 0.65);
+    public double BrowserThumbnailHeight => _settings.BrowserViewMode switch
+    {
+        ContentBrowserViewMode.LargeGrid => Math.Round(_settings.LargeThumbnailSize * 0.68),
+        ContentBrowserViewMode.ExtraLargeGrid => Math.Round(_settings.ExtraLargeThumbnailSize * 0.68),
+        _ => Math.Round(_settings.SmallThumbnailSize * 0.65)
+    };
 
     public async Task CycleBrowserViewModeAsync(CancellationToken cancellationToken = default)
     {
@@ -289,6 +298,7 @@ public sealed class MainViewModel : ObservableObject
         {
             ContentBrowserViewMode.List => ContentBrowserViewMode.SmallGrid,
             ContentBrowserViewMode.SmallGrid => ContentBrowserViewMode.LargeGrid,
+            ContentBrowserViewMode.LargeGrid => ContentBrowserViewMode.ExtraLargeGrid,
             _ => ContentBrowserViewMode.List
         };
         NotifyBrowserLayoutChanged();
@@ -937,6 +947,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         SynchronizeProjectFromTimeline();
+        progress?.Report(new RenderProgress(8, TimeSpan.Zero, TimeSpan.Zero, "Cloning project layers"));
         var previewProject = JsonSerializer.Deserialize<EditorProject>(JsonSerializer.Serialize(_project)) ??
                              throw new InvalidOperationException("The project could not be cloned for preview.");
         var track = previewProject.Tracks.FirstOrDefault(candidate => candidate.Id == trackId) ??
@@ -951,6 +962,7 @@ public sealed class MainViewModel : ObservableObject
             track.Items.Add(previewItem);
         }
 
+        progress?.Report(new RenderProgress(14, TimeSpan.Zero, TimeSpan.Zero, "Mapping active effects and overlays"));
         var renderPlan = ProjectRenderMapper.Create(previewProject, _plugins);
         if (renderPlan.Segments.Count == 0)
         {
@@ -975,6 +987,7 @@ public sealed class MainViewModel : ObservableObject
 
         var previewFolder = Path.Combine(_settings.MetadataFolder, "effect-frame-previews");
         Directory.CreateDirectory(previewFolder);
+        progress?.Report(new RenderProgress(20, TimeSpan.Zero, duration, "Preparing frame render"));
         var outputPath = Path.Combine(previewFolder, $"{previewProject.Id:N}-{DateTime.UtcNow.Ticks}.mp4");
         var orientation = previewProject.Output.Height > previewProject.Output.Width
             ? OutputOrientation.Portrait
@@ -984,7 +997,7 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Rendering effect frame at {DurationFormatter.Format(start)}…";
         try
         {
-            progress?.Report(new RenderProgress(1, TimeSpan.Zero, duration, "Preparing effect frame"));
+            progress?.Report(new RenderProgress(24, TimeSpan.Zero, duration, "Starting FFmpeg"));
             var result = await _videoRenderer.RenderAsync(
                 CreateRenderRequest(
                     renderPlan,

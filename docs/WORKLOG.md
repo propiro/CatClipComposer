@@ -2,6 +2,21 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-13 — v0.1.25 overlay fidelity and editor-shell polish
+
+- Replaced effect-frame's long nearly-empty wait with an immediately painted five-percent bar, named project
+  preparation stages, a monotonic preparation ticker, mapped FFmpeg progress, and persistent elapsed timing.
+- Removed the image renderer's hidden 90% alpha. Added schema-9 explicit 0–100% opacity for text/image overlays,
+  including editor/live image feedback, Core mapping, validation, and real FFmpeg alpha/color application.
+- Replaced black emoji lock buttons with transparent gray vector open/closed locks; locked state adds a gray body
+  fill while unlocked remains an outline. Project-view overlay double-click now opens that item's editor.
+- Added List/Small/Large/Extra large browser cycling with a bounded 420 px default and portable INI/CLI support.
+  Space now consumes previously focused panel buttons and expands Browser/Layers/Timeline as requested.
+- Bound the custom scrollbar tracks to their scrollbar viewport/value properties, restoring proportional thumbs;
+  capped/ellipsized context-menu labels remove the excessive blank width.
+- Advanced metadata and the extensionless marker to 0.1.25. Verification covered clean full solution builds,
+  XAML resource checks, schema/config round-trips, and real 100% versus 50% image-overlay renders.
+
 ## 2026-08-12 — v0.1.24 persistent prerenders and timeline safety
 
 - Retained the latest successful project prerender in metadata storage and restored it on startup or normal

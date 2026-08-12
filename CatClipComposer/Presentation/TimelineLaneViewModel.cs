@@ -167,8 +167,6 @@ public sealed class TimelineLaneItemViewModel
 
     public bool IsTransformLocked { get; }
 
-    public string TransformLockIcon => IsTransformLocked ? "🔒" : "🔓";
-
     public string TransformLockActionText => IsTransformLocked
         ? "Unlock overlay transform"
         : "Lock overlay transform";

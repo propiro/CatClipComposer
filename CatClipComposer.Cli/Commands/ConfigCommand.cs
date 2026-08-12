@@ -34,6 +34,7 @@ internal static class ConfigCommand
                 browserViewMode = settings.BrowserViewMode.ToString(),
                 settings.SmallThumbnailSize,
                 settings.LargeThumbnailSize,
+                settings.ExtraLargeThumbnailSize,
                 settings.IncludeSubfolders,
                 settings.ShowFileNames,
                 settings.RescanLibraryOnStartup,
@@ -111,7 +112,7 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
         await context.Output.WriteLineAsync(
             $"Browser view: {settings.BrowserViewMode}; thumbnails: small={settings.SmallThumbnailSize}px, " +
-            $"large={settings.LargeThumbnailSize}px");
+            $"large={settings.LargeThumbnailSize}px, extra-large={settings.ExtraLargeThumbnailSize}px");
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
         await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");

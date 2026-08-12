@@ -338,7 +338,7 @@ internal static class FfmpegFilterGraphBuilder
             $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlayDuration)}," +
             $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
             $"scale='min(480,iw)*{FormatNumber(scale)}':-2,setsar=1,format=yuva420p," +
-            "colorchannelmixer=aa=0.9");
+            $"colorchannelmixer=aa={FormatNumber(Math.Clamp(overlay.Opacity, 0, 1))}");
         AppendOverlayAlphaFades(graph, overlay);
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
         graph.Append(CultureInfo.InvariantCulture, $"[layerimage{stage}];");
@@ -396,6 +396,8 @@ internal static class FfmpegFilterGraphBuilder
         var fontOption = string.IsNullOrWhiteSpace(overlay.FontPath)
             ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(overlay.FontFamily) ? "Segoe UI" : overlay.FontFamily)}':"
             : $"fontfile='{EscapeFilterValue(overlay.FontPath)}':";
+        var opacity = Math.Clamp(overlay.Opacity, 0, 1);
+        var borderOpacity = opacity * 0.72;
         var hasFade = overlay.FadeInSeconds > 0 || overlay.FadeOutSeconds > 0;
         if (!overlay.HasCustomTransform && !hasFade)
         {
@@ -403,9 +405,9 @@ internal static class FfmpegFilterGraphBuilder
             graph.Append(CultureInfo.InvariantCulture,
                 $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
             graph.Append(CultureInfo.InvariantCulture,
-                $"fontcolor=white:fontsize={Math.Clamp(overlay.FontSize, 8, 240)}:");
+                $"fontcolor=white@{FormatNumber(opacity)}:fontsize={Math.Clamp(overlay.FontSize, 8, 240)}:");
             graph.Append(CultureInfo.InvariantCulture,
-                $"borderw=3:bordercolor=black@0.72:x={presetX}:y={presetY}" +
+                $"borderw=3:bordercolor=black@{FormatNumber(borderOpacity)}:x={presetX}:y={presetY}" +
                 $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
             return $"stage{stage}";
         }
@@ -423,9 +425,9 @@ internal static class FfmpegFilterGraphBuilder
             $"color=c=black@0.0:s={width}x{height}:r={FormatNumber(request.FramesPerSecond)}:d={duration}," +
             $"format=yuva420p,drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
         graph.Append(CultureInfo.InvariantCulture,
-            $"fontcolor=white:fontsize={scaledFontSize}:");
+            $"fontcolor=white@{FormatNumber(opacity)}:fontsize={scaledFontSize}:");
         graph.Append(CultureInfo.InvariantCulture,
-            $"borderw=3:bordercolor=black@0.72:x={drawX}:y={drawY}");
+            $"borderw=3:bordercolor=black@{FormatNumber(borderOpacity)}:x={drawX}:y={drawY}");
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
         graph.Append(CultureInfo.InvariantCulture,
             $",setpts=PTS+{start}/TB");

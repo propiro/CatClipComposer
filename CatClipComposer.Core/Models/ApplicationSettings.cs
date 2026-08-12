@@ -42,7 +42,8 @@ public enum ContentBrowserViewMode
 {
     List,
     SmallGrid,
-    LargeGrid
+    LargeGrid,
+    ExtraLargeGrid
 }
 
 public sealed class ApplicationSettings
@@ -62,6 +63,8 @@ public sealed class ApplicationSettings
     public int SmallThumbnailSize { get; set; } = 120;
 
     public int LargeThumbnailSize { get; set; } = 220;
+
+    public int ExtraLargeThumbnailSize { get; set; } = 420;
 
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
@@ -133,6 +136,7 @@ public sealed class ApplicationSettings
         BrowserViewMode = BrowserViewMode,
         SmallThumbnailSize = SmallThumbnailSize,
         LargeThumbnailSize = LargeThumbnailSize,
+        ExtraLargeThumbnailSize = ExtraLargeThumbnailSize,
         FfmpegPath = FfmpegPath,
         CustomFontFolder = CustomFontFolder,
         IncludeSubfolders = IncludeSubfolders,

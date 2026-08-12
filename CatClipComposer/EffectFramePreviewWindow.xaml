@@ -18,7 +18,7 @@
                        Foreground="{StaticResource FaintTextBrush}" Text="0.0 s" />
         </Grid>
         <ProgressBar x:Name="RenderProgressBar" Grid.Row="1" Height="7" Margin="0,0,0,7"
-                     Minimum="0" Maximum="100" Visibility="Collapsed" />
+                     Minimum="0" Maximum="100" Visibility="Collapsed" Foreground="#C8C0B2" />
         <Border Grid.Row="2" Background="#050505"
                 BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">
             <MediaElement x:Name="FramePlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"

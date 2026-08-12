@@ -77,6 +77,7 @@ public partial class LayerItemEditorWindow : Window
         ProgressHeightEditor.SetValue(10);
         PositionComboBox.ItemsSource = Enum.GetValues<OverlayPosition>();
         PositionComboBox.SelectedItem = OverlayPosition.Center;
+        OverlayOpacityEditor.SetValue(100);
         SetTransformEditorValues(0.5, 0.5, 1, 0);
         ProgressTimingComboBox.ItemsSource = Enum.GetValues<ProgressTimeMode>();
         ProgressTimingComboBox.SelectedItem = ProgressTimeMode.CustomRange;
@@ -127,6 +128,7 @@ public partial class LayerItemEditorWindow : Window
         FadeOutEditor.SetValue(item.FadeOutSeconds);
         OverlayFadeInEditor.SetValue(item.FadeInSeconds);
         OverlayFadeOutEditor.SetValue(item.FadeOutSeconds);
+        OverlayOpacityEditor.SetValue(item.OverlayOpacity * 100);
         FontSizeEditor.SetValue(item.FontSize);
         PositionComboBox.SelectedItem = item.Position;
         var (overlayX, overlayY) = item.HasCustomOverlayTransform
@@ -189,6 +191,7 @@ public partial class LayerItemEditorWindow : Window
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
+        OverlayOpacityField.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
         TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
         OverlayFadeFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
         AudioFields.Visibility = Visible(_kind == LayerEditorKind.Audio);
@@ -230,6 +233,15 @@ public partial class LayerItemEditorWindow : Window
         }
     }
 
+    private void OverlayOpacityEditor_Edited(object? sender, EventArgs e)
+    {
+        if (_kind == LayerEditorKind.Image &&
+            TryParse(OverlayOpacityEditor.Text, 0, 100, out var opacityPercent))
+        {
+            ImageOverlayPreview.Opacity = opacityPercent / 100;
+        }
+    }
+
     private void UpdateImagePreview()
     {
         ImageOverlayPreview.Source = null;
@@ -257,6 +269,10 @@ public partial class LayerItemEditorWindow : Window
             preview.EndInit();
             preview.Freeze();
             ImageOverlayPreview.Source = preview;
+            if (TryParse(OverlayOpacityEditor.Text, 0, 100, out var opacityPercent))
+            {
+                ImageOverlayPreview.Opacity = opacityPercent / 100;
+            }
             ImagePreviewStatusText.Visibility = Visibility.Collapsed;
         }
         catch (Exception)
@@ -305,13 +321,14 @@ public partial class LayerItemEditorWindow : Window
             -360000,
             360000,
             out var overlayRotation);
+        var overlayOpacityValid = TryParse(OverlayOpacityEditor.Text, 0, 100, out var overlayOpacityPercent);
 
         if (!TimeRangeEditor.TryGetRange(out var startTime, out var durationTime) ||
             (_kind == LayerEditorKind.Text &&
              (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
             (_kind is LayerEditorKind.Image or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
             (_kind is LayerEditorKind.Text or LayerEditorKind.Image &&
-             (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid ||
+             (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid || !overlayOpacityValid ||
               !overlayFadeInValid || !overlayFadeOutValid ||
               overlayFadeIn > durationTime.TotalSeconds || overlayFadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Audio && (!volumeValid || !fadeInValid || !fadeOutValid ||
@@ -319,7 +336,7 @@ public partial class LayerItemEditorWindow : Window
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
             MessageBox.Show(this,
-                "Check the required source/text, start, positive duration, font size 8–240, overlay transform/fades, audio values, and progress color/height.",
+                "Check the required source/text, start, positive duration, font size 8–240, overlay transform/opacity/fades, audio values, and progress color/height.",
                 "Invalid layer item", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -375,6 +392,7 @@ public partial class LayerItemEditorWindow : Window
             OverlayY = OverlayTransformValues.NormalizeCoordinate(overlayYPercent / 100),
             OverlayScale = OverlayTransformValues.NormalizeScale(overlayScalePercent / 100),
             OverlayRotationDegrees = OverlayTransformValues.NormalizeRotation(overlayRotation),
+            OverlayOpacity = Math.Clamp(overlayOpacityPercent / 100, 0, 1),
             Volume = _kind == LayerEditorKind.Audio ? volume : 1,
             FadeInSeconds = _kind == LayerEditorKind.Audio
                 ? fadeIn

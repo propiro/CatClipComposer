@@ -71,7 +71,7 @@
 
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="Content Browser thumbnails" />
                 <TextBlock Margin="0,3,0,5" Foreground="{StaticResource MutedTextBrush}"
-                           Text="Card widths used by the Small and Large grid modes." />
+                           Text="Card widths used by the Small, Large, and Extra large grid modes." />
                 <WrapPanel Margin="0,0,0,14">
                     <TextBlock VerticalAlignment="Center" Text="Small" />
                     <TextBox x:Name="SmallThumbnailSizeTextBox" Width="58" Margin="7,0,5,0" />
@@ -80,7 +80,11 @@
                     <TextBlock Margin="22,0,0,0" VerticalAlignment="Center" Text="Large" />
                     <TextBox x:Name="LargeThumbnailSizeTextBox" Width="58" Margin="7,0,5,0" />
                     <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FaintTextBrush}"
-                               Text="px (140–360)" />
+                               Text="px (140-360)" />
+                    <TextBlock Margin="22,0,0,0" VerticalAlignment="Center" Text="Extra large" />
+                    <TextBox x:Name="ExtraLargeThumbnailSizeTextBox" Width="58" Margin="7,0,5,0" />
+                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FaintTextBrush}"
+                               Text="px (240-640)" />
                 </WrapPanel>
 
                 <TextBlock FontSize="14" FontWeight="SemiBold" Text="Final video output folder" />

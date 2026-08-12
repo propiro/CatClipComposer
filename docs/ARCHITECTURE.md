@@ -99,13 +99,15 @@ The executable modules may reference Core and Infrastructure for composition. Co
    the renderer's hard safety limits permit it.
 5. Effect frame preview clones the in-memory project, replaces only the working effect item, renders a 0.1-second
    H.264 slice at the selected playhead, and never saves the candidate or records export history. The editor
-   owns cancellation/debounce and a snapped non-modal preview window.
+   owns cancellation/debounce and a snapped non-modal preview window. The window paints immediately, reports
+   preparation phases over the first quarter, and maps process progress monotonically over the remainder.
 6. `ProjectPreviewOverlayCanvas` maps the project frame into the MediaElement's actual letterboxed viewport,
    displays active text/image content with selection handles, and owns pointer capture for move, uniform-scale,
    and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
    the original transform. Item-ID selection remains shared with the timeline and Project Layers Data panel.
-   A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing.
+   A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing;
+   schema 9 opacity flows through the same shared mapper to FFmpeg alpha/color controls.
 
 ### Plugin discovery and effect rendering
 

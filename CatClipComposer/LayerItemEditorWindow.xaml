@@ -25,6 +25,13 @@
                         </Grid>
                     </StackPanel>
 
+                    <StackPanel x:Name="OverlayOpacityField" Margin="0,0,0,10">
+                        <TextBlock Margin="0,0,0,4" Text="Opacity (%)" />
+                        <controls:NumericEditorControl x:Name="OverlayOpacityEditor"
+                                                       Minimum="0" Maximum="100" Step="5"
+                                                       Edited="OverlayOpacityEditor_Edited" />
+                    </StackPanel>
+
                     <Border x:Name="ImagePreviewFields" Height="210" Margin="0,0,0,10" Padding="6"
                             Background="{StaticResource PreviewBrush}"
                             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">

@@ -1,6 +1,0 @@
-Cat Clip Composer 0.1.24
-
-- Restored timed Background blur in frame, range, and full prerenders.
-- Retained valid project prerenders between sessions and synchronized timeline seeking/play state.
-- Prioritized clip-boundary snapping for moved and resized effect blocks.
-- Added determinate effect-frame progress and lockable text/image overlay transforms.

@@ -47,6 +47,7 @@ PreviewSlideCount=12
 BrowserViewMode=SmallGrid
 SmallThumbnailSize=120
 LargeThumbnailSize=220
+ExtraLargeThumbnailSize=420
 
 [Output]
 Folder=C:\Videos\Compositions
@@ -83,9 +84,10 @@ and preview storage, export/project default folders, external tools, custom font
 Resolution, frame rate, encoder, quality, target duration, ruler/snap behavior, and render effects belong to
 each `.nya` project and can be changed from **Project settings** or the timeline.
 
-`PreviewSlideCount` is clamped to 1-24 and defaults to 12. `BrowserViewMode` accepts `List`, `SmallGrid`, or
-`LargeGrid` and defaults to `SmallGrid`. `SmallThumbnailSize` is clamped to 80-200 pixels;
-`LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size.
+`PreviewSlideCount` is clamped to 1-24 and defaults to 12. `BrowserViewMode` accepts `List`, `SmallGrid`,
+`LargeGrid`, or `ExtraLargeGrid` and defaults to `SmallGrid`. `SmallThumbnailSize` is clamped to 80-200 pixels;
+`LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size;
+`ExtraLargeThumbnailSize` is clamped to 240-640 and kept at least 40 pixels larger than Large.
 These browser preferences affect cached-image presentation only and never cause source videos to be loaded.
 
 `Startup.FirstStartupCompleted` defaults to false. After the editor initializes successfully, the application

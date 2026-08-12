@@ -29,7 +29,9 @@ those logical project changes; recovery autosave follows the restored state. The
 an asterisk whenever the current snapshot differs from the last normal save. Undo history is session-only and
 is not embedded into `.nya` or recovery files.
 
-Schema version 8 adds the persisted `isTransformLocked` flag for text/image overlays. Schema version 7 adds
+Schema version 9 adds explicit 0–100% text/image overlay opacity. Existing projects load at 100%, matching their
+intended visual setting while removing the renderer's former hidden 90% PNG attenuation. Schema version 8 adds
+the persisted `isTransformLocked` flag for text/image overlays. Schema version 7 adds
 optional per-text/image-overlay fade-in and fade-out seconds. These alpha fades are
 bounded to the item's duration and remain independent from source/audio fades. Schema version 6 added
 backward-compatible text/image overlay transforms: normalized X/Y center coordinates,
@@ -41,7 +43,7 @@ Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older JSON projects
-remain readable; saving them writes schema 8. The normal Open dialog prefers `.nya`.
+remain readable; saving them writes schema 9. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 

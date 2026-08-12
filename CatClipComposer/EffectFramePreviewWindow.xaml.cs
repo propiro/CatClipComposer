@@ -10,31 +10,53 @@ public partial class EffectFramePreviewWindow : Window
 {
     private readonly Stopwatch _renderTimer = new();
     private readonly DispatcherTimer _elapsedTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly DispatcherTimer _preparationTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     public EffectFramePreviewWindow()
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         _elapsedTimer.Tick += (_, _) => UpdateElapsedText();
+        _preparationTimer.Tick += (_, _) =>
+        {
+            if (RenderProgressBar.Value < 23)
+            {
+                RenderProgressBar.Value = Math.Min(23, RenderProgressBar.Value + 1);
+            }
+        };
     }
 
     public void SetLoading(TimeSpan frame)
     {
-        StatusText.Text = $"Rendering selected frame {FormatTime(frame)}…";
-        RenderProgressBar.Value = 1;
+        StatusText.Text = $"Preparing project at {FormatTime(frame)}… 5%";
+        RenderProgressBar.Value = 5;
         RenderProgressBar.IsIndeterminate = false;
         RenderProgressBar.Visibility = Visibility.Visible;
         _renderTimer.Restart();
         _elapsedTimer.Start();
+        _preparationTimer.Start();
         UpdateElapsedText();
     }
 
     public void ReportProgress(RenderProgress progress)
     {
         RenderProgressBar.IsIndeterminate = false;
-        RenderProgressBar.Value = Math.Clamp(progress.Percent, 0, 100);
-        StatusText.Text = $"Rendering selected frame… {progress.Percent:0}% " +
-                          $"({FormatTime(progress.ProcessedDuration)} / {FormatTime(progress.TotalDuration)})";
+        var displayedPercent = progress.Percent >= 100
+            ? 100
+            : progress.ProcessedDuration == TimeSpan.Zero && progress.Percent is > 0 and < 25
+                ? progress.Percent
+                : 25 + Math.Clamp(progress.Percent, 0, 100) * 0.74;
+        displayedPercent = Math.Max(RenderProgressBar.Value, displayedPercent);
+        RenderProgressBar.Value = displayedPercent;
+        if (displayedPercent >= 25)
+        {
+            _preparationTimer.Stop();
+        }
+
+        var timing = progress.TotalDuration > TimeSpan.Zero
+            ? $" ({FormatTime(progress.ProcessedDuration)} / {FormatTime(progress.TotalDuration)})"
+            : string.Empty;
+        StatusText.Text = $"{progress.Message}… {displayedPercent:0}%{timing}";
     }
 
     public void ShowPreview(string path, TimeSpan frame)
@@ -81,6 +103,7 @@ public partial class EffectFramePreviewWindow : Window
         FramePlayer.Stop();
         FramePlayer.Source = null;
         _elapsedTimer.Stop();
+        _preparationTimer.Stop();
         base.OnClosed(e);
     }
 
@@ -88,6 +111,7 @@ public partial class EffectFramePreviewWindow : Window
     {
         _renderTimer.Stop();
         _elapsedTimer.Stop();
+        _preparationTimer.Stop();
         RenderProgressBar.IsIndeterminate = false;
         RenderProgressBar.Value = 100;
         UpdateElapsedText();

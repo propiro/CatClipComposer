@@ -45,7 +45,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   realized, supports explicit Ctrl-toggle and first-anchor Shift-range selection plus mass tag editing, and
   drags one or many clips into a selected Video timeline.
 - **Selectable browser presentation — Done.** One header control cycles through a thumbnail list, small grid,
-  and large grid; Preferences stores separate bounded thumbnail sizes for both grid modes.
+  large grid, and extra-large grid; Preferences stores separate bounded thumbnail sizes for all grid modes.
 - **Full-width browser focus — Done.** A left-edge arrow expands the browser while preserving the timeline
   drop target; toggling back restores the saved dock layout.
 - **Video/contact-sheet preview — Done.** Muted-by-default playback has play/pause, seek, mute, and volume
@@ -103,9 +103,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder. Active overlays expose their
   content and move/scale/rotate gizmos over Project Preview; clicking one synchronizes timeline and Layers /
-  Used Clips selection. Visible per-block lock controls prevent project-view transform gestures while retaining
-  selection and form editing. OK/Enter commits the draft and Cancel/Escape restores it. The same editor exposes
-  the persisted transform plus optional fade-in from and fade-out to transparency.
+  Used Clips selection; double-clicking it opens the item's preferences. Visible gray transparent per-block lock
+  controls prevent project-view transform gestures while retaining selection and form editing. OK/Enter commits
+  the draft and Cancel/Escape restores it. The same editor exposes transform, explicit 0–100% opacity, and
+  optional fade-in from and fade-out to transparency.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
   names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
@@ -120,8 +121,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
-  Effect dialogs can render the selected project frame in a same-width companion above the editor, show live
-  render progress and elapsed time, and optionally refresh after a short debounce while parameters change.
+  Effect dialogs can render the selected project frame in a same-width companion above the editor, show staged
+  preparation plus live FFmpeg progress and elapsed time, and optionally refresh after a short debounce.
 - **Effect discovery and block state — Done.** The Content Browser has a grouped Effects tab with native and
   plugin entries repeated under every compatible timeline category. Timeline blocks can be disabled without
   deletion; disabled blocks remain editable but render darkened/grayed and are excluded from output.
@@ -141,7 +142,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-8 `.nya` JSON uses stable track/item IDs, optional
+- **Named editable projects — Done.** Versioned schema-9 `.nya` JSON uses stable track/item IDs, optional
   track/item colors and overlay fades/transforms, background color, and plugin metadata.
 - **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore bounded project
   snapshots, the project/title shows an asterisk away from the last save point, and closing offers Save,
@@ -160,7 +161,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.24 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.25 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

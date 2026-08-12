@@ -67,6 +67,7 @@ public static class ProjectRenderMapper
                         TransformY: item.OverlayY,
                         TransformScale: item.OverlayScale,
                         TransformRotationDegrees: item.OverlayRotationDegrees,
+                        Opacity: item.OverlayOpacity,
                         FadeInSeconds: item.FadeInSeconds,
                         FadeOutSeconds: item.FadeOutSeconds));
                 }
@@ -84,6 +85,7 @@ public static class ProjectRenderMapper
                         TransformY: item.OverlayY,
                         TransformScale: item.OverlayScale,
                         TransformRotationDegrees: item.OverlayRotationDegrees,
+                        Opacity: item.OverlayOpacity,
                         FadeInSeconds: item.FadeInSeconds,
                         FadeOutSeconds: item.FadeOutSeconds));
                 }

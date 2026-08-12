@@ -1,5 +1,36 @@
 # Audit log
 
+## AUDIT-2026-08-13-001 — Overlay alpha and editor interaction audit
+
+Scope: investigate weak frame-preview feedback, ambiguous lock presentation, maximum browser-card sizing, Space
+focus behavior, PNG transparency leakage, project-view editing entry points, wide menus, and malformed timeline
+scrollbars.
+
+Findings and remediation:
+
+- PNG overlay construction unconditionally applied `colorchannelmixer=aa=0.9`; this was not a source-image alpha
+  defect but deliberate hidden attenuation. It is removed. Schema 9 adds normalized opacity defaulting to 1.0,
+  the layer editor exposes 0–100%, image preview updates live, Core maps the field, JSON validation clamps it,
+  and FFmpeg applies it to image alpha plus text fill/border alpha.
+- The frame companion started at one percent immediately before synchronous clone/map work, making the bar too
+  short to perceive while only status text changed. It now yields after showing, starts at five percent, advances
+  across named preparation phases without regression, then maps processed FFmpeg time across 25–99 percent.
+- Emoji locks inherited the ordinary black Button template. A focused transparent button style and vector data
+  template now render gray open/closed shackle geometry; locked gets a translucent gray body fill. No black tile
+  remains. The overlay canvas also emits a distinct double-click editor request before gesture continuation.
+- Content Browser had only two grid sizes. A fourth ExtraLargeGrid state, 240–640 bound, 420 default, INI/CLI
+  serialization, options validation, and layout metrics were added. Panel Space handling now consumes ButtonBase
+  focus for non-preview panels, preventing WPF from clicking the previous toolbar button.
+- The scrollbar templates omitted min/max/value/viewport bindings on PART_Track, forcing minimum-size thumbs.
+  Two-way value and viewport bindings restore proportional scroll behavior. Context menus and items now cap at
+  compact widths and ellipsize oversized labels with full-label tooltips.
+
+Verification: repeated complete Release builds passed with zero warnings/errors; XAML resources resolved. An
+isolated real render placed a solid red image overlay on blue video: 100% produced an opaque red center, while
+50% produced the expected purple blend. Config JSON reported ExtraLargeThumbnailSize=420. A schema-8 fixture
+without opacity loaded at 100%, then saved/reloaded as schema 9 while preserving an explicit 37%. No dependency
+changed; vulnerability audit not required.
+
 ## AUDIT-2026-08-12-013 — Prerender persistence, timed blur, and edit-safety audit
 
 Scope: address lost cross-session video feedback, missing Background blur in Frame/range/All, timeline seeking
