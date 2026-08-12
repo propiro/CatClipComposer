@@ -1,5 +1,25 @@
 # Audit log
 
+## AUDIT-2026-08-12-009 — Approximately three-second splash audit
+
+Scope: shorten the already-corrected startup presentation to approximately three seconds on the normal cached,
+scan-skipped path without hiding or delaying genuine startup work.
+
+Findings and remediation:
+
+- The v0.1.19 50–100 ms ordinary gaps and 200–500 ms boundary holds still produced a measured handoff around
+  four seconds on the initial smoke environment.
+- WPF-owned decorative pacing now uses inclusive 20–40 ms ordinary gaps and 100–200 ms opening/completion holds.
+  Configured startup scans and live manual refresh messages remain unpaced, so large libraries may correctly keep
+  the splash open longer than three seconds.
+- Application/component metadata and the extensionless distributable marker advanced together to 0.1.20.
+
+Verification: the complete Release solution build passed with zero warnings/errors; CLI `--version` returned
+0.1.20 and GUI output contained only `version_0.1.20`. Three real versioned WPF process/title smokes reached the
+main editor in 2.415, 2.474, and 2.775 seconds (2.555-second mean) and closed cleanly. A preceding colder run of
+the same timing code measured approximately 2.9 seconds. No dependency changed, so no vulnerability audit was
+required.
+
 ## AUDIT-2026-08-12-008 — Splash pacing correction audit
 
 Scope: remove the excessive artificial duration introduced by pacing every detailed startup line while keeping

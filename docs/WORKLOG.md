@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.20 approximately three-second startup
+
+- Reduced ordinary synthetic startup gaps to 20–40 ms and opening/completion holds to 100–200 ms.
+- Kept configured startup scanning and manual library-refresh diagnostics immediate so genuine work, rather than
+  decorative timing, determines longer splash durations.
+- Advanced application/component metadata and the checked-in extensionless marker to 0.1.20.
+- A full Release build passed without warnings or errors. Three real v0.1.20 WPF launches reached the editor in
+  2.415, 2.474, and 2.775 seconds and closed cleanly; an earlier colder pass measured approximately 2.9 seconds.
+
 ## 2026-08-12 — v0.1.19 shorter splash pacing
 
 - Removed the unconditional five-second minimum from startup and manual library-refresh splashes.

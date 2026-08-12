@@ -1,8 +1,0 @@
-Cat Clip Composer v0.1.19
-
-This file has no added file-type extension and is the distributable version marker. Its filename must match the application version.
-
-Changes since v0.1.18:
-- Shortened ordinary startup progress-line pacing to 50–100 milliseconds.
-- Replaced the five-second minimum splash duration with 200–500 millisecond opening and completion holds.
-- Applied the same short boundary holds to manual library-refresh splashes without delaying live scan updates.

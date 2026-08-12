@@ -1,0 +1,8 @@
+Cat Clip Composer v0.1.20
+
+This file has no added file-type extension and is the distributable version marker. Its filename must match the application version.
+
+Changes since v0.1.19:
+- Tuned ordinary startup progress-line pacing to 20–40 milliseconds.
+- Shortened the opening and completion holds to 100–200 milliseconds.
+- Reduced normal measured startup handoff to approximately three seconds.

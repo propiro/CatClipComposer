@@ -7,10 +7,10 @@ namespace CatClipComposer;
 
 public partial class SplashWindow : Window
 {
-    internal const int MessageDelayMinimumMilliseconds = 50;
-    internal const int MessageDelayMaximumMilliseconds = 100;
-    internal const int BoundaryDelayMinimumMilliseconds = 200;
-    internal const int BoundaryDelayMaximumMilliseconds = 500;
+    internal const int MessageDelayMinimumMilliseconds = 20;
+    internal const int MessageDelayMaximumMilliseconds = 40;
+    internal const int BoundaryDelayMinimumMilliseconds = 100;
+    internal const int BoundaryDelayMaximumMilliseconds = 200;
 
     private Task _reportQueue = Task.CompletedTask;
     private DateTime? _lastReportUtc;

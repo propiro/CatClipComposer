@@ -67,9 +67,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   readable text, distinct disabled states, and dark custom scrollbars are applied consistently.
 - **Startup and scan feedback — Done.** The wide split Mr Cat splash reports named stages, a visible percentage,
   progress bar, and timestamped console diagnostics. Software layout, plugins, catalog, project/recovery, fonts,
-  and editor readiness are separate messages. Opening/completion holds last 200–500 ms, while ordinary fast
-  lines use 50–100 ms gaps. Configured startup scans add immediate live per-file counts/percentages; skipped
-  scans say why. Manual rescans use the same foreground, cancelable presentation.
+  and editor readiness are separate messages. Opening/completion holds last 100–200 ms, while ordinary fast
+  lines use 20–40 ms gaps for an approximately three-second normal startup. Configured startup scans add
+  immediate live per-file counts/percentages; skipped scans say why. Manual rescans use the same foreground,
+  cancelable presentation.
 
 ### Timeline and presentation
 
@@ -149,7 +150,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.19 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.20 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope
