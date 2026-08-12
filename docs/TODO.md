@@ -302,8 +302,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P1 / Done
 - Acceptance: Opening and completion holds each last 100–200 ms; ordinary fast startup-only lines appear
-  20–40 ms apart; normal startup measures approximately three seconds while configured startup rescans and
-  manual refresh diagnostics remain immediate.
+  20–40 ms apart; the first successful installation launch lasts at least five seconds and persists completion,
+  while later normal startups last at least approximately three seconds. Configured startup rescans and manual
+  refresh diagnostics remain immediate.
 
 ### `UX-SPLASH-003` — Expose a detailed staged startup pipeline
 
@@ -442,8 +443,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P1 / Done
 - Acceptance: The foreground Mr Cat splash displays progress plus capped scrolling diagnostics during startup
-  and manual rescans, with 100–200 ms opening/completion holds and no five-second minimum; Preferences defaults
-  tall enough to avoid a scrollbar until the user shrinks it.
+  and manual rescans, with a five-second first-successful-launch minimum, approximately three-second returning
+  minimum, and short manual-refresh boundary holds; Preferences defaults tall enough to avoid a scrollbar until
+  the user shrinks it.
 
 ### `UX-PANEL-003` — Focus the selected editing panel from the keyboard
 

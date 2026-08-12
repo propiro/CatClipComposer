@@ -35,6 +35,11 @@ internal static class ApplicationSettingsIniMapper
             "Sources",
             "RescanLibraryOnStartup",
             settings.RescanLibraryOnStartup);
+        settings.FirstStartupCompleted = ReadBool(
+            ini,
+            "Startup",
+            "FirstStartupCompleted",
+            settings.FirstStartupCompleted);
         settings.MetadataFolder = ini.Get("Library", "MetadataFolder") ?? settings.MetadataFolder;
         settings.PreviewSlideCount = ReadInt(
             ini,
@@ -109,6 +114,10 @@ internal static class ApplicationSettingsIniMapper
         var builder = new StringBuilder();
         builder.AppendLine("; Cat Clip Composer configuration");
         builder.AppendLine("; Stored beside the executable as requested. Paths are not quoted.");
+        builder.AppendLine();
+        builder.AppendLine("[Startup]");
+        builder.AppendLine(CultureInfo.InvariantCulture,
+            $"FirstStartupCompleted={settings.FirstStartupCompleted.ToString().ToLowerInvariant()}");
         builder.AppendLine();
         builder.AppendLine("[Sources]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"IncludeSubfolders={settings.IncludeSubfolders.ToString().ToLowerInvariant()}");

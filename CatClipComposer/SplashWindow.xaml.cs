@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
@@ -12,6 +13,7 @@ public partial class SplashWindow : Window
     internal const int BoundaryDelayMinimumMilliseconds = 100;
     internal const int BoundaryDelayMaximumMilliseconds = 200;
 
+    private readonly Stopwatch _displayTimer = Stopwatch.StartNew();
     private Task _reportQueue = Task.CompletedTask;
     private DateTime? _lastReportUtc;
 
@@ -31,6 +33,17 @@ public partial class SplashWindow : Window
     public Task WaitForOpeningDisplayAsync() => WaitForBoundaryPauseAsync();
 
     public Task WaitForCompletionDisplayAsync() => WaitForBoundaryPauseAsync();
+
+    public async Task WaitForCompletionDisplayAsync(TimeSpan minimumDisplayDuration)
+    {
+        var boundaryPause = CreateBoundaryPause();
+        var minimumRemaining = minimumDisplayDuration - _displayTimer.Elapsed;
+        var delay = minimumRemaining > boundaryPause ? minimumRemaining : boundaryPause;
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay);
+        }
+    }
 
     public void QueueReport(StartupProgress update, bool paceFastMessages)
     {
@@ -64,7 +77,9 @@ public partial class SplashWindow : Window
         _lastReportUtc = DateTime.UtcNow;
     }
 
-    private static Task WaitForBoundaryPauseAsync() => Task.Delay(Random.Shared.Next(
+    private static Task WaitForBoundaryPauseAsync() => Task.Delay(CreateBoundaryPause());
+
+    private static TimeSpan CreateBoundaryPause() => TimeSpan.FromMilliseconds(Random.Shared.Next(
         BoundaryDelayMinimumMilliseconds,
         BoundaryDelayMaximumMilliseconds + 1));
 

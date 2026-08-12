@@ -1,0 +1,8 @@
+Cat Clip Composer v0.1.21
+
+This file has no added file-type extension and is the distributable version marker. Its filename must match the application version.
+
+Changes since v0.1.20:
+- Show the splash for at least five seconds on the first successful launch of an installation.
+- Persist first-startup completion in the portable INI after successful editor initialization.
+- Keep later normal startups visible for a minimum of approximately three seconds.

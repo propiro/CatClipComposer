@@ -1,5 +1,8 @@
 ; Copy as CatClipComposer.ini beside the executable. The application also creates it when Preferences are saved.
 
+[Startup]
+FirstStartupCompleted=false
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true

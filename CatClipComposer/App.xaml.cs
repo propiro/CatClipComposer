@@ -87,7 +87,16 @@ public partial class App : Application
                 "EDITOR WORKSPACE"));
             await mainWindow.InitializeAsync(progress);
             await splash.WaitForPendingReportsAsync();
-            await splash.WaitForCompletionDisplayAsync();
+            var minimumSplashDuration = settings.FirstStartupCompleted
+                ? TimeSpan.FromSeconds(3)
+                : TimeSpan.FromSeconds(5);
+            if (!settings.FirstStartupCompleted)
+            {
+                settings.FirstStartupCompleted = true;
+                await services.SettingsStore.SaveAsync(settings);
+            }
+
+            await splash.WaitForCompletionDisplayAsync(minimumSplashDuration);
             splash.Topmost = false;
             splash.Close();
             ShutdownMode = ShutdownMode.OnMainWindowClose;

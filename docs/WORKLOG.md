@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.21 first-launch splash duration
+
+- Added portable `Startup.FirstStartupCompleted` state, defaulting false and saved atomically only after the editor
+  initializes successfully.
+- Applied a five-second splash minimum to the first successful launch in an installation and an approximately
+  three-second minimum thereafter; manual refresh retains only its short boundary holds.
+- Exposed the first-startup state through human and JSON CLI configuration output and documented its INI schema.
+- Advanced application/component metadata and the checked-in extensionless marker to 0.1.21.
+- Full Release builds passed without warnings/errors. Real WPF observation measured 5.138 seconds of first splash
+  visibility and 3.266 seconds returning, confirmed the persisted false-to-true transition, and closed cleanly.
+
 ## 2026-08-12 — v0.1.20 approximately three-second startup
 
 - Reduced ordinary synthetic startup gaps to 20–40 ms and opening/completion holds to 100–200 ms.

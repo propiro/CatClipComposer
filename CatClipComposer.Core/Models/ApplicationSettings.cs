@@ -73,6 +73,8 @@ public sealed class ApplicationSettings
 
     public bool RescanLibraryOnStartup { get; set; } = true;
 
+    public bool FirstStartupCompleted { get; set; }
+
     public WorkspaceDockSlot ContentBrowserDock { get; set; } = WorkspaceDockSlot.Left;
 
     public WorkspaceDockSlot PreviewDock { get; set; } = WorkspaceDockSlot.Center;
@@ -122,6 +124,7 @@ public sealed class ApplicationSettings
         IncludeSubfolders = IncludeSubfolders,
         ShowFileNames = ShowFileNames,
         RescanLibraryOnStartup = RescanLibraryOnStartup,
+        FirstStartupCompleted = FirstStartupCompleted,
         ContentBrowserDock = ContentBrowserDock,
         PreviewDock = PreviewDock,
         LayersDock = LayersDock,

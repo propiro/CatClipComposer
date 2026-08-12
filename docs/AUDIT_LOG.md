@@ -1,5 +1,27 @@
 # Audit log
 
+## AUDIT-2026-08-12-010 — First-versus-returning splash audit
+
+Scope: keep the introductory splash visible for five seconds on the first successful installation launch, then
+enforce an approximately three-second minimum on later launches.
+
+Findings and remediation:
+
+- Splash timing previously had no persisted lifecycle state, so every launch followed the same timing path.
+- `ApplicationSettings.FirstStartupCompleted` now round-trips through `[Startup]` in the portable INI, survives
+  settings copies/saves, and is visible through both forms of CLI configuration output. Missing/false remains
+  backward compatible and selects the first-launch path.
+- The flag changes only after `MainWindow.InitializeAsync` completes. Completion waiting takes the larger of the
+  total 5/3-second remaining duration and the normal 100–200 ms final hold, preserving both total and last-line
+  readability. Manual refresh does not use installation startup minimums.
+- Application/component metadata and the extensionless distributable marker advanced together to 0.1.21.
+
+Verification: complete Release solution builds passed with zero warnings/errors. In one portable output folder,
+the first real WPF run loaded a missing flag as false, persisted true after successful initialization, showed the
+splash for 5.138 observed seconds, and closed cleanly. The returning run used the same INI and showed the splash
+for 3.266 observed seconds. CLI configuration inspection reported the persisted true state. No dependency
+changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-009 — Approximately three-second splash audit
 
 Scope: shorten the already-corrected startup presentation to approximately three seconds on the normal cached,

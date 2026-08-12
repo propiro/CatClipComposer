@@ -37,6 +37,7 @@ internal static class ConfigCommand
                 settings.IncludeSubfolders,
                 settings.ShowFileNames,
                 settings.RescanLibraryOnStartup,
+                settings.FirstStartupCompleted,
                 settings.OutputFolder,
                 settings.ProjectFolder,
                 settings.FfmpegPath,
@@ -104,6 +105,7 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
         await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");
+        await context.Output.WriteLineAsync($"First startup completed: {settings.FirstStartupCompleted}");
         await context.Output.WriteLineAsync(
             $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
             $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");

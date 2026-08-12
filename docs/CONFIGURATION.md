@@ -22,6 +22,9 @@ configuration model. Catalog data and generated previews default to `%LOCALAPPDA
 ```ini
 ; Cat Clip Composer configuration
 
+[Startup]
+FirstStartupCompleted=false
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true
@@ -73,6 +76,10 @@ each `.nya` project and can be changed from **Project settings** or the timeline
 `LargeGrid` and defaults to `SmallGrid`. `SmallThumbnailSize` is clamped to 80-200 pixels;
 `LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size.
 These browser preferences affect cached-image presentation only and never cause source videos to be loaded.
+
+`Startup.FirstStartupCompleted` defaults to false. After the editor initializes successfully, the application
+atomically saves it as true. False or missing values select the five-second first-launch splash minimum; true
+selects the approximately three-second returning-launch minimum. Failed initialization does not advance it.
 
 `RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. The splash
 reports the skip explicitly when this setting is false or no folder exists. When enabled with configured folders,
