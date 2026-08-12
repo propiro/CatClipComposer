@@ -16,6 +16,8 @@ This is an append-only record of material project work. Newest entries go first.
 - The full FFmpeg-aware portable publisher passed with exactly one current marker, v0.1.18 CLI output, and no
   packaged private-path or credential match.
 - Advanced all application/component metadata and the checked-in marker to 0.1.18.
+- Published GitHub Release v0.1.18 with the validated 280,258,157-byte Windows x64 ZIP and separately downloadable
+  checksum; public metadata and checksum content match the local archive.
 
 ## 2026-08-12 — v0.1.17 extensionless version marker
 

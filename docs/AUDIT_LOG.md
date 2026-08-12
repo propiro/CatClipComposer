@@ -26,6 +26,8 @@ reached the v0.1.18 editor and closed cleanly. A 920x520 runtime capture was vis
 stage/status/progress/log geometry. The full FFmpeg-aware portable publisher then passed into a fresh folder;
 its CLI and sole byte-identical `version_0.1.18` marker matched the build, and packaged text contained no private
 path or credential match. No dependency changed, so no vulnerability audit was required.
+GitHub Release v0.1.18 was then published; the public ZIP reports 280,258,157 bytes and its separately downloaded
+checksum matches `sha256:bca26912e4dfed5ed62949b36a01ba42a71951c66c57962d103729e0af9a9ae5`.
 
 ## AUDIT-2026-08-12-006 — Extensionless distributable version-marker audit
 
