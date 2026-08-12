@@ -1,9 +1,0 @@
-Cat Clip Composer v0.1.18
-
-This file has no added file-type extension and is the distributable version marker. Its filename must match the application version.
-
-Changes since v0.1.17:
-- Expanded the Mr. Cat splash screen into a staged startup pipeline with visible percentages.
-- Added separate software-layout, catalog, project-file, plugin, font, and editor-readiness messages.
-- Added per-file startup library-scan progress when Rescan library on startup is enabled.
-- Reported explicit scan-skipped and no-startup-project states when those stages have no work.

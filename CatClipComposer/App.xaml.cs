@@ -25,17 +25,21 @@ public partial class App : Application
         {
             splash.Report(new StartupProgress(1, "Starting the WPF application runtime…", "SYSTEM / BOOT"));
             await Dispatcher.Yield(DispatcherPriority.Render);
-            splash.Report(new StartupProgress(
+            await splash.WaitForOpeningDisplayAsync();
+            splash.QueueReport(new StartupProgress(
                 4,
                 "Resolving portable data paths and opening the catalog database…",
-                "SYSTEM / SERVICES"));
+                "SYSTEM / SERVICES"), paceFastMessages: true);
             var services = await ApplicationServicesFactory.CreateAsync();
-            splash.Report(new StartupProgress(
+            splash.QueueReport(new StartupProgress(
                 8,
                 "Catalog, rendering, thumbnail, and plugin services are online.",
-                "SYSTEM / SERVICES"));
-            splash.Report(new StartupProgress(10, "Reading CatClipComposer.ini preferences…", "CONFIGURATION"));
+                "SYSTEM / SERVICES"), paceFastMessages: true);
+            splash.QueueReport(
+                new StartupProgress(10, "Reading CatClipComposer.ini preferences…", "CONFIGURATION"),
+                paceFastMessages: true);
             var settings = await services.SettingsStore.LoadAsync();
+            await splash.WaitForPendingReportsAsync();
             var paceFastMessages = !(settings.RescanLibraryOnStartup && settings.SourceFolders.Count > 0);
             IProgress<StartupProgress> progress = new DirectProgress<StartupProgress>(
                 update => splash.QueueReport(update, paceFastMessages));
@@ -83,7 +87,7 @@ public partial class App : Application
                 "EDITOR WORKSPACE"));
             await mainWindow.InitializeAsync(progress);
             await splash.WaitForPendingReportsAsync();
-            await splash.WaitForMinimumDisplayAsync();
+            await splash.WaitForCompletionDisplayAsync();
             splash.Topmost = false;
             splash.Close();
             ShutdownMode = ShutdownMode.OnMainWindowClose;

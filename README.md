@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.18**.
+Current application and component version: **0.1.19**.
 
 ## Documentation
 
@@ -83,11 +83,12 @@ Current application and component version: **0.1.18**.
   distinguishable without launching it.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
   with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
-- See a wide split Mr Cat startup/rescan splash for at least five seconds, with a named pipeline stage, visible
+- See a wide split Mr Cat startup/rescan splash with a named pipeline stage, visible
   percentage, progress bar, and timestamped console log. Startup separately reports software layout, plugins,
   catalog, project-file/recovery, fonts, and editor readiness. When configured, library scans report per-file
-  counts and scan percentage; disabled or unconfigured scans are explicitly marked skipped. Fast startup-only
-  messages are paced 0.5–0.75 seconds apart, while real scans report immediately without artificial delay.
+  counts and scan percentage; disabled or unconfigured scans are explicitly marked skipped. The opening and
+  completion pause for 0.2–0.5 seconds, ordinary fast lines are paced 0.05–0.1 seconds apart, and real scans
+  report immediately without artificial per-line delay.
 
 ## Is FFmpeg required?
 

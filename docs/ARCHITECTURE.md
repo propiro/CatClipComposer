@@ -183,7 +183,9 @@ Each component is listed separately to keep its responsibility and boundary read
   license flags, versions, and required render capabilities before publishing.
 - **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate the
   staged splash pipeline, saved software layout, conditional live scan, project/recovery state, and main-window
-  handoff. Presentation-only percentages/stage labels do not leak into Infrastructure. `BOOT-001` is closed.
+  handoff. The WPF shell alone owns its 50–100 ms ordinary-line pacing and 200–500 ms opening/completion holds;
+  real scan updates bypass artificial per-line pacing. Presentation-only percentages/stage labels do not leak
+  into Infrastructure. `BOOT-001` is closed.
 - **INI configuration:** Split generic reading, application mapping, and atomic storage. `CFG-001` and
   `AUD-CFG-001` are closed.
 

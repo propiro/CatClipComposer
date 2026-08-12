@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.19 shorter splash pacing
+
+- Removed the unconditional five-second minimum from startup and manual library-refresh splashes.
+- Reduced artificial gaps between ordinary fast startup lines from 500–750 ms to 50–100 ms, while preserving
+  immediate live scan reporting.
+- Added separate randomized 200–500 ms opening and completion holds so the first and last states remain readable.
+- Advanced application/component metadata and the checked-in extensionless marker to 0.1.19.
+- Verified two warning-free full Release builds, the v0.1.19 CLI and marker, a real WPF startup reaching the
+  versioned editor in about 4.1 seconds and closing cleanly, and a UI-Automation pass observing the staged log
+  reach 17 visible lines before successful editor handoff.
+
 ## 2026-08-12 — v0.1.18 staged startup diagnostics
 
 - Expanded the wide split Mr Cat splash with a named stage, numeric percentage, progress bar, and timestamped

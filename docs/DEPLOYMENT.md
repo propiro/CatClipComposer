@@ -43,11 +43,11 @@ After the version change and all verification are committed and pushed, create a
 matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.18 -m "Cat Clip Composer v0.1.18"
-git push origin v0.1.18
+git tag -a v0.1.19 -m "Cat Clip Composer v0.1.19"
+git push origin v0.1.19
 ```
 
-Replace `0.1.18` with the central version. Do not reuse or move a published version tag; increment the
+Replace `0.1.19` with the central version. Do not reuse or move a published version tag; increment the
 application version for another release. Create a GitHub Release from that tag and attach the portable ZIP
 and its lowercase SHA-256 checksum file. The Release description gives the four extraction/launch steps and
 identifies the bundled FFmpeg license/source records.

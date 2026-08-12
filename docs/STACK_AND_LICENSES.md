@@ -35,7 +35,7 @@ Each dependency is described separately so version, purpose, license, and distri
 - **SQLite via SQLitePCLRaw 2.1.12:** Embedded public-domain catalog database. Accepted.
 - **SQLitePCLRaw 2.1.12:** Apache-2.0 native interop/bundle, pinned past vulnerable SQLite versions.
 - **System.Text.Json from .NET 8:** Structured CLI output and project serialization. Accepted MIT library.
-- **CatClipComposer.Plugins.BuiltIn assembly 0.1.18:** First-party dynamic module assembly containing
+- **CatClipComposer.Plugins.BuiltIn assembly 0.1.19:** First-party dynamic module assembly containing
   background blur, video blur, and PNG source support. Individual module contract versions are 1.0.0 or
   1.1.0. It adds no NuGet or third-party runtime dependency and ships under `plugins`.
 - **FFmpeg/FFprobe n8.1.2-34-g9b6c8969e0-20260806:** Probe, preview, filters, and encoding. The pinned
@@ -76,7 +76,7 @@ that reports `--enable-gpl` or `--enable-nonfree`.
 
 ## Application versioning
 
-`Directory.Build.props` supplies version 0.1.18 to the WPF, CLI, Core, Infrastructure, and built-in plugin
+`Directory.Build.props` supplies version 0.1.19 to the WPF, CLI, Core, Infrastructure, and built-in plugin
 projects, including
 assembly, file, and informational metadata. User-visible strings resolve from Core assembly metadata so the
 main-window title/status bars and headless output cannot drift from the built components.

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Windows;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
@@ -8,9 +7,11 @@ namespace CatClipComposer;
 
 public partial class SplashWindow : Window
 {
-    public static readonly TimeSpan MinimumDisplayDuration = TimeSpan.FromSeconds(5);
+    internal const int MessageDelayMinimumMilliseconds = 50;
+    internal const int MessageDelayMaximumMilliseconds = 100;
+    internal const int BoundaryDelayMinimumMilliseconds = 200;
+    internal const int BoundaryDelayMaximumMilliseconds = 500;
 
-    private readonly Stopwatch _displayTimer = Stopwatch.StartNew();
     private Task _reportQueue = Task.CompletedTask;
     private DateTime? _lastReportUtc;
 
@@ -27,14 +28,9 @@ public partial class SplashWindow : Window
 
     public ObservableCollection<string> LogLines { get; }
 
-    public async Task WaitForMinimumDisplayAsync()
-    {
-        var remaining = MinimumDisplayDuration - _displayTimer.Elapsed;
-        if (remaining > TimeSpan.Zero)
-        {
-            await Task.Delay(remaining);
-        }
-    }
+    public Task WaitForOpeningDisplayAsync() => WaitForBoundaryPauseAsync();
+
+    public Task WaitForCompletionDisplayAsync() => WaitForBoundaryPauseAsync();
 
     public void QueueReport(StartupProgress update, bool paceFastMessages)
     {
@@ -54,7 +50,9 @@ public partial class SplashWindow : Window
         await precedingReport;
         if (_lastReportUtc.HasValue)
         {
-            var targetGap = TimeSpan.FromMilliseconds(Random.Shared.Next(500, 751));
+            var targetGap = TimeSpan.FromMilliseconds(Random.Shared.Next(
+                MessageDelayMinimumMilliseconds,
+                MessageDelayMaximumMilliseconds + 1));
             var remaining = targetGap - (DateTime.UtcNow - _lastReportUtc.Value);
             if (remaining > TimeSpan.Zero)
             {
@@ -65,6 +63,10 @@ public partial class SplashWindow : Window
         Report(update);
         _lastReportUtc = DateTime.UtcNow;
     }
+
+    private static Task WaitForBoundaryPauseAsync() => Task.Delay(Random.Shared.Next(
+        BoundaryDelayMinimumMilliseconds,
+        BoundaryDelayMaximumMilliseconds + 1));
 
     public void Report(StartupProgress update)
     {

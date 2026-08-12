@@ -1,5 +1,25 @@
 # Audit log
 
+## AUDIT-2026-08-12-008 — Splash pacing correction audit
+
+Scope: remove the excessive artificial duration introduced by pacing every detailed startup line while keeping
+the staged splash readable at its boundaries.
+
+Findings and remediation:
+
+- Fast startup diagnostics previously targeted 500–750 ms between messages and the splash independently enforced
+  a five-second minimum. With the expanded staged log, those delays accumulated into an unnecessarily long wait.
+- Ordinary queued messages now fill only gaps below a randomized 50–100 ms target. Real configured startup scans
+  and live manual-refresh messages continue to bypass artificial per-line pacing.
+- Startup and manual refresh now use explicit randomized 200–500 ms opening and completion holds instead of a
+  global minimum duration. Version and the extensionless distributable marker advanced together to 0.1.19.
+
+Verification: two complete Release solution builds passed with zero warnings/errors. CLI `--version` returned
+0.1.19 and the GUI output contained only `version_0.1.19`. A real WPF process/title smoke reached the versioned
+editor in approximately 4.1 seconds and closed cleanly; a separate UI-Automation run observed the staged splash
+reach 17 visible diagnostic lines before the main-window handoff. Source inspection confirmed inclusive 50–100 ms
+ordinary bounds and 200–500 ms boundary bounds. No dependency changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-007 — Staged startup and conditional scan-progress audit
 
 Scope: make the split Mr Cat splash look more technically detailed while separately reporting software-layout,

@@ -395,6 +395,7 @@ public partial class MainWindow : Window
             splash.Report(new StartupProgress(0, "Discovering video files…", "LIBRARY REFRESH"));
             splash.Show();
             IsEnabled = false;
+            await splash.WaitForOpeningDisplayAsync();
             ScanResult result;
             try
             {
@@ -412,7 +413,7 @@ public partial class MainWindow : Window
             }
             finally
             {
-                await splash.WaitForMinimumDisplayAsync();
+                await splash.WaitForCompletionDisplayAsync();
                 IsEnabled = true;
                 splash.Topmost = false;
                 splash.Close();
