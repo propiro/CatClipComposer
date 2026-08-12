@@ -74,7 +74,9 @@ each `.nya` project and can be changed from **Project settings** or the timeline
 `LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size.
 These browser preferences affect cached-image presentation only and never cause source videos to be loaded.
 
-`RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. Source
+`RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. The splash
+reports the skip explicitly when this setting is false or no folder exists. When enabled with configured folders,
+it shows live per-file counts and a scan percentage inside the overall startup percentage range. Source
 folders use zero-based `FolderN` keys, load in numeric order, and are deduplicated case-insensitively.
 
 `MetadataFolder` contains `catalog.db`, cached `thumbnails`, cached contact-sheet `previews`, and crash

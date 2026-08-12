@@ -1,8 +1,0 @@
-Cat Clip Composer v0.1.17
-
-This extensionless file is the distributable version marker. Its filename must match the application version.
-
-Changes since v0.1.16:
-- Added a version_<version> marker beside every GUI and CLI executable.
-- Made builds and portable publishing fail when the checked-in marker name does not match the central version.
-- Removed stale version markers from reused build and publish output folders.

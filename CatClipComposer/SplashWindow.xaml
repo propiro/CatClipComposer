@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Cat Clip Composer"
-        Width="760" Height="470"
+        Width="920" Height="520"
         WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True"
@@ -11,7 +11,7 @@
             BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="310" />
+                <ColumnDefinition Width="350" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Border Margin="10" Background="{StaticResource PreviewBrush}"
@@ -31,7 +31,19 @@
                 <TextBlock Grid.Row="1" Margin="0,4,0,14" FontSize="11"
                            Foreground="{StaticResource MutedTextBrush}" Text="Mr Cat is preparing the edit desk." />
                 <StackPanel Grid.Row="2" Margin="0,0,0,10">
-                    <TextBlock x:Name="StatusText" Margin="0,0,0,5" Text="Starting…" />
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StageText" FontFamily="Consolas" FontSize="10"
+                                   Foreground="{StaticResource MutedTextBrush}" Text="SYSTEM / BOOT" />
+                        <TextBlock x:Name="PercentText" Grid.Column="1" Margin="12,0,0,0"
+                                   FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" Text="0.0%" />
+                    </Grid>
+                    <TextBlock x:Name="StatusText" Margin="0,0,0,6" TextWrapping="Wrap"
+                               Text="Starting the application runtime…" />
                     <ProgressBar x:Name="SplashProgressBar" Height="9" Minimum="0" Maximum="100" />
                 </StackPanel>
                 <Border Grid.Row="3" Background="#0E0E0D"
@@ -39,11 +51,13 @@
                     <ListBox x:Name="LogList" Margin="5" ItemsSource="{Binding LogLines}"
                              FontFamily="Consolas" FontSize="10"
                              Foreground="{StaticResource MutedTextBrush}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto" />
                 </Border>
                 <DockPanel Grid.Row="4" Margin="0,10,0,0">
                     <TextBlock VerticalAlignment="Center" FontSize="10"
-                               Foreground="{StaticResource FaintTextBrush}" Text="Loading and library diagnostics" />
+                               Foreground="{StaticResource FaintTextBrush}"
+                               Text="Startup pipeline / project and library diagnostics" />
                     <Button x:Name="CancelButton" DockPanel.Dock="Right" MinWidth="80"
                             Visibility="Collapsed" Click="Cancel_Click" Content="Cancel" />
                 </DockPanel>

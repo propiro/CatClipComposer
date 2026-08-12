@@ -1,5 +1,32 @@
 # Audit log
 
+## AUDIT-2026-08-12-007 — Staged startup and conditional scan-progress audit
+
+Scope: make the split Mr Cat splash look more technically detailed while separately reporting software-layout,
+project-file, and optional library-scan loading.
+
+Findings and remediation:
+
+- Startup previously reused one plain status line and progress bar, and most phases collapsed into generic
+  catalog/recovery text. The splash now shows a named stage, numeric percentage, progress bar, and timestamped
+  console line for services, configuration, fonts, layout, workspace, plugins, catalog, project/recovery, and
+  final synchronization.
+- `RescanLibraryOnStartup` now controls a distinct live branch: configured folders show enumeration, per-file
+  counts, nested scan percentage, finalization, and result totals. Disabled scanning or an empty folder list gets
+  a clear skip message instead of impersonating scan activity.
+- The split window is 920x520 with a wider diagnostics pane and horizontal access for long file names. Manual
+  refresh splash messages use the same stage/percentage format. Version advanced to 0.1.18.
+
+Verification: the Release solution build and XAML resource audit passed with zero warnings/errors. Three isolated
+real-WPF/UI-Automation smokes preserved the user's executable-directory INI while using temporary metadata: the
+disabled branch captured 26 distinct UI messages including layout, scan-skip, project-file, and percentage text;
+the enabled empty-library branch captured 24 including scan enumeration, finalization, totals, project-file, and
+100% completion; and a generated saved project exposed its filename plus clean-load result at 84/87/92%. All
+reached the v0.1.18 editor and closed cleanly. A 920x520 runtime capture was visually inspected for readable
+stage/status/progress/log geometry. The full FFmpeg-aware portable publisher then passed into a fresh folder;
+its CLI and sole byte-identical `version_0.1.18` marker matched the build, and packaged text contained no private
+path or credential match. No dependency changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-006 — Extensionless distributable version-marker audit
 
 Scope: require a changing filename beside every executable so users can verify that an extracted build was

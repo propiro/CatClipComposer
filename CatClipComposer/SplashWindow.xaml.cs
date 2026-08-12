@@ -68,9 +68,15 @@ public partial class SplashWindow : Window
 
     public void Report(StartupProgress update)
     {
-        SplashProgressBar.Value = Math.Clamp(update.Percent, 0, 100);
+        var percent = Math.Clamp(update.Percent, 0, 100);
+        var stage = string.IsNullOrWhiteSpace(update.Stage)
+            ? "STARTUP"
+            : update.Stage.Trim().ToUpperInvariant();
+        SplashProgressBar.Value = percent;
+        PercentText.Text = $"{percent:0.0}%";
+        StageText.Text = stage;
         StatusText.Text = update.Message;
-        LogLines.Add($"{DateTime.Now:HH:mm:ss}  {update.Message}");
+        LogLines.Add($"{DateTime.Now:HH:mm:ss}  [{percent,5:0.0}%]  {stage,-20}  {update.Message}");
         while (LogLines.Count > 200)
         {
             LogLines.RemoveAt(0);

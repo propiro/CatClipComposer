@@ -304,6 +304,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Fast startup-only lines appear 500–750 ms apart while configured startup rescans and manual
   refresh diagnostics remain immediate; the five-second minimum remains intact.
 
+### `UX-SPLASH-003` — Expose a detailed staged startup pipeline
+
+- Priority/status: P0 / Done
+- Acceptance: The wide split splash shows a stage label, percentage, progress bar, and timestamped diagnostics;
+  software layout, plugins, catalog, project/recovery, fonts, and editor synchronization are distinct messages.
+  Enabled startup scanning reports per-file counts and percentage, while disabled/unconfigured scanning reports
+  an explicit skip reason. Real UI Automation verifies both conditional branches and the layout is inspected.
+
 ### `UX-SAFETY-001` — Protect unsaved projects and finish application handoff polish
 
 - Priority/status: P0 / Done

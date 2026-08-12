@@ -392,7 +392,7 @@ public partial class MainWindow : Window
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             splash.CancelRequested += (_, _) => _viewModel.CancelOperation();
-            splash.Report(new StartupProgress(0, "Discovering video files…"));
+            splash.Report(new StartupProgress(0, "Discovering video files…", "LIBRARY REFRESH"));
             splash.Show();
             IsEnabled = false;
             ScanResult result;
@@ -403,11 +403,12 @@ public partial class MainWindow : Window
                     var percent = update.Total == 0 ? 0 : update.Processed * 100d / update.Total;
                     var message = string.IsNullOrWhiteSpace(update.CurrentFile)
                         ? "Finalizing the library catalog…"
-                        : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
-                    splash.Report(new StartupProgress(percent, message));
+                        : $"Scanning clip {update.Processed + 1:N0} of {update.Total:N0} " +
+                          $"({percent:0.0}%): {update.CurrentFile}";
+                    splash.Report(new StartupProgress(percent, message, "LIBRARY REFRESH"));
                 });
                 result = await _viewModel.ScanAsync(refreshDialog.RegeneratePreviews, progress);
-                splash.Report(new StartupProgress(100, "Library refresh complete."));
+                splash.Report(new StartupProgress(100, "Library refresh complete.", "LIBRARY REFRESH COMPLETE"));
             }
             finally
             {

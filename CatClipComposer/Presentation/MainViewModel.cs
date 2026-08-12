@@ -281,46 +281,106 @@ public sealed class MainViewModel : ObservableObject
         CancellationToken cancellationToken = default)
     {
         startupProgress?.Report(new StartupProgress(
-            7,
-            $"Loaded {_plugins.Plugins.Count} effect/source module(s) from the portable plugins folder."));
+            28,
+            $"Loaded {_plugins.Plugins.Count} effect/source module(s) from the portable plugins folder.",
+            "PLUGIN MODULES"));
         foreach (var diagnostic in _plugins.Diagnostics.Where(message =>
                      message.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
                      message.Contains("not found", StringComparison.OrdinalIgnoreCase)))
         {
-            startupProgress?.Report(new StartupProgress(7, diagnostic));
+            startupProgress?.Report(new StartupProgress(29, diagnostic, "PLUGIN / WARNING"));
         }
 
-        startupProgress?.Report(new StartupProgress(8, "Loading the existing clip catalog…"));
+        startupProgress?.Report(new StartupProgress(
+            32,
+            "Loading cached clip metadata and preview references…",
+            "LIBRARY CATALOG"));
         await LoadCatalogAsync(cancellationToken);
+        startupProgress?.Report(new StartupProgress(
+            40,
+            $"Catalog loaded: {MediaFiles.Count} clip record(s) available to the browser.",
+            "LIBRARY CATALOG"));
         if (_settings.RescanLibraryOnStartup && _settings.SourceFolders.Count > 0)
         {
-            startupProgress?.Report(new StartupProgress(18, "Rescanning configured video folders…"));
+            startupProgress?.Report(new StartupProgress(
+                42,
+                $"Startup scan enabled: enumerating {_settings.SourceFolders.Count} configured source folder(s)…",
+                "LIBRARY SCAN"));
             var scanProgress = new Progress<ScanProgress>(update =>
             {
-                var percent = update.Total == 0 ? 18 : 18 + update.Processed * 72d / update.Total;
+                var scanPercent = update.Total == 0
+                    ? 0
+                    : Math.Clamp(update.Processed * 100d / update.Total, 0, 100);
+                var percent = update.Total == 0 ? 80 : 44 + scanPercent * 0.36;
                 var message = string.IsNullOrWhiteSpace(update.CurrentFile)
-                    ? "Finalizing the library catalog…"
-                    : $"Scanning {update.Processed + 1} of {update.Total}: {update.CurrentFile}";
-                startupProgress?.Report(new StartupProgress(percent, message));
+                    ? $"Finalizing library scan: {update.Added} added, {update.Updated} refreshed, " +
+                      $"{update.Failed} failed."
+                    : $"Scanning clip {update.Processed + 1:N0} of {update.Total:N0} " +
+                      $"({scanPercent:0.0}%): {update.CurrentFile}";
+                startupProgress?.Report(new StartupProgress(percent, message, "LIBRARY SCAN"));
             });
-            await ScanAsync(false, scanProgress);
+            var scanResult = await ScanAsync(false, scanProgress);
+            startupProgress?.Report(new StartupProgress(
+                81,
+                $"Library scan complete: {scanResult.Discovered} discovered, {scanResult.Added} added, " +
+                $"{scanResult.Updated} refreshed, {scanResult.Failed} failed.",
+                "LIBRARY SCAN"));
+        }
+        else
+        {
+            var scanMessage = _settings.RescanLibraryOnStartup
+                ? "Startup scan has no configured source folders; catalog scan skipped."
+                : "Startup library scan is disabled in preferences; cached catalog retained.";
+            startupProgress?.Report(new StartupProgress(45, scanMessage, "LIBRARY SCAN / SKIP"));
         }
 
-        startupProgress?.Report(new StartupProgress(94, "Checking crash recovery data…"));
+        startupProgress?.Report(new StartupProgress(
+            84,
+            "Locating the startup project file and crash-recovery snapshot…",
+            "PROJECT FILE"));
         var recovery = await _projectStore.LoadRecoveryAsync(cancellationToken);
         if (recovery is not null)
         {
-            if (!await RestoreCleanRecoveryAsync(recovery, cancellationToken))
+            var projectLabel = string.IsNullOrWhiteSpace(recovery.ProjectFilePath)
+                ? recovery.Name
+                : Path.GetFileName(recovery.ProjectFilePath);
+            startupProgress?.Report(new StartupProgress(
+                87,
+                $"Reading project state: {projectLabel}…",
+                "PROJECT FILE"));
+            if (await RestoreCleanRecoveryAsync(recovery, cancellationToken))
+            {
+                startupProgress?.Report(new StartupProgress(
+                    92,
+                    $"Project loaded cleanly: {ProjectName}.",
+                    "PROJECT FILE"));
+            }
+            else
             {
                 ApplyProject(recovery);
                 _projectHistory.Reset(recovery, isSaved: false);
                 NotifyHistoryStateChanged();
                 IsDirty = true;
                 StatusText = $"Recovered autosave: {recovery.Name}";
+                startupProgress?.Report(new StartupProgress(
+                    92,
+                    $"Recovered unsaved project state: {recovery.Name}.",
+                    "PROJECT RECOVERY"));
             }
         }
+        else
+        {
+            startupProgress?.Report(new StartupProgress(
+                92,
+                "No startup project file is queued; prepared a clean Untitled project.",
+                "PROJECT FILE / NEW"));
+        }
 
-        startupProgress?.Report(new StartupProgress(100, "Editor ready."));
+        startupProgress?.Report(new StartupProgress(
+            97,
+            "Synchronizing timeline lanes, preview surfaces, and editor commands…",
+            "EDITOR WORKSPACE"));
+        startupProgress?.Report(new StartupProgress(100, "Editor ready.", "STARTUP COMPLETE"));
     }
 
     public async Task NewProjectAsync(CancellationToken cancellationToken = default)

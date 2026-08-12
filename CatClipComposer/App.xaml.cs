@@ -1,5 +1,6 @@
 using System.Windows;
 using System.IO;
+using System.Windows.Threading;
 using CatClipComposer.Desktop;
 using CatClipComposer.Infrastructure.Composition;
 using CatClipComposer.Presentation;
@@ -22,30 +23,44 @@ public partial class App : Application
 
         try
         {
-            var initialProgress = new List<StartupProgress>
-            {
-                new(2, "Preparing portable application services…")
-            };
+            splash.Report(new StartupProgress(1, "Starting the WPF application runtime…", "SYSTEM / BOOT"));
+            await Dispatcher.Yield(DispatcherPriority.Render);
+            splash.Report(new StartupProgress(
+                4,
+                "Resolving portable data paths and opening the catalog database…",
+                "SYSTEM / SERVICES"));
             var services = await ApplicationServicesFactory.CreateAsync();
-            initialProgress.Add(new StartupProgress(5, "Reading application preferences…"));
+            splash.Report(new StartupProgress(
+                8,
+                "Catalog, rendering, thumbnail, and plugin services are online.",
+                "SYSTEM / SERVICES"));
+            splash.Report(new StartupProgress(10, "Reading CatClipComposer.ini preferences…", "CONFIGURATION"));
             var settings = await services.SettingsStore.LoadAsync();
             var paceFastMessages = !(settings.RescanLibraryOnStartup && settings.SourceFolders.Count > 0);
-            foreach (var update in initialProgress)
-            {
-                splash.QueueReport(update, paceFastMessages);
-            }
-
             IProgress<StartupProgress> progress = new DirectProgress<StartupProgress>(
                 update => splash.QueueReport(update, paceFastMessages));
+            progress.Report(new StartupProgress(
+                14,
+                $"Preferences decoded: {settings.SourceFolders.Count} source folder(s), startup scan " +
+                $"{(settings.RescanLibraryOnStartup ? "enabled" : "disabled")}.",
+                "CONFIGURATION"));
+            progress.Report(new StartupProgress(16, "Preparing the portable custom-font workspace…", "FONTS"));
             try
             {
                 Directory.CreateDirectory(settings.CustomFontFolder);
             }
             catch (Exception exception)
             {
-                progress.Report(new StartupProgress(6, $"Custom font folder unavailable: {exception.Message}"));
+                progress.Report(new StartupProgress(
+                    17,
+                    $"Custom font folder unavailable: {exception.Message}",
+                    "FONTS / WARNING"));
             }
 
+            progress.Report(new StartupProgress(
+                18,
+                "Loading saved window geometry, panel docks, splitters, and preview arrangement…",
+                "SOFTWARE LAYOUT"));
             var mainWindow = new MainWindow(
                 settings,
                 services.SettingsStore,
@@ -56,6 +71,16 @@ public partial class App : Application
                 services.CompositionExporter,
                 services.Plugins);
             MainWindow = mainWindow;
+            progress.Report(new StartupProgress(
+                24,
+                $"Software layout applied: {settings.ContentBrowserDock}/{settings.PreviewDock}/" +
+                $"{settings.LayersDock}/{settings.TimelineDock}; previews " +
+                $"{(settings.PreviewsSplit ? "split" : "joined")}.",
+                "SOFTWARE LAYOUT"));
+            progress.Report(new StartupProgress(
+                26,
+                "Binding browser, preview, layer, and timeline workspaces…",
+                "EDITOR WORKSPACE"));
             await mainWindow.InitializeAsync(progress);
             await splash.WaitForPendingReportsAsync();
             await splash.WaitForMinimumDisplayAsync();

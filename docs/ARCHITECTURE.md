@@ -123,8 +123,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 2. `MainViewModel` synchronizes ordered video/still items into the project's Video track.
 3. `IProjectStore` writes the complete versioned document atomically to recovery.
 4. Normal Save writes the selected `.nya` and refreshes `autosave.nya` recovery.
-5. Startup shows progress, optionally rescans the catalog, then loads recovery so media IDs/paths can be
-   resolved into timeline view models.
+5. Startup reports named, percentage-based service/configuration/layout/plugin/catalog stages; conditionally
+   rescans the catalog with per-file scan progress, then reports project-file/recovery loading so media IDs and
+   paths are resolved before timeline/preview synchronization.
 6. A successful render carries project identity into history; editing and autosave alone never update catalog usage.
 7. `ProjectUndoHistory` holds up to 100 serialized in-memory snapshots. Every logical project mutation captures
    after synchronization, undo/redo reapplies through the normal project projection, and the exact saved
@@ -180,8 +181,9 @@ Each component is listed separately to keep its responsibility and boundary read
 - **Portable publisher:** Compose the two single-file entry points, extensionless version marker, INI, docs,
   mandatory pinned FFmpeg payload, plugin modules, and custom-font folder. It validates marker identity, hashes,
   license flags, versions, and required render capabilities before publishing.
-- **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate
-  splash progress, optional scan, recovery, and main-window handoff. `BOOT-001` is closed.
+- **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate the
+  staged splash pipeline, saved software layout, conditional live scan, project/recovery state, and main-window
+  handoff. Presentation-only percentages/stage labels do not leak into Infrastructure. `BOOT-001` is closed.
 - **INI configuration:** Split generic reading, application mapping, and atomic storage. `CFG-001` and
   `AUD-CFG-001` are closed.
 

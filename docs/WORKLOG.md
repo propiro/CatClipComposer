@@ -2,6 +2,21 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.18 staged startup diagnostics
+
+- Expanded the wide split Mr Cat splash with a named stage, numeric percentage, progress bar, and timestamped
+  console-style messages; widened the diagnostics area and exposed horizontal scrolling for long file details.
+- Split startup into service, configuration, font, software-layout, editor-workspace, plugin, catalog,
+  project-file/recovery, and completion stages. Empty/disabled scan work is reported explicitly.
+- When startup scanning is selected and source folders exist, reported enumeration plus per-file scan counts,
+  scan percentage, finalization, and result totals inside the overall startup range. Manual refresh uses the same
+  stage/percentage presentation.
+- Real UI Automation verified scan-disabled, scan-enabled empty-library, and generated saved-project startup
+  branches without retaining test settings/data; the saved project displayed its filename and clean-load result.
+- The full FFmpeg-aware portable publisher passed with exactly one current marker, v0.1.18 CLI output, and no
+  packaged private-path or credential match.
+- Advanced all application/component metadata and the checked-in marker to 0.1.18.
+
 ## 2026-08-12 — v0.1.17 extensionless version marker
 
 - Added checked-in `version_0.1.17` with a short changelist and copied it beside both executable outputs.

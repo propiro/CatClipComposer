@@ -65,9 +65,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   replace them.
 - **Compact monochrome theme — Done.** Dark surfaces, warm neutral colors, square controls, reduced spacing,
   readable text, distinct disabled states, and dark custom scrollbars are applied consistently.
-- **Startup and scan feedback — Done.** The sharpened Mr Cat splash reports startup/library progress and a
-  scrolling diagnostic log for at least five seconds; manual rescans use the same foreground, cancelable
-  presentation.
+- **Startup and scan feedback — Done.** The wide split Mr Cat splash reports named stages, a visible percentage,
+  progress bar, and timestamped console diagnostics for at least five seconds. Software layout, plugins, catalog,
+  project/recovery, fonts, and editor readiness are separate messages. Configured startup scans add live per-file
+  counts/percentages; skipped scans say why. Manual rescans use the same foreground, cancelable presentation.
 
 ### Timeline and presentation
 
@@ -147,7 +148,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.17 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.17 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.18 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

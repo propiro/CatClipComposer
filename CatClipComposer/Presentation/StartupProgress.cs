@@ -1,3 +1,3 @@
 namespace CatClipComposer.Presentation;
 
-public sealed record StartupProgress(double Percent, string Message);
+public sealed record StartupProgress(double Percent, string Message, string Stage = "STARTUP");
