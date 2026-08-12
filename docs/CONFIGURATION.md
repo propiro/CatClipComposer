@@ -69,6 +69,8 @@ WindowMaximized=false
 WorkspaceLeftWidth=310
 WorkspaceRightWidth=270
 WorkspaceBottomHeight=270
+TimelinePixelsPerSecond=8
+TimelineTrackHeight=64
 PreviewsSplit=false
 PreviewSplitRatio=0.5
 ActivePreviewTab=0
@@ -120,7 +122,9 @@ browser-left, preview-center, layers-right, and timeline-bottom.
 The remaining Workspace values are captured when the main window closes. Window width/height are clamped to
 the application's minimum size; a position is reused only when it still intersects the Windows virtual screen.
 `WindowLeft=-1` and `WindowTop=-1` mean use normal centered first-run placement. The three workspace sizes
-preserve the left, right, and bottom splitters. `PreviewsSplit` and `PreviewSplitRatio` restore joined tabs or
+preserve the left, right, and bottom splitters. `TimelinePixelsPerSecond` (0.1–240) and
+`TimelineTrackHeight` (28–110 px) restore the two project-timeline zoom axes; **Fit width** sets the time zoom
+to fit the complete project duration into the current viewport. `PreviewsSplit` and `PreviewSplitRatio` restore joined tabs or
 side-by-side previews and their divider. `ActivePreviewTab` is 0 for Clip Preview or 1 for Project Preview.
 `ActiveWorkspacePanel` and optional `ExpandedWorkspacePanel` accept `ContentBrowser`, `Preview`, `Layers`, or
 `Timeline`. Invalid numeric values and ratios are normalized before use.

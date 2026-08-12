@@ -499,19 +499,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CatalogListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
-        AddSelectedCatalogItems();
-
     private void CatalogListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _catalogDragStart = e.GetPosition(CatalogListBox);
         var container = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
-        if (container is null)
+        if (container?.DataContext is not MediaCardViewModel clickedMedia)
         {
             return;
         }
 
-        var index = CatalogListBox.ItemContainerGenerator.IndexFromContainer(container);
+        var index = CatalogListBox.Items.IndexOf(clickedMedia);
+        if (index < 0)
+        {
+            return;
+        }
+
         var modifiers = Keyboard.Modifiers;
         if (modifiers.HasFlag(ModifierKeys.Shift) && _catalogSelectionAnchor >= 0)
         {
@@ -529,20 +531,35 @@ public partial class MainWindow : Window
                     CatalogListBox.SelectedItems.Add(item);
                 }
             }
-            e.Handled = true;
         }
         else if (modifiers.HasFlag(ModifierKeys.Control))
         {
-            container.IsSelected = !container.IsSelected;
+            if (CatalogListBox.SelectedItems.Contains(clickedMedia))
+            {
+                CatalogListBox.SelectedItems.Remove(clickedMedia);
+            }
+            else
+            {
+                CatalogListBox.SelectedItems.Add(clickedMedia);
+            }
+
             if (_catalogSelectionAnchor < 0)
             {
                 _catalogSelectionAnchor = index;
             }
-            e.Handled = true;
         }
         else
         {
+            CatalogListBox.SelectedItems.Clear();
+            CatalogListBox.SelectedItems.Add(clickedMedia);
             _catalogSelectionAnchor = index;
+        }
+
+        CatalogListBox.Focus();
+        e.Handled = true;
+        if (e.ClickCount == 2)
+        {
+            AddSelectedCatalogItems();
         }
     }
 
@@ -582,6 +599,10 @@ public partial class MainWindow : Window
             _viewModel.SelectedMedia = CatalogListBox.SelectedItems
                 .Cast<MediaCardViewModel>()
                 .Last();
+        }
+        else
+        {
+            _viewModel.SelectedMedia = null;
         }
 
         LoadClipPreview(_viewModel.SelectedMedia?.FullPath);
@@ -2161,8 +2182,11 @@ public partial class MainWindow : Window
             : "Range cleared. Render preview to update.";
     }
 
-    private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e) =>
-        _viewModel.FitTimelineHorizontally(Math.Max(100, TimelineDropSurface.ActualWidth - 76));
+    private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.FitTimelineHorizontally(Math.Max(100, TimelineHorizontalScrollViewer.ViewportWidth));
+        TimelineHorizontalScrollViewer.ScrollToHorizontalOffset(0);
+    }
 
     private void FitTimelineVertically_Click(object sender, RoutedEventArgs e) =>
         _viewModel.FitTimelineVertically(Math.Max(100, TimelineDropSurface.ActualHeight));
@@ -2927,6 +2951,8 @@ public partial class MainWindow : Window
         settings.WorkspaceLeftWidth = WorkspaceGrid.ColumnDefinitions[0].ActualWidth;
         settings.WorkspaceRightWidth = WorkspaceGrid.ColumnDefinitions[4].ActualWidth;
         settings.WorkspaceBottomHeight = WorkspaceGrid.RowDefinitions[2].ActualHeight;
+        settings.TimelinePixelsPerSecond = _viewModel.Timeline.PixelsPerSecond;
+        settings.TimelineTrackHeight = _viewModel.Timeline.TrackHeight;
         var previewLeft = PreviewSplitGrid.ColumnDefinitions[0];
         var previewRight = PreviewSplitGrid.ColumnDefinitions[2];
         var previewWidth = previewLeft.ActualWidth + previewRight.ActualWidth;

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
@@ -182,6 +183,7 @@ public partial class LayerItemEditorWindow : Window
     {
         TitleText.Text = $"Add {GetDisplayName(_kind)}";
         SourceFields.Visibility = Visible(_kind is LayerEditorKind.Image or LayerEditorKind.Audio);
+        ImagePreviewFields.Visibility = Visible(_kind == LayerEditorKind.Image);
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
@@ -196,6 +198,7 @@ public partial class LayerItemEditorWindow : Window
         else if (_kind == LayerEditorKind.Image)
         {
             SourceLabel.Text = "PNG / image file";
+            UpdateImagePreview();
         }
     }
 
@@ -214,6 +217,49 @@ public partial class LayerItemEditorWindow : Window
         if (dialog.ShowDialog(this) == true)
         {
             SourceTextBox.Text = dialog.FileName;
+        }
+    }
+
+    private void SourceTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (_kind == LayerEditorKind.Image)
+        {
+            UpdateImagePreview();
+        }
+    }
+
+    private void UpdateImagePreview()
+    {
+        ImageOverlayPreview.Source = null;
+        ImagePreviewStatusText.Visibility = Visibility.Visible;
+        var path = SourceTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            ImagePreviewStatusText.Text = "Choose a PNG or image to preview it here.";
+            return;
+        }
+
+        if (!File.Exists(path))
+        {
+            ImagePreviewStatusText.Text = "Image file not found.";
+            return;
+        }
+
+        try
+        {
+            var preview = new BitmapImage();
+            preview.BeginInit();
+            preview.CacheOption = BitmapCacheOption.OnLoad;
+            preview.DecodePixelWidth = 900;
+            preview.UriSource = new Uri(path, UriKind.Absolute);
+            preview.EndInit();
+            preview.Freeze();
+            ImageOverlayPreview.Source = preview;
+            ImagePreviewStatusText.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception)
+        {
+            ImagePreviewStatusText.Text = "This image cannot be previewed.";
         }
     }
 

@@ -64,6 +64,8 @@ internal static class ConfigCommand
                     settings.WorkspaceLeftWidth,
                     settings.WorkspaceRightWidth,
                     settings.WorkspaceBottomHeight,
+                    settings.TimelinePixelsPerSecond,
+                    settings.TimelineTrackHeight,
                     settings.PreviewsSplit,
                     settings.PreviewSplitRatio,
                     settings.ActivePreviewTab,
@@ -126,7 +128,8 @@ internal static class ConfigCommand
             $"{settings.WindowLeft:0.#},{settings.WindowTop:0.#}; maximized={settings.WindowMaximized}");
         await context.Output.WriteLineAsync(
             $"Workspace sizes: left={settings.WorkspaceLeftWidth:0.#}, right={settings.WorkspaceRightWidth:0.#}, " +
-            $"bottom={settings.WorkspaceBottomHeight:0.#}; previewsSplit={settings.PreviewsSplit}");
+            $"bottom={settings.WorkspaceBottomHeight:0.#}; timeline={settings.TimelinePixelsPerSecond:0.#}px/s, " +
+            $"{settings.TimelineTrackHeight:0.#}px tracks; previewsSplit={settings.PreviewsSplit}");
         return CliExitCodes.Success;
     }
 }

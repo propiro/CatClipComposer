@@ -109,6 +109,10 @@ public sealed class ApplicationSettings
 
     public double WorkspaceBottomHeight { get; set; } = 270;
 
+    public double TimelinePixelsPerSecond { get; set; } = 8;
+
+    public double TimelineTrackHeight { get; set; } = 64;
+
     public bool PreviewsSplit { get; set; }
 
     public double PreviewSplitRatio { get; set; } = 0.5;
@@ -152,6 +156,8 @@ public sealed class ApplicationSettings
         WorkspaceLeftWidth = WorkspaceLeftWidth,
         WorkspaceRightWidth = WorkspaceRightWidth,
         WorkspaceBottomHeight = WorkspaceBottomHeight,
+        TimelinePixelsPerSecond = TimelinePixelsPerSecond,
+        TimelineTrackHeight = TimelineTrackHeight,
         PreviewsSplit = PreviewsSplit,
         PreviewSplitRatio = PreviewSplitRatio,
         ActivePreviewTab = ActivePreviewTab,

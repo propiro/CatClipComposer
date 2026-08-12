@@ -1,7 +1,0 @@
-Cat Clip Composer 0.1.22
-
-- Added reliable Ctrl/Shift browser selection and a grouped compatible Effects catalog.
-- Added selected-clip Progress creation, remembered defaults, and style copy/paste.
-- Added timeline block disable/enable plus corrected Video-lane effect editing and snapping.
-- Added recent-project opening and effect-frame render progress/timing.
-- Corrected Background lightness so -100 is black and +100 is white.

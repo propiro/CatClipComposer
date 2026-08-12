@@ -2,6 +2,19 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.23 bundled-preview compatibility and browser/timeline polish
+
+- Replaced Background lightness's unavailable `eq` dependency with a bounded `lutyuv` luma offset supported by
+  the bundled LGPL FFmpeg; -100/0/+100 retain their black/unchanged/white semantics.
+- Reworked Content Browser mouse selection so Ctrl explicitly toggles cards and Shift selects from the first
+  anchor through the clicked card, while retaining multi-card drag and double-click insertion.
+- Persisted timeline time zoom and track height in `[Workspace]`, renamed the existing horizontal fit control to
+  **Fit width**, and based it on the live scroll viewport. Removed misleading scrollbar arrow end caps.
+- Added an immediate, non-locking source preview to the PNG/image overlay editor with missing/invalid feedback.
+- Advanced application/component metadata and the extensionless marker to 0.1.23. Verification included clean
+  Release builds, settings/XAML checks, direct lightness endpoint probes, and a real saved-project render through
+  the bundled FFmpeg producing a one-second 320x180 MPEG-4/AAC output without `eq`.
+
 ## 2026-08-12 — v0.1.22 effect discovery, progress workflow, and timeline-state polish
 
 - Confirmed the user's splash timing and window/workspace restoration acceptance, then made Content Browser

@@ -181,7 +181,6 @@
                                  PreviewMouseLeftButtonDown="CatalogListBox_PreviewMouseLeftButtonDown"
                                  PreviewMouseRightButtonDown="CatalogListBox_PreviewMouseRightButtonDown"
                                  PreviewMouseMove="CatalogListBox_PreviewMouseMove"
-                                 MouseDoubleClick="CatalogListBox_MouseDoubleClick"
                                  ScrollViewer.CanContentScroll="True"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -738,7 +737,7 @@
                                 <Button Margin="0,0,4,0" Click="AddTrack_Click" Style="{StaticResource HeaderButtonStyle}"
                                         Content="+ Add track" />
                                 <Button Click="FitTimelineHorizontally_Click" Style="{StaticResource HeaderButtonStyle}"
-                                        Content="Fit horizontal" ToolTip="Fit the project duration into the visible width" />
+                                        Content="Fit width" ToolTip="Fit the complete project duration into the visible timeline width" />
                                 <Button Margin="3,0,4,0" Click="FitTimelineVertically_Click" Style="{StaticResource HeaderButtonStyle}"
                                         Content="Fit vertical" ToolTip="Fit all timelines into the visible height" />
                             </StackPanel>
@@ -862,7 +861,7 @@
                                     </ItemsControl>
                                 </StackPanel>
 
-                                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto"
+                                <ScrollViewer x:Name="TimelineHorizontalScrollViewer" Grid.Column="1" HorizontalScrollBarVisibility="Auto"
                                               VerticalScrollBarVisibility="Disabled">
                                     <Grid x:Name="TimelineCanvas" Width="{Binding Timeline.TimelineWidth}"
                                           PreviewMouseRightButtonDown="TimelineCanvas_PreviewMouseRightButtonDown">

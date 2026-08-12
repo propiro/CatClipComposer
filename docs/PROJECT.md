@@ -157,7 +157,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.22 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.23 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

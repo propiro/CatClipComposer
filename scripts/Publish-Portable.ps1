@@ -129,7 +129,9 @@ function Assert-FfmpegPayload([string]$Directory, [bool]$InspectCapabilities) {
 
     $filters = @(& $ffmpegExe -hide_banner -filters 2>&1)
     $encoders = @(& $ffmpegExe -hide_banner -encoders 2>&1)
-    foreach ($requiredPattern in @("\bdrawtext\b", "\bmpeg4\b", "\baac\b", "\bh264_mf\b")) {
+    foreach ($requiredPattern in @(
+        "\bdrawtext\b", "\bhue\b", "\blutyuv\b", "\bgblur\b",
+        "\bmpeg4\b", "\baac\b", "\bh264_mf\b")) {
         if (-not [bool]($filters -match $requiredPattern) -and
             -not [bool]($encoders -match $requiredPattern)) {
             throw "Bundled FFmpeg lacks a required capability matching '$requiredPattern'."

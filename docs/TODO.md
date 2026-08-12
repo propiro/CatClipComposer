@@ -102,9 +102,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: Normal/maximized window bounds, three workspace splitter sizes, preview join/split and divider,
-  active preview tab, focused panel, and optional expanded panel round-trip through the executable-directory
-  INI; missing/off-screen geometry falls back safely. An isolated real-window close/reopen returns the exact
-  saved position and dimensions.
+  active preview tab, focused panel, optional expanded panel, timeline time zoom, and timeline track height
+  round-trip through the executable-directory INI; missing/off-screen geometry falls back safely. An isolated
+  real-window close/reopen returns the exact saved position and dimensions. Fit width uses the live viewport.
 
 ### `BROWSER-001` — Make the content browser safe for very large libraries and support drag/drop
 
@@ -122,8 +122,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: The virtualized wrap panel derives the real viewport width, expanded browsing produces
-  multiple columns, extended selection supports mass tag replacement and multi-clip drag/drop, and browser
-  context actions operate on the clicked selection.
+  multiple columns, explicit Ctrl toggles and first-anchor Shift ranges support mass tag replacement and
+  multi-clip drag/drop, and browser context actions operate on the clicked selection.
 
 ### `BROWSER-004` — Offer list and configurable grid presentations
 
@@ -295,8 +295,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `FX-LIGHTNESS-001` — Give Background lightness literal endpoint behavior
 
 - Priority/status: P0 / Done
-- Acceptance: The -100..100 slider maps linearly to FFmpeg `eq` brightness -1..1, with -100 yielding black,
-  0 unchanged, and +100 white; the editor documents lightness, saturation, and hue calculation ranges.
+- Acceptance: The -100..100 slider maps linearly to a bounded luma offset implemented with filters present in
+  the bundled LGPL FFmpeg, with -100 yielding black, 0 unchanged, and +100 white; the editor documents
+  lightness, saturation, and hue calculation ranges.
 
 ### `RENDER-BG-002` — Define optional overlay contribution to Blur content background
 
@@ -441,7 +442,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `OVERLAY-001` — Support multiple image/text overlays with individual timing
 
 - Priority/status: P2 / Done
-- Acceptance: The layer editor controls timing and placement for multiple elements; timed render passed.
+- Acceptance: The layer editor controls timing and placement for multiple elements, shows the chosen image
+  immediately without locking its source file, and reports missing/invalid image input; timed render passed.
 
 ### `PREVIEW-001` — Add an FFmpeg contact-sheet/slideshow fallback preview
 

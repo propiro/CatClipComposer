@@ -110,6 +110,10 @@ internal static class ApplicationSettingsIniMapper
             ini, "Workspace", "WorkspaceRightWidth", settings.WorkspaceRightWidth);
         settings.WorkspaceBottomHeight = ReadDouble(
             ini, "Workspace", "WorkspaceBottomHeight", settings.WorkspaceBottomHeight);
+        settings.TimelinePixelsPerSecond = ReadDouble(
+            ini, "Workspace", "TimelinePixelsPerSecond", settings.TimelinePixelsPerSecond);
+        settings.TimelineTrackHeight = ReadDouble(
+            ini, "Workspace", "TimelineTrackHeight", settings.TimelineTrackHeight);
         settings.PreviewsSplit = ReadBool(ini, "Workspace", "PreviewsSplit", settings.PreviewsSplit);
         settings.PreviewSplitRatio = ReadDouble(
             ini, "Workspace", "PreviewSplitRatio", settings.PreviewSplitRatio);
@@ -184,6 +188,8 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceLeftWidth={settings.WorkspaceLeftWidth:0.###}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceRightWidth={settings.WorkspaceRightWidth:0.###}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"WorkspaceBottomHeight={settings.WorkspaceBottomHeight:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"TimelinePixelsPerSecond={settings.TimelinePixelsPerSecond:0.###}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"TimelineTrackHeight={settings.TimelineTrackHeight:0.###}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewsSplit={settings.PreviewsSplit.ToString().ToLowerInvariant()}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewSplitRatio={settings.PreviewSplitRatio:0.######}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ActivePreviewTab={settings.ActivePreviewTab}");
@@ -254,6 +260,8 @@ internal static class ApplicationSettingsIniMapper
         settings.WorkspaceLeftWidth = Math.Clamp(settings.WorkspaceLeftWidth, 190, 3000);
         settings.WorkspaceRightWidth = Math.Clamp(settings.WorkspaceRightWidth, 190, 3000);
         settings.WorkspaceBottomHeight = Math.Clamp(settings.WorkspaceBottomHeight, 150, 3000);
+        settings.TimelinePixelsPerSecond = Math.Clamp(settings.TimelinePixelsPerSecond, 0.1, 240);
+        settings.TimelineTrackHeight = Math.Clamp(settings.TimelineTrackHeight, 28, 110);
         settings.PreviewSplitRatio = Math.Clamp(settings.PreviewSplitRatio, 0.15, 0.85);
         settings.ActivePreviewTab = Math.Clamp(settings.ActivePreviewTab, 0, 1);
         NormalizeWorkspace(settings);

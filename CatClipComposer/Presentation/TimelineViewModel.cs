@@ -144,7 +144,7 @@ public sealed class TimelineViewModel : ObservableObject
     };
 
     public double TimelineWidth => Math.Max(
-        720,
+        100,
         Math.Max(TargetDuration.TotalSeconds, Duration.TotalSeconds) * PixelsPerSecond + 1);
 
     public TimeSpan Duration => TimeSpan.FromTicks(_clips.Sum(clip => clip.Duration.Ticks));

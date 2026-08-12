@@ -1,5 +1,30 @@
 # Audit log
 
+## AUDIT-2026-08-12-012 — Bundled preview regression and interaction follow-up
+
+Scope: address the reported `No such filter: 'eq'` failure for every project-preview path, broken Content
+Browser modifier selection, missing image-overlay feedback, orphaned scrollbar arrows, and timeline zoom state.
+
+Findings and remediation:
+
+- The bundled audited FFmpeg exposes `lutyuv`, `hue`, and `gblur` but not `eq`; v0.1.22 therefore introduced a
+  hard preview failure whenever Background blur was active. The plugin now implements lightness with a clamped
+  luma lookup expression and no longer asks for an absent filter.
+- The recycled Content Browser's selection depended partly on ListBoxItem behavior after preview handling.
+  Selection is now fully explicit against the clicked data item: Ctrl toggles, Shift selects the anchor range,
+  plain click replaces, and double-click inserts the resulting selection.
+- Timeline zoom values were presentation state but were not copied into the persisted workspace. Both zoom axes
+  now round-trip as bounded INI values; Fit width measures the actual horizontal viewport and resets its offset.
+- The isolated upward/downward triangles were scrollbar line buttons whose remaining track could be visually
+  irrelevant at short extents. The theme now presents only its functional page/drag track. The image layer editor
+  now decodes a bounded preview on load without holding the source file open.
+
+Verification: full Release builds passed after each code tranche. Direct bundled-FFmpeg luma probes produced
+black at -100 and maximum luma at +100. A schema-7 saved-project smoke containing a still and Background blur
+rendered successfully through the bundled executable to a decodable one-second 320x180 MPEG-4/AAC file. The
+portable publisher now gates `hue`, `lutyuv`, and `gblur` as required filters so the mismatch cannot recur. Static
+XAML/settings checks and `git diff --check` passed. No dependency changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-011 — Timeline/effect interaction and render-state audit
 
 Scope: address the reported browser selection, effect discovery, Progress insertion, preview feedback,

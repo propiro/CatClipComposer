@@ -20,10 +20,21 @@
                         <TextBlock x:Name="SourceLabel" Margin="0,0,0,4" Text="Source file" />
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <TextBox x:Name="SourceTextBox" />
+                            <TextBox x:Name="SourceTextBox" TextChanged="SourceTextBox_TextChanged" />
                             <Button Grid.Column="1" Margin="5,0,0,0" Click="Browse_Click" Content="Browse…" />
                         </Grid>
                     </StackPanel>
+
+                    <Border x:Name="ImagePreviewFields" Height="210" Margin="0,0,0,10" Padding="6"
+                            Background="{StaticResource PreviewBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <Grid>
+                            <TextBlock x:Name="ImagePreviewStatusText" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Foreground="{StaticResource FaintTextBrush}"
+                                       Text="Choose a PNG or image to preview it here." />
+                            <Image x:Name="ImageOverlayPreview" Stretch="Uniform" />
+                        </Grid>
+                    </Border>
 
                     <StackPanel x:Name="TextFields" Margin="0,0,0,10">
                         <TextBlock Margin="0,0,0,4" Text="Text" />

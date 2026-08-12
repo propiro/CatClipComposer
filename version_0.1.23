@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.23
+
+- Restored previews on the bundled FFmpeg by removing the unavailable eq-filter dependency.
+- Added reliable Ctrl/Shift Content Browser selection and PNG/image editor previews.
+- Preserved timeline time zoom and track height between sessions, with a clear Fit width action.
+- Removed misleading orphaned scrollbar arrow buttons.

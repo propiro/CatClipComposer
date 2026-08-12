@@ -59,6 +59,8 @@ public sealed class MainViewModel : ObservableObject
         _compositionExporter = compositionExporter;
         _plugins = plugins;
         Timeline = new TimelineViewModel(15);
+        Timeline.PixelsPerSecond = settings.TimelinePixelsPerSecond;
+        Timeline.TrackHeight = settings.TimelineTrackHeight;
         _project = EditorProject.Create("Untitled project", CreateOutputSettings());
         _projectHistory.Reset(_project, isSaved: true);
         Timeline.Changed += Timeline_Changed;

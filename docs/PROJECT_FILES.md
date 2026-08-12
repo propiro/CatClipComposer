@@ -49,7 +49,7 @@ saturation, lightness, hue, zoom, and Gaussian blur parameters. Plugin module ID
 missing or incompatible required module produces an explicit render error instead of silently changing the
 project.
 
-Background lightness is a human percentage mapped linearly to FFmpeg's -1..1 brightness interval: -100 is
+Background lightness is a human percentage mapped linearly to a bounded luma offset: -100 is
 black, 0 leaves brightness unchanged, and +100 is white. Saturation uses 0 for grayscale, 1 unchanged, and 3
 as the slider maximum; hue rotates through 0..360 degrees.
 
