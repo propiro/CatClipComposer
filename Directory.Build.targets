@@ -1,5 +1,17 @@
 <Project>
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+    <IsCatClipComposerExecutable>true</IsCatClipComposerExecutable>
+    <VersionMarkerFileName>version_$(Version)</VersionMarkerFileName>
+    <VersionMarkerSource>$(MSBuildThisFileDirectory)$(VersionMarkerFileName)</VersionMarkerSource>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsCatClipComposerExecutable)' == 'true'">
+    <RepositoryVersionMarker Include="$(MSBuildThisFileDirectory)version_*" />
+    <None Include="$(VersionMarkerSource)"
+          Link="$(VersionMarkerFileName)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="Always"
+          Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)thirdparty\ffmpeg\**\*"
           Link="thirdparty\ffmpeg\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
@@ -11,9 +23,17 @@
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="ValidateVersionMarker"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(IsCatClipComposerExecutable)' == 'true'">
+    <Error Condition="'@(RepositoryVersionMarker)' != '$(VersionMarkerSource)'"
+           Text="The repository must contain exactly one extensionless version marker named $(VersionMarkerFileName). Rename the marker whenever Directory.Build.props changes." />
+  </Target>
+
   <Target Name="CopyBuiltInPluginsToOutput"
           AfterTargets="Build"
-          Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+          Condition="'$(IsCatClipComposerExecutable)' == 'true'">
     <ItemGroup>
       <BuiltInPluginFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.dll" />
       <BuiltInPluginFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json"
@@ -24,9 +44,20 @@
           DestinationFolder="$(TargetDir)plugins"
           SkipUnchangedFiles="true" />
   </Target>
+
+  <Target Name="RemoveStaleBuildVersionMarkers"
+          AfterTargets="Build"
+          Condition="'$(IsCatClipComposerExecutable)' == 'true' and '$(TargetDir)' != ''">
+    <ItemGroup>
+      <StaleBuildVersionMarker Include="$(TargetDir)version_*"
+                               Exclude="$(TargetDir)$(VersionMarkerFileName)" />
+    </ItemGroup>
+    <Delete Files="@(StaleBuildVersionMarker)" />
+  </Target>
+
   <Target Name="CopyBuiltInPluginsToPublish"
           AfterTargets="Publish"
-          Condition="'$(MSBuildProjectName)' == 'CatClipComposer' Or '$(MSBuildProjectName)' == 'CatClipComposer.Cli'">
+          Condition="'$(IsCatClipComposerExecutable)' == 'true'">
     <ItemGroup>
       <BuiltInPluginPublishFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.dll" />
       <BuiltInPluginPublishFile Include="$(MSBuildThisFileDirectory)CatClipComposer.Plugins.BuiltIn\bin\$(Configuration)\net8.0\CatClipComposer.Plugins.BuiltIn.deps.json"
@@ -36,5 +67,15 @@
     <Copy SourceFiles="@(BuiltInPluginPublishFile)"
           DestinationFolder="$(PublishDir)plugins"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="RemoveStalePublishVersionMarkers"
+          AfterTargets="Publish"
+          Condition="'$(IsCatClipComposerExecutable)' == 'true' and '$(PublishDir)' != ''">
+    <ItemGroup>
+      <StalePublishVersionMarker Include="$(PublishDir)version_*"
+                                 Exclude="$(PublishDir)$(VersionMarkerFileName)" />
+    </ItemGroup>
+    <Delete Files="@(StalePublishVersionMarker)" />
   </Target>
 </Project>

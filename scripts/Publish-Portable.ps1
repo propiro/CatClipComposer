@@ -9,6 +9,17 @@ param(
 $ErrorActionPreference = "Stop"
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 & (Join-Path $PSScriptRoot "Test-XamlStaticResources.ps1")
+[xml]$versionProperties = Get-Content `
+    -LiteralPath (Join-Path $repositoryRoot "Directory.Build.props") `
+    -Raw -Encoding utf8
+$applicationVersion = [string]$versionProperties.Project.PropertyGroup.Version
+$versionMarkerName = "version_$applicationVersion"
+$versionMarkerSource = Join-Path $repositoryRoot $versionMarkerName
+$repositoryVersionMarkers = @(Get-ChildItem -LiteralPath $repositoryRoot -File -Filter "version_*")
+if ($repositoryVersionMarkers.Count -ne 1 -or
+    $repositoryVersionMarkers[0].Name -cne $versionMarkerName) {
+    throw "The repository must contain exactly one version marker named '$versionMarkerName'."
+}
 $resolvedOutput = if ([System.IO.Path]::IsPathRooted($OutputPath)) {
     [System.IO.Path]::GetFullPath($OutputPath)
 } else {
@@ -167,15 +178,31 @@ try {
 
     $desktopFiles = @(Get-ChildItem -LiteralPath $desktopPublish -File)
     $cliFiles = @(Get-ChildItem -LiteralPath $cliPublish -File)
-    if ($desktopFiles.Count -ne 1 -or $desktopFiles[0].Name -ne "CatClipComposer.exe") {
+    $desktopExe = Join-Path $desktopPublish "CatClipComposer.exe"
+    $cliExe = Join-Path $cliPublish "CatClipComposer.Cli.exe"
+    $desktopVersionMarker = Join-Path $desktopPublish $versionMarkerName
+    $cliVersionMarker = Join-Path $cliPublish $versionMarkerName
+    $expectedDesktopNames = @("CatClipComposer.exe", $versionMarkerName)
+    $expectedCliNames = @("CatClipComposer.Cli.exe", $versionMarkerName)
+    if ($desktopFiles.Count -ne 2 -or
+        @($desktopFiles | Where-Object { $_.Name -notin $expectedDesktopNames }).Count -ne 0) {
         throw "Desktop single-file publish produced an unexpected file layout."
     }
-    if ($cliFiles.Count -ne 1 -or $cliFiles[0].Name -ne "CatClipComposer.Cli.exe") {
+    if ($cliFiles.Count -ne 2 -or
+        @($cliFiles | Where-Object { $_.Name -notin $expectedCliNames }).Count -ne 0) {
         throw "CLI single-file publish produced an unexpected file layout."
     }
+    $sourceMarkerHash = (Get-FileHash -LiteralPath $versionMarkerSource -Algorithm SHA256).Hash
+    foreach ($publishedMarker in @($desktopVersionMarker, $cliVersionMarker)) {
+        if (-not (Test-Path -LiteralPath $publishedMarker) -or
+            (Get-FileHash -LiteralPath $publishedMarker -Algorithm SHA256).Hash -ne $sourceMarkerHash) {
+            throw "Published version marker is missing or changed: $publishedMarker"
+        }
+    }
 
-    Copy-Item -LiteralPath $desktopFiles[0].FullName -Destination $packageRoot
-    Copy-Item -LiteralPath $cliFiles[0].FullName -Destination $packageRoot
+    Copy-Item -LiteralPath $desktopExe -Destination $packageRoot
+    Copy-Item -LiteralPath $cliExe -Destination $packageRoot
+    Copy-Item -LiteralPath $desktopVersionMarker -Destination $packageRoot
     $pluginPublish = Join-Path $desktopPublish "plugins"
     $builtInPlugin = Join-Path $pluginPublish "CatClipComposer.Plugins.BuiltIn.dll"
     if (-not (Test-Path -LiteralPath $builtInPlugin)) {
@@ -202,6 +229,13 @@ try {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "fonts") `
         -Destination $packageRoot -Recurse -Force
     Assert-FfmpegPayload (Join-Path $packageRoot "thirdparty\ffmpeg") $false
+    $packagedVersionMarkers = @(Get-ChildItem -LiteralPath $packageRoot -File -Filter "version_*")
+    if ($packagedVersionMarkers.Count -ne 1 -or
+        $packagedVersionMarkers[0].Name -cne $versionMarkerName -or
+        (Get-FileHash -LiteralPath $packagedVersionMarkers[0].FullName -Algorithm SHA256).Hash -ne
+            $sourceMarkerHash) {
+        throw "Portable package version marker does not match $versionMarkerName."
+    }
 
     if (Test-Path -LiteralPath $resolvedOutput) {
         Remove-Item -LiteralPath $resolvedOutput -Recurse -Force

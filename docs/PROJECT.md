@@ -143,9 +143,11 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   libx264 is only an explicit user-supplied-tool opt-in.
 - **One-folder deployment — Done.** GUI and CLI are single-file applications; the pinned LGPL FFmpeg shared
   runtime, its DLLs, license, source record, build information, and hashes are always under `thirdparty`.
+- **Visible package version marker — Done.** Every executable output carries one extensionless
+  `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.16 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.16 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.17 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

@@ -43,11 +43,11 @@ After the version change and all verification are committed and pushed, create a
 matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.16 -m "Cat Clip Composer v0.1.16"
-git push origin v0.1.16
+git tag -a v0.1.17 -m "Cat Clip Composer v0.1.17"
+git push origin v0.1.17
 ```
 
-Replace `0.1.16` with the central version. Do not reuse or move a published version tag; increment the
+Replace `0.1.17` with the central version. Do not reuse or move a published version tag; increment the
 application version for another release. Create a GitHub Release from that tag and attach the portable ZIP
 and its lowercase SHA-256 checksum file. The Release description gives the four extraction/launch steps and
 identifies the bundled FFmpeg license/source records.
@@ -62,6 +62,7 @@ Windows security.
 CatClipComposer/
 |-- CatClipComposer.exe
 |-- CatClipComposer.Cli.exe
+|-- version_<version>
 |-- CatClipComposer.ini
 |-- fonts/
 |   `-- README.txt
@@ -82,8 +83,9 @@ CatClipComposer/
         `-- MANIFEST.sha256
 ```
 
-The root contains only the GUI/CLI entry points and portable INI plus organized `fonts`, `plugins`, `docs`,
-and `thirdparty` subfolders.
+The root contains only the GUI/CLI entry points, extensionless `version_<version>` marker, and portable INI
+plus organized `fonts`, `plugins`, `docs`, and `thirdparty` subfolders. The marker contains a short changelist;
+its changing filename lets users verify an extracted build was actually replaced without launching it.
 Application assemblies, native SQLite, and the optional .NET runtime remain inside the single-file programs.
 Plugin assemblies remain replaceable under `plugins`; the publisher requires the built-in module assembly.
 FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
@@ -135,14 +137,16 @@ the build will otherwise lack a runnable tool payload and the publisher's hash c
 
 Before publishing, the script verifies:
 
-1. Required executables, records, and license files exist.
-2. Every runtime/license SHA-256 matches `MANIFEST.sha256`.
-3. FFmpeg and FFprobe report the pinned version.
-4. FFmpeg reports neither `--enable-gpl` nor `--enable-nonfree`.
-5. `drawtext`, native `mpeg4`, native `aac`, and `h264_mf` are available.
-6. The copied package payload still matches its manifest.
-7. The portable custom-font folder is included separately from the application executables.
-8. The built-in plugin module assembly is included under `plugins`.
+1. Exactly one checked-in extensionless version marker matches `Directory.Build.props`.
+2. GUI and CLI publish outputs contain byte-identical copies beside their executables, with no stale marker.
+3. Required FFmpeg executables, records, and license files exist.
+4. Every runtime/license SHA-256 matches `MANIFEST.sha256`.
+5. FFmpeg and FFprobe report the pinned version.
+6. FFmpeg reports neither `--enable-gpl` nor `--enable-nonfree`.
+7. `drawtext`, native `mpeg4`, native `aac`, and `h264_mf` are available.
+8. The copied package payload still matches its manifest.
+9. The portable custom-font folder is included separately from the application executables.
+10. The built-in plugin module assembly is included under `plugins`.
 
 ## Updating FFmpeg
 

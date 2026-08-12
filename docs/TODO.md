@@ -361,6 +361,13 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: All projects share central assembly/file metadata; the main title/status bars and CLI
   version output resolve it from Core.
 
+### `VERSION-MARKER-001` — Put a visibly changing version file beside every executable
+
+- Priority/status: P0 / Done
+- Acceptance: Exactly one extensionless `version_<version>` file matches central version metadata, is copied
+  beside GUI and CLI build/publish outputs, contains a short changelist, and replaces stale markers. Builds and
+  portable publishing fail for a missing, duplicate, stale, or mismatched copied marker.
+
 ### `DEPLOY-002` — Keep application DLL/runtime clutter out of the portable root
 
 - Priority/status: P1 / Done

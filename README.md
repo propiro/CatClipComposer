@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.16**.
+Current application and component version: **0.1.17**.
 
 ## Documentation
 
@@ -78,7 +78,9 @@ Current application and component version: **0.1.16**.
   supplies blur-content background, timed video blur, and PNG splash-screen functionality.
 - Compose overlays and Video blur according to visual track order, and preview the selected timeline frame in
   a window snapped beside the effect editor with manual or debounced automatic refresh.
-- Show the shared semantic version in the main title/status bars and through the headless `--version` option.
+- Show the shared semantic version in the main title/status bars and through the headless `--version` option;
+  place the extensionless `version_<version>` marker beside both executables so an unpacked build is visibly
+  distinguishable without launching it.
 - Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
   with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
 - See a Mr Cat startup/rescan splash for at least five seconds. Fast startup-only messages are paced 0.5–0.75
@@ -109,7 +111,8 @@ When a portable package is available:
    archives.
 2. Optionally verify the download with the adjacent `.sha256` checksum file.
 3. Extract the complete `CatClipComposer` folder to a writable location.
-4. Keep the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside `CatClipComposer.exe`.
+4. Keep `version_<version>` plus the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside
+   `CatClipComposer.exe`. The marker filename should match the version in the Release name.
 5. Run `CatClipComposer.exe`. The normal self-contained package does not need a separate .NET installation.
 
 Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.

@@ -177,9 +177,9 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.
-- **Portable publisher:** Compose the two single-file entry points, INI, docs, mandatory pinned FFmpeg
-  payload, plugin modules, and custom-font folder. It validates hashes, license flags, versions, and required render
-  capabilities before publishing.
+- **Portable publisher:** Compose the two single-file entry points, extensionless version marker, INI, docs,
+  mandatory pinned FFmpeg payload, plugin modules, and custom-font folder. It validates marker identity, hashes,
+  license flags, versions, and required render capabilities before publishing.
 - **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate
   splash progress, optional scan, recovery, and main-window handoff. `BOOT-001` is closed.
 - **INI configuration:** Split generic reading, application mapping, and atomic storage. `CFG-001` and

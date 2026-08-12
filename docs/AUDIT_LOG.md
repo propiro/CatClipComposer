@@ -1,5 +1,26 @@
 # Audit log
 
+## AUDIT-2026-08-12-006 — Extensionless distributable version-marker audit
+
+Scope: require a changing filename beside every executable so users can verify that an extracted build was
+actually advanced without relying on an already-running window or file properties.
+
+Findings and remediation:
+
+- Central assembly metadata alone was embedded inside binaries and had no separately visible package artifact.
+  The repository now carries exactly one extensionless `version_<version>` file with a short changelist.
+- Executable MSBuild projects validate its exact filename against `Directory.Build.props`, copy it into build
+  and publish output, and remove stale marker names from reused output folders.
+- The portable publisher independently validates the single repository marker, byte identity in both GUI and
+  CLI publish results, and the final package root. Application/component version advanced to 0.1.17.
+
+Verification: the Release solution build and XAML resource audit passed with zero warnings/errors. A simulated
+`Version=9.9.9` build failed with the intended missing-marker diagnostic. Deliberately planted stale GUI/CLI
+markers were removed by the next build, leaving only byte-identical `version_0.1.17` files. The complete
+FFmpeg-aware publisher passed into a fresh folder; its root contained exactly that marker beside both executables,
+and packaged CLI plus the real WPF title reported v0.1.17. A packaged-text privacy scan found no private path or
+credential match. No dependency changed, so a new vulnerability audit was not required.
+
 ## AUDIT-2026-08-12-005 — v0.1.16 clean-session and workspace-restoration correction
 
 Scope: user reports that an unchanged project prompted to save again, window geometry did not appear restored,

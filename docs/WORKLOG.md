@@ -2,6 +2,17 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.17 extensionless version marker
+
+- Added checked-in `version_0.1.17` with a short changelist and copied it beside both executable outputs.
+- Made executable builds reject a marker that is missing, duplicated, or out of sync with central version
+  metadata, and remove stale `version_*` files from reused build/publish directories.
+- Extended portable publishing to require byte-identical GUI/CLI markers and accept exactly one current marker
+  in the package root. Advanced all application/component metadata to 0.1.17.
+- Verified expected rejection of a deliberately mismatched version, automatic removal of planted stale markers,
+  a warning-free Release build, XAML resource audit, fresh full portable publish, packaged CLI version, and real
+  WPF v0.1.17 title. Package text contained no private-path or credential match.
+
 ## 2026-08-12 — v0.1.16 session-state correction
 
 - Corrected clean recovery being unconditionally classified as an unsaved edit on every startup. Clean shutdown
