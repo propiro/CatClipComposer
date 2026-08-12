@@ -22,6 +22,7 @@ public partial class LayerItemEditorWindow : Window
     private readonly LayerEditorKind _kind;
     private readonly TimeSpan _projectDuration;
     private readonly Guid? _existingId;
+    private readonly bool _existingTransformLocked;
     private readonly double _snapSeconds;
     private bool _loadingTransformFields = true;
     private bool _existingCustomTransform;
@@ -114,6 +115,7 @@ public partial class LayerItemEditorWindow : Window
     {
         _loadingTransformFields = true;
         _existingId = item.Id;
+        _existingTransformLocked = item.IsTransformLocked;
         _existingCustomTransform = item.HasCustomOverlayTransform;
         TitleText.Text = $"Edit {GetDisplayName(_kind)}";
         AddButton.Content = "Apply";
@@ -362,6 +364,7 @@ public partial class LayerItemEditorWindow : Window
             SourcePath = SourceTextBox.Text,
             StartTicks = TimeSpan.FromSeconds(start).Ticks,
             DurationTicks = TimeSpan.FromSeconds(duration).Ticks,
+            IsTransformLocked = _existingTransformLocked,
             Text = OverlayTextBox.Text,
             FontPath = _kind == LayerEditorKind.Text ? font?.FilePath ?? string.Empty : string.Empty,
             FontFamily = _kind == LayerEditorKind.Text ? font?.FamilyName ?? "Segoe UI" : "Segoe UI",

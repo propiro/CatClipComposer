@@ -2,6 +2,24 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.24 persistent prerenders and timeline safety
+
+- Retained the latest successful project prerender in metadata storage and restored it on startup or normal
+  project Open only when a project/app/source-file fingerprint still matches. Preview filenames are unique so
+  Windows playback locks cannot corrupt replacement, while superseded files are removed best-effort.
+- Reworked timed Background blur as an absolute-time choice between complete normal and blurred compositions,
+  restoring the effect consistently in Frame, selected-range, and All prerenders. The portable capability gate
+  now requires the bundled FFmpeg `blend` filter.
+- Connected ruler, empty-lane, and block clicks to pause and seek inside available prerender coverage; corrected
+  autoplay-pending consumption so the project play/pause button follows the actual MediaElement state.
+- Made clip-boundary candidates take priority over nearby grid candidates while moving/resizing timed blocks.
+  Effect-frame feedback is now determinate and parses current plus historical FFmpeg progress timestamps.
+- Added persisted schema-8 text/image transform locking with visible lock buttons on timeline blocks and Project
+  Layers Data, context actions, and read-only selection in Project Preview while locked.
+- Advanced application/component metadata and the extensionless marker to 0.1.24. Repeated complete Release
+  builds passed with zero warnings/errors; the user's real 179-second Background-blur project rendered through
+  the bundled FFmpeg at reduced smoke-test resolution and produced a decodable output with blurred side fill.
+
 ## 2026-08-12 — v0.1.23 bundled-preview compatibility and browser/timeline polish
 
 - Replaced Background lightness's unavailable `eq` dependency with a bounded `lutyuv` luma offset supported by

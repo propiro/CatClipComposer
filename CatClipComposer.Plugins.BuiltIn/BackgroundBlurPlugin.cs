@@ -43,15 +43,15 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
 
         return
             $"[{context.InputLabel}]split=3[{prefix}plain][{prefix}bg][{prefix}fg];" +
-            $"[{prefix}plain]scale={context.Width}:{context.Height}:force_original_aspect_ratio=decrease," +
-            $"pad={context.Width}:{context.Height}:(ow-iw)/2:(oh-ih)/2:color={PluginValues.Color(context.BackgroundColor)}[{prefix}base];" +
             $"[{prefix}bg]scale={backgroundWidth}:{backgroundHeight}:force_original_aspect_ratio=increase," +
             $"crop={context.Width}:{context.Height},hue=h={PluginValues.Format(hue)}:s={PluginValues.Format(saturation)}," +
             $"lutyuv=y='min(max(val+{PluginValues.Format(lightness)}*maxval,0),maxval)'," +
             $"gblur=sigma={PluginValues.Format(blur)}[{prefix}back];" +
             $"[{prefix}fg]scale={context.Width}:{context.Height}:force_original_aspect_ratio=decrease[{prefix}front];" +
             $"[{prefix}back][{prefix}front]overlay=(W-w)/2:(H-h)/2:shortest=1[{prefix}blurred];" +
-            $"[{prefix}base][{prefix}blurred]overlay=0:0:enable='between(t,{start},{end})'[{context.OutputLabel}];";
+            $"[{prefix}plain]scale={context.Width}:{context.Height}:force_original_aspect_ratio=decrease," +
+            $"pad={context.Width}:{context.Height}:(ow-iw)/2:(oh-ih)/2:color={PluginValues.Color(context.BackgroundColor)}[{prefix}base];" +
+            $"[{prefix}base][{prefix}blurred]blend=all_expr='if(between(T,{start},{end}),B,A)'[{context.OutputLabel}];";
     }
 
     private static int MakeEven(int value) => value % 2 == 0 ? value : value + 1;

@@ -21,8 +21,8 @@ public partial class EffectFramePreviewWindow : Window
     public void SetLoading(TimeSpan frame)
     {
         StatusText.Text = $"Rendering selected frame {FormatTime(frame)}…";
-        RenderProgressBar.Value = 0;
-        RenderProgressBar.IsIndeterminate = true;
+        RenderProgressBar.Value = 1;
+        RenderProgressBar.IsIndeterminate = false;
         RenderProgressBar.Visibility = Visibility.Visible;
         _renderTimer.Restart();
         _elapsedTimer.Start();
@@ -32,8 +32,9 @@ public partial class EffectFramePreviewWindow : Window
     public void ReportProgress(RenderProgress progress)
     {
         RenderProgressBar.IsIndeterminate = false;
-        RenderProgressBar.Value = progress.Percent;
-        StatusText.Text = $"Rendering selected frame… {progress.Percent:0}%";
+        RenderProgressBar.Value = Math.Clamp(progress.Percent, 0, 100);
+        StatusText.Text = $"Rendering selected frame… {progress.Percent:0}% " +
+                          $"({FormatTime(progress.ProcessedDuration)} / {FormatTime(progress.TotalDuration)})";
     }
 
     public void ShowPreview(string path, TimeSpan frame)

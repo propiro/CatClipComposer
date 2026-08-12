@@ -667,11 +667,21 @@
                                                                 <MenuItem CommandParameter="{Binding}" Click="AddClipEffectContext_Click" Header="Add compatible effect for this item…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="ColorCode_Click" Header="Set item color…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleTransformLock_Click"
+                                                                          Header="{Binding TransformLockActionText}"
+                                                                          Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="RemoveLayerContext_Click" Header="Remove item" />
                                                             </ContextMenu>
                                                         </Border.ContextMenu>
                                                         <StackPanel Opacity="{Binding ContentOpacity}">
-                                                            <TextBlock FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding Title}" />
+                                                            <DockPanel>
+                                                                <Button DockPanel.Dock="Right" Width="25" Height="23" Margin="4,0,0,0" Padding="0"
+                                                                        CommandParameter="{Binding}" Click="LayerTransformLockButton_Click"
+                                                                        Content="{Binding TransformLockIcon}" ToolTip="{Binding TransformLockActionText}"
+                                                                        Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                                                           TextTrimming="CharacterEllipsis" Text="{Binding Title}" />
+                                                            </DockPanel>
                                                             <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource MutedTextBrush}"
                                                                        TextTrimming="CharacterEllipsis" Text="{Binding Detail}" />
                                                         </StackPanel>
@@ -938,6 +948,9 @@
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemAddEffect_Click" Header="Add compatible effect…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemColor_Click" Header="Set item color…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleTransformLock_Click"
+                                                                                          Header="{Binding TransformLockActionText}"
+                                                                                          Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineProgressCopyStyle_Click" Header="Copy progress style"
                                                                                           Visibility="{Binding IsProgress, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineProgressPasteStyle_Click" Header="Paste progress style"
@@ -950,6 +963,13 @@
                                                                             <Image Opacity="0.34" Source="{Binding ThumbnailPath}"
                                                                                    Stretch="UniformToFill"
                                                                                    Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                            <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                                                    Width="23" Height="21" Margin="0,1,8,0" Padding="0"
+                                                                                    Panel.ZIndex="4" CommandParameter="{Binding}"
+                                                                                    Click="TimelineTransformLockButton_Click"
+                                                                                    Content="{Binding TransformLockIcon}"
+                                                                                    ToolTip="{Binding TransformLockActionText}"
+                                                                                    Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                                             <Grid>
                                                                                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                                                                 <WrapPanel Visibility="{Binding ShowClipActions, Converter={StaticResource BooleanToVisibilityConverter}}">

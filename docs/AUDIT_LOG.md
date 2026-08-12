@@ -1,5 +1,40 @@
 # Audit log
 
+## AUDIT-2026-08-12-013 — Prerender persistence, timed blur, and edit-safety audit
+
+Scope: address lost cross-session video feedback, missing Background blur in Frame/range/All, timeline seeking
+after prerender, stale project-preview transport state, ineffective clip-edge snapping, looping effect-preview
+feedback, and accidental text/image transform manipulation.
+
+Findings and remediation:
+
+- Project Preview previously retained only transient in-window coverage. Each successful prerender now writes an
+  atomic metadata entry beside a uniquely named MP4. A SHA-256 fingerprint covers semantic project content,
+  application version, and referenced source/font file length and modification time; startup and normal Open
+  restore only an existing exact match, so changed projects or media cannot silently show stale feedback.
+- Background blur combined a finite blurred branch over a base with an enabled overlay. Segment-relative
+  timestamps and early branch EOF could make short final trims expose only the base. The module now builds the
+  two complete alternatives and uses `blend` with absolute segment time to select the blurred composition only
+  inside the effect range. Frame, range, and full output consequently share one composition path.
+- Timeline clicks could update the playhead without reliably pausing/seeking the loaded prerender, and pending
+  autoplay survived some MediaOpened paths. Ruler, empty-lane, and block clicks now share coverage-aware seek;
+  MediaOpened consumes pending state exactly once and explicitly starts or pauses transport/button/timer state.
+- Grid candidates competed with clip boundaries in one nearest-value set. When the finer grid was closer, the
+  enabled clip option appeared inert. Clip starts/ends now receive a bounded 12-pixel priority zone before normal
+  frame/grid snapping for both item movement and either resize edge.
+- Effect-frame progress was initialized as indeterminate even though FFmpeg emits processed timestamps. It now
+  starts at 1%, remains determinate, and accepts `out_time_us`, the historical microsecond-valued `out_time_ms`,
+  and formatted `out_time` before displaying processed/total time and elapsed wall-clock time.
+- Schema 8 adds a default-false transform lock. Visible timeline and Project Layers Data buttons plus context
+  actions persist it. Locked overlays remain selectable and editable through forms but cannot begin project-view
+  move/scale/rotation gestures; existing schema projects migrate safely as unlocked.
+
+Verification: complete Release builds passed after every code tranche with zero warnings/errors. The exact saved
+179-second user project rendered at reduced resolution through the bundled LGPL FFmpeg and yielded a valid
+MPEG-4/AAC output whose sampled frame contained blurred side fill and a sharp foreground. CLI version output
+reported 0.1.24, the XAML resource audit passed, and the portable publisher validates `blend` in addition to the
+previous required blur/color filters. No dependency changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-012 — Bundled preview regression and interaction follow-up
 
 Scope: address the reported `No such filter: 'eq'` failure for every project-preview path, broken Content

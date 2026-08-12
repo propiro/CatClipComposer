@@ -152,6 +152,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.InitializeAsync(progress);
+            await RestoreCachedProjectPreviewAsync();
         }
         catch (Exception exception)
         {
@@ -206,6 +207,8 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.NewProjectAsync();
+            InvalidateProjectPreviewForRangeChange();
+            ProjectPreviewStatusText.Text = "No project prerender is available yet.";
         }
         catch (Exception exception)
         {
@@ -266,11 +269,29 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.OpenProjectAsync(projectPath);
+            InvalidateProjectPreviewForRangeChange();
+            await RestoreCachedProjectPreviewAsync();
         }
         catch (Exception exception)
         {
             DesktopDialogs.ShowError(this, "Could not open the project.", exception);
         }
+    }
+
+    private async Task RestoreCachedProjectPreviewAsync()
+    {
+        var cachedPreview = await _viewModel.TryLoadProjectPreviewCacheAsync();
+        if (cachedPreview is null)
+        {
+            return;
+        }
+
+        AttachProjectPreview(
+            cachedPreview.OutputPath,
+            cachedPreview.RangeStart,
+            cachedPreview.Duration,
+            autoplay: false,
+            $"Restored cached prerender from {cachedPreview.RenderedUtc.ToLocalTime():g}");
     }
 
     private async void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -837,25 +858,21 @@ public partial class MainWindow : Window
             SetProjectPlaybackState(false);
             ProjectPreviewPlayer.Source = null;
             var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd);
-            _projectPreviewTimelineOffset = rangeStart ?? TimeSpan.Zero;
-            _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + result.Duration;
-            _viewModel.MarkProjectPreviewRendered(rangeStart, rangeEnd);
-            _viewModel.Timeline.SetPlayhead(_projectPreviewTimelineOffset);
-
-            _projectPreviewAutoplayPending = autoplay;
-            ProjectPreviewPlayer.Source = new Uri(result.OutputPath, UriKind.Absolute);
-            ProjectPreviewOverlayCanvas.MarkPreviewRendered();
-            ProjectPreviewPlayer.IsMuted = true;
-            UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
-            ProjectPreviewStatusText.Text = isFrame
-                ? $"Frame prerendered at {FormatPreviewTime(_projectPreviewTimelineOffset)}"
+            var previewOffset = rangeStart ?? TimeSpan.Zero;
+            var status = isFrame
+                ? $"Frame prerendered at {FormatPreviewTime(previewOffset)}"
                 : !rangeStart.HasValue
                     ? "Full project prerender ready"
                     : _viewModel.Timeline.HasRangeSelection &&
                       rangeStart == _viewModel.Timeline.RangeStart && rangeEnd == _viewModel.Timeline.RangeEnd
                         ? $"Selected range prerendered: {_viewModel.Timeline.RangeText}"
                         : $"Preview prerendered from {FormatPreviewTime(rangeStart.Value)}";
-            ProjectPreviewPlayer.Play();
+            AttachProjectPreview(
+                result.OutputPath,
+                previewOffset,
+                result.Duration,
+                autoplay,
+                status);
         }
         catch (OperationCanceledException)
         {
@@ -864,6 +881,31 @@ public partial class MainWindow : Window
         {
             ProjectPreviewStatusText.Text = "Preview could not be rendered.";
             DesktopDialogs.ShowError(this, "The project preview could not be rendered.", exception);
+        }
+    }
+
+    private void AttachProjectPreview(
+        string outputPath,
+        TimeSpan rangeStart,
+        TimeSpan duration,
+        bool autoplay,
+        string status)
+    {
+        _projectPreviewTimelineOffset = rangeStart;
+        _projectPreviewTimelineEnd = rangeStart + duration;
+        _viewModel.MarkProjectPreviewRendered(rangeStart, _projectPreviewTimelineEnd);
+        _viewModel.Timeline.SetPlayhead(rangeStart);
+        _projectPreviewAutoplayPending = autoplay;
+        ProjectPreviewPlayer.Source = new Uri(outputPath, UriKind.Absolute);
+        ProjectPreviewOverlayCanvas.MarkPreviewRendered();
+        ProjectPreviewPlayer.IsMuted = true;
+        UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
+        ProjectPreviewStatusText.Text = status;
+        ProjectPreviewPlayer.Play();
+        SetProjectPlaybackState(autoplay);
+        if (autoplay)
+        {
+            _projectPreviewTimer.Start();
         }
     }
 
@@ -906,9 +948,10 @@ public partial class MainWindow : Window
         _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
         ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
         SeekProjectPreview(_projectPreviewTimelineOffset);
-        if (_projectPreviewAutoplayPending)
+        var shouldAutoplay = _projectPreviewAutoplayPending;
+        _projectPreviewAutoplayPending = false;
+        if (shouldAutoplay)
         {
-            _projectPreviewAutoplayPending = false;
             ProjectPreviewPlayer.Play();
             _projectPreviewTimer.Start();
             SetProjectPlaybackState(true);
@@ -938,6 +981,9 @@ public partial class MainWindow : Window
 
         if (!_viewModel.BeginOverlayTransformEdit(e.ItemId))
         {
+            _viewModel.SelectTimelineItem(e.ItemId);
+            ProjectPreviewOverlayCanvas.Select(e.ItemId);
+            ProjectPreviewStatusText.Text = "Overlay selected. Its transform is locked.";
             return;
         }
 
@@ -1120,6 +1166,30 @@ public partial class MainWindow : Window
         ProjectPreviewSeekSlider.Value = clampedLocal.TotalSeconds;
         ProjectPreviewPositionText.Text = FormatPreviewTime(timelinePosition);
         _viewModel.Timeline.SetPlayhead(timelinePosition);
+    }
+
+    private void PauseAndSeekProjectPreview(TimeSpan position)
+    {
+        _viewModel.Timeline.SetPlayhead(position);
+        if (ProjectPreviewPlayer.Source is null)
+        {
+            return;
+        }
+
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewAutoplayPending = false;
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        if (position >= _projectPreviewTimelineOffset && position <= _projectPreviewTimelineEnd)
+        {
+            SeekProjectPreview(position);
+        }
+        else
+        {
+            ProjectPreviewStatusText.Text =
+                $"Frame {FormatPreviewTime(position)} is outside the cached prerender. Prerender Frame or a range to update it.";
+            QueueProjectPreviewOverlayRefresh();
+        }
     }
 
     private void SetProjectPlaybackState(bool playing)
@@ -2072,14 +2142,7 @@ public partial class MainWindow : Window
             InvalidateProjectPreviewForRangeChange();
         }
 
-        _viewModel.Timeline.SetPlayhead(position);
-        if (ProjectPreviewPlayer.Source is not null)
-        {
-            ProjectPreviewPlayer.Pause();
-            _projectPreviewTimer.Stop();
-            SetProjectPlaybackState(false);
-            SeekProjectPreview(_viewModel.Timeline.Playhead);
-        }
+        PauseAndSeekProjectPreview(position);
     }
 
     private void SetPlayheadFromTimelineLane(Border lane, MouseEventArgs e)
@@ -2087,14 +2150,7 @@ public partial class MainWindow : Window
         var position = TimeSpan.FromSeconds(Math.Max(
             0,
             e.GetPosition(lane).X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
-        _viewModel.Timeline.SetPlayhead(position);
-        if (ProjectPreviewPlayer.Source is not null)
-        {
-            ProjectPreviewPlayer.Pause();
-            _projectPreviewTimer.Stop();
-            SetProjectPlaybackState(false);
-            SeekProjectPreview(position);
-        }
+        PauseAndSeekProjectPreview(position);
     }
 
     private void TimelineRangeHandle_DragStarted(object sender, DragStartedEventArgs e)
@@ -2207,7 +2263,8 @@ public partial class MainWindow : Window
     {
         if (sender is Border { Tag: TimelineLaneItemViewModel item })
         {
-            if (FindAncestor<Thumb>(e.OriginalSource as DependencyObject) is not null)
+            if (FindAncestor<Thumb>(e.OriginalSource as DependencyObject) is not null ||
+                FindAncestor<Button>(e.OriginalSource as DependencyObject) is not null)
             {
                 _timelineDragItem = null;
                 return;
@@ -2219,6 +2276,7 @@ public partial class MainWindow : Window
                 Math.Clamp(e.GetPosition((Border)sender).X, 0, ((Border)sender).ActualWidth) /
                 Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond));
             _viewModel.SelectTimelineItem(item.Id, Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
+            PauseAndSeekProjectPreview(item.Start + localOffset);
             _timelineDragStart = e.GetPosition(this);
             _timelineDragItem = item;
             var selectedStart = _viewModel.TimelineLanes
@@ -2522,6 +2580,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TimelineItemToggleTransformLock_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is not null)
+        {
+            ToggleOverlayTransformLock(item.Id);
+        }
+    }
+
     private void LayerItemToggleEnabled_Click(object sender, RoutedEventArgs e)
     {
         var row = SelectLayerCommandTarget(sender);
@@ -2529,6 +2596,53 @@ public partial class MainWindow : Window
         {
             _viewModel.SetTimelineItemEnabled(row.Item.Id, !row.Item.IsEnabled);
         }
+    }
+
+    private void LayerItemToggleTransformLock_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender);
+        if (row?.Item is not null)
+        {
+            ToggleOverlayTransformLock(row.Item.Id);
+        }
+    }
+
+    private void LayerTransformLockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { CommandParameter: ProjectLayerRowViewModel { Item: { } item } })
+        {
+            _viewModel.SelectTimelineItem(item.Id);
+            ToggleOverlayTransformLock(item.Id);
+            e.Handled = true;
+        }
+    }
+
+    private void TimelineTransformLockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { CommandParameter: TimelineLaneItemViewModel item })
+        {
+            _viewModel.SelectTimelineItem(item.Id);
+            ToggleOverlayTransformLock(item.Id);
+            e.Handled = true;
+        }
+    }
+
+    private void ToggleOverlayTransformLock(Guid itemId)
+    {
+        var item = _viewModel.ProjectLayers.FirstOrDefault(row => row.Item?.Id == itemId)?.Item;
+        if (item is null)
+        {
+            return;
+        }
+
+        if (_overlayTransformEditItemId == itemId)
+        {
+            ProjectPreviewOverlayCanvas.CompleteEdit(itemId, accepted: false);
+            _overlayTransformEditItemId = null;
+        }
+
+        _viewModel.SetOverlayTransformLocked(itemId, !item.IsTransformLocked);
+        QueueProjectPreviewOverlayRefresh();
     }
 
     private void TimelineProgressCopyStyle_Click(object sender, RoutedEventArgs e)

@@ -66,7 +66,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -145,6 +145,8 @@ public sealed class ProjectTimelineItem
     public bool HasAudio { get; set; }
 
     public bool IsEnabled { get; set; } = true;
+
+    public bool IsTransformLocked { get; set; }
 
     public string Color { get; set; } = string.Empty;
 

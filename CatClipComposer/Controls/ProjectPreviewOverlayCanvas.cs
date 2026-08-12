@@ -153,13 +153,15 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             Width = width,
             Height = height,
             Background = Brushes.Transparent,
-            Cursor = Cursors.SizeAll,
+            Cursor = item.IsTransformLocked ? Cursors.Arrow : Cursors.SizeAll,
             RenderTransformOrigin = new Point(0.5, 0.5),
             RenderTransform = new RotateTransform(
                 item.HasCustomOverlayTransform
                     ? OverlayTransformValues.NormalizeRotation(item.OverlayRotationDegrees)
                     : 0),
-            ToolTip = editing
+            ToolTip = item.IsTransformLocked
+                ? "Overlay transform is locked. Use the lock button in Project Layers Data to unlock it."
+                : editing
                 ? "Drag to move. Drag the lower-right square to scale. Drag the upper-center circle to rotate."
                 : "Click to select this overlay."
         };
@@ -181,7 +183,19 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             Background = Brushes.Transparent,
             IsHitTestVisible = false
         });
-        root.MouseLeftButtonDown += (_, e) => BeginInteraction(item, InteractionKind.Move, viewport, e);
+        root.MouseLeftButtonDown += (_, e) =>
+        {
+            if (item.IsTransformLocked)
+            {
+                _selectedItemId = item.Id;
+                OverlaySelected?.Invoke(this, new PreviewOverlaySelectedEventArgs(item.Id));
+                Redraw();
+                e.Handled = true;
+                return;
+            }
+
+            BeginInteraction(item, InteractionKind.Move, viewport, e);
+        };
 
         if (editing)
         {

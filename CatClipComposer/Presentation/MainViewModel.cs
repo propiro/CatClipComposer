@@ -420,6 +420,9 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
+            _projectPreviewCurrent = false;
+            _projectPreviewCoverageStart = TimeSpan.Zero;
+            _projectPreviewCoverageEnd = TimeSpan.Zero;
             RefreshProjectLayers();
         }
         finally
@@ -769,7 +772,12 @@ public sealed class MainViewModel : ObservableObject
 
         var previewFolder = Path.Combine(_settings.MetadataFolder, "project-previews");
         Directory.CreateDirectory(previewFolder);
-        var outputPath = Path.Combine(previewFolder, $"{_project.Id:N}-{DateTime.UtcNow.Ticks}.mp4");
+        var previewDuration = outputRangeDuration ?? compositionDuration;
+        var fingerprint = ProjectContentComparer.CreateContentFingerprint(_project);
+        var outputPath = Path.Combine(
+            previewFolder,
+            $"{_project.Id:N}-{fingerprint[..16]}-{(outputRangeStart ?? TimeSpan.Zero).Ticks}-" +
+            $"{previewDuration.Ticks}-{DateTime.UtcNow.Ticks}.mp4");
         var orientation = _project.Output.Height > _project.Output.Width
             ? OutputOrientation.Portrait
             : OutputOrientation.Landscape;
@@ -796,21 +804,13 @@ public sealed class MainViewModel : ObservableObject
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
-            foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{_project.Id:N}-*.mp4")
-                         .Where(path => !path.Equals(outputPath, StringComparison.OrdinalIgnoreCase)))
-            {
-                try
-                {
-                    File.Delete(oldPreview);
-                }
-                catch (IOException)
-                {
-                    // Windows MediaElement may briefly retain the preceding preview file.
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
-            }
+            await SaveProjectPreviewCacheEntryAsync(
+                previewFolder,
+                outputPath,
+                outputRangeStart ?? TimeSpan.Zero,
+                result.Duration,
+                _operationCancellation.Token);
+            DeleteSupersededProjectPreviews(previewFolder, outputPath);
             ScanProgress = 100;
             StatusText = "Project preview ready";
             return result;
@@ -825,6 +825,102 @@ public sealed class MainViewModel : ObservableObject
             IsBusy = false;
             _operationCancellation.Dispose();
             _operationCancellation = null;
+        }
+    }
+
+    internal async Task<ProjectPreviewCacheEntry?> TryLoadProjectPreviewCacheAsync(
+        CancellationToken cancellationToken = default)
+    {
+        SynchronizeProjectFromTimeline();
+        var previewFolder = Path.Combine(_settings.MetadataFolder, "project-previews");
+        var metadataPath = GetProjectPreviewMetadataPath(previewFolder);
+        if (!File.Exists(metadataPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            await using var stream = File.OpenRead(metadataPath);
+            var entry = await JsonSerializer.DeserializeAsync<ProjectPreviewCacheEntry>(stream, cancellationToken: cancellationToken);
+            if (entry is null || entry.Duration <= TimeSpan.Zero || !File.Exists(entry.OutputPath) ||
+                !string.Equals(
+                    entry.ProjectFingerprint,
+                    ProjectContentComparer.CreateContentFingerprint(_project),
+                    StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return entry;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task SaveProjectPreviewCacheEntryAsync(
+        string previewFolder,
+        string outputPath,
+        TimeSpan rangeStart,
+        TimeSpan duration,
+        CancellationToken cancellationToken)
+    {
+        var entry = new ProjectPreviewCacheEntry
+        {
+            ProjectFingerprint = ProjectContentComparer.CreateContentFingerprint(_project),
+            OutputPath = outputPath,
+            RangeStartTicks = rangeStart.Ticks,
+            DurationTicks = duration.Ticks,
+            RenderedUtc = DateTime.UtcNow
+        };
+        var metadataPath = GetProjectPreviewMetadataPath(previewFolder);
+        var temporaryPath = $"{metadataPath}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await using (var stream = new FileStream(
+                             temporaryPath,
+                             FileMode.CreateNew,
+                             FileAccess.Write,
+                             FileShare.None,
+                             4096,
+                             FileOptions.Asynchronous | FileOptions.WriteThrough))
+            {
+                await JsonSerializer.SerializeAsync(stream, entry, cancellationToken: cancellationToken);
+                await stream.FlushAsync(cancellationToken);
+            }
+
+            File.Move(temporaryPath, metadataPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
+    private string GetProjectPreviewMetadataPath(string previewFolder) =>
+        Path.Combine(previewFolder, $"{_project.Id:N}-preview.json");
+
+    private void DeleteSupersededProjectPreviews(string previewFolder, string currentPath)
+    {
+        foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{_project.Id:N}-*.mp4")
+                     .Where(path => !path.Equals(currentPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                File.Delete(oldPreview);
+            }
+            catch (IOException)
+            {
+                // MediaElement can retain the preceding file briefly; it can be removed on a later render.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
     }
 
@@ -888,6 +984,7 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Rendering effect frame at {DurationFormatter.Format(start)}…";
         try
         {
+            progress?.Report(new RenderProgress(1, TimeSpan.Zero, duration, "Preparing effect frame"));
             var result = await _videoRenderer.RenderAsync(
                 CreateRenderRequest(
                     renderPlan,
@@ -1349,6 +1446,27 @@ public sealed class MainViewModel : ObservableObject
         return true;
     }
 
+    public bool SetOverlayTransformLocked(Guid itemId, bool locked)
+    {
+        var item = FindPositionableOverlay(itemId);
+        if (item is null || item.IsTransformLocked == locked)
+        {
+            return false;
+        }
+
+        if (_overlayTransformDraft?.ItemId == itemId)
+        {
+            CancelOverlayTransformEdit();
+        }
+
+        item.IsTransformLocked = locked;
+        MarkProjectDirty();
+        RefreshProjectLayers(item.Id);
+        _ = SaveRecoverySafelyAsync();
+        StatusText = $"{(locked ? "Locked" : "Unlocked")} transform for {item.Name}";
+        return true;
+    }
+
     public bool BeginOverlayTransformEdit(Guid itemId)
     {
         if (_overlayTransformDraft?.ItemId == itemId)
@@ -1358,7 +1476,7 @@ public sealed class MainViewModel : ObservableObject
 
         CancelOverlayTransformEdit();
         var item = FindPositionableOverlay(itemId);
-        if (item is null)
+        if (item is null || item.IsTransformLocked)
         {
             return false;
         }
@@ -1590,7 +1708,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var increment = Timeline.SnapIncrement;
         var seconds = Math.Max(0, candidate.TotalSeconds);
-        var candidates = new List<double> { Math.Round(seconds / increment) * increment };
+        var gridCandidate = Math.Round(seconds / increment) * increment;
+        var candidates = new List<double> { gridCandidate };
         var track = _project.Tracks.FirstOrDefault(item => item.Id == trackId);
         if (track is not null)
         {
@@ -1603,17 +1722,27 @@ public sealed class MainViewModel : ObservableObject
 
         if (snapToClipRanges)
         {
+            var clipCandidates = new List<double>();
             foreach (var boundary in GetPrimaryVideoTrack().Items
                          .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
                          .SelectMany(item => new[] { item.Start, item.Start + item.Duration })
                          .Append(TimeSpan.Zero)
                          .Distinct())
             {
-                candidates.Add(boundary.TotalSeconds);
+                clipCandidates.Add(boundary.TotalSeconds);
                 if (movingDuration > TimeSpan.Zero)
                 {
-                    candidates.Add(boundary.TotalSeconds - movingDuration.Value.TotalSeconds);
+                    clipCandidates.Add(boundary.TotalSeconds - movingDuration.Value.TotalSeconds);
                 }
+            }
+
+            var clipThreshold = Math.Min(2, 12 / Math.Max(0.1, Timeline.PixelsPerSecond));
+            var nearestClip = clipCandidates.Where(value => value >= 0)
+                .OrderBy(value => Math.Abs(value - seconds))
+                .FirstOrDefault(double.NaN);
+            if (double.IsFinite(nearestClip) && Math.Abs(nearestClip - seconds) <= clipThreshold)
+            {
+                return TimeSpan.FromSeconds(nearestClip);
             }
         }
 
@@ -1626,17 +1755,25 @@ public sealed class MainViewModel : ObservableObject
     {
         var increment = Timeline.SnapIncrement;
         var seconds = Math.Max(0, candidate.TotalSeconds);
-        var candidates = new List<double> { Math.Round(seconds / increment) * increment };
+        var gridCandidate = Math.Round(seconds / increment) * increment;
         if (snapToClipRanges)
         {
-            candidates.AddRange(GetPrimaryVideoTrack().Items
+            var clipCandidates = GetPrimaryVideoTrack().Items
                 .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
-                .SelectMany(item => new[] { item.Start.TotalSeconds, (item.Start + item.Duration).TotalSeconds }));
+                .SelectMany(item => new[] { item.Start.TotalSeconds, (item.Start + item.Duration).TotalSeconds })
+                .Append(0)
+                .Distinct()
+                .ToList();
+            var clipThreshold = Math.Min(2, 12 / Math.Max(0.1, Timeline.PixelsPerSecond));
+            var nearestClip = clipCandidates.OrderBy(value => Math.Abs(value - seconds)).First();
+            if (Math.Abs(nearestClip - seconds) <= clipThreshold)
+            {
+                return TimeSpan.FromSeconds(nearestClip);
+            }
         }
 
         var threshold = Math.Max(increment / 2, 8 / Math.Max(0.1, Timeline.PixelsPerSecond));
-        var nearest = candidates.OrderBy(value => Math.Abs(value - seconds)).First();
-        return TimeSpan.FromSeconds(Math.Abs(nearest - seconds) <= threshold ? nearest : seconds);
+        return TimeSpan.FromSeconds(Math.Abs(gridCandidate - seconds) <= threshold ? gridCandidate : seconds);
     }
 
     public TimelineItemMovePreview? GetTimelineMovePreview(
@@ -1947,6 +2084,9 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
+            _projectPreviewCurrent = false;
+            _projectPreviewCoverageStart = TimeSpan.Zero;
+            _projectPreviewCoverageEnd = TimeSpan.Zero;
             RefreshProjectLayers();
         }
         finally

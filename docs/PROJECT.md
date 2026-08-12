@@ -91,8 +91,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
   double-clicks. Prerender Preview defaults to that active range or the current frame, while adjacent Frame
   and All actions are explicit. Project preview maps local playback back onto project time and uses
-  Windows-compatible H.264 without recording export history. Project Settings is a compact rollout at the
-  bottom-left of Project Preview rather than consuming Used Clips space.
+  Windows-compatible H.264 without recording export history. The latest valid prerender is restored between
+  sessions and exact project/source/app fingerprints prevent stale reuse; timeline clicks pause and seek within
+  its available coverage. Project Settings is a compact rollout at the bottom-left of Project Preview rather
+  than consuming Project Layers Data space.
 - **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
   marks range boundaries; the selected-range menu renders only that interval. Left-clicking empty lanes,
   plus track-header and item menus, lists only compatible plugin effects. Timeline selection mirrors Layers /
@@ -101,8 +103,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder. Active overlays expose their
   content and move/scale/rotate gizmos over Project Preview; clicking one synchronizes timeline and Layers /
-  Used Clips selection. OK/Enter commits the draft and Cancel/Escape restores it. The same editor exposes the
-  persisted transform plus optional fade-in from and fade-out to transparency.
+  Used Clips selection. Visible per-block lock controls prevent project-view transform gestures while retaining
+  selection and form editing. OK/Enter commits the draft and Cancel/Escape restores it. The same editor exposes
+  the persisted transform plus optional fade-in from and fade-out to transparency.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
   names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
@@ -138,7 +141,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-7 `.nya` JSON uses stable track/item IDs, optional
+- **Named editable projects — Done.** Versioned schema-8 `.nya` JSON uses stable track/item IDs, optional
   track/item colors and overlay fades/transforms, background color, and plugin metadata.
 - **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore bounded project
   snapshots, the project/title shows an asterisk away from the last save point, and closing offers Save,
@@ -157,7 +160,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.23 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.24 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

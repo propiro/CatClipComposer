@@ -117,6 +117,7 @@ public sealed class TimelineLaneItemViewModel
         NeedsProjectPreview = needsProjectPreview;
         CanResize = canResize || item.Kind == ProjectItemKind.Effect;
         IsEnabled = item.IsEnabled;
+        IsTransformLocked = item.IsTransformLocked;
         var enabledBackground = !string.IsNullOrWhiteSpace(item.Color)
             ? item.Color
             : !string.IsNullOrWhiteSpace(track.Color)
@@ -161,6 +162,16 @@ public sealed class TimelineLaneItemViewModel
     public bool IsVideo { get; }
 
     public bool IsProgress => Kind == ProjectItemKind.ProgressBar;
+
+    public bool IsPositionableOverlay => Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay;
+
+    public bool IsTransformLocked { get; }
+
+    public string TransformLockIcon => IsTransformLocked ? "🔒" : "🔓";
+
+    public string TransformLockActionText => IsTransformLocked
+        ? "Unlock overlay transform"
+        : "Lock overlay transform";
 
     public bool IsSelected { get; }
 

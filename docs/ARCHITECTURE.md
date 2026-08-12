@@ -80,6 +80,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
     interval. They do not fade the composed video or reuse audio/source fade semantics.
 16. The primary Project Preview action sends either the active range or a short slice at the playhead; explicit
     Frame and All actions share the same render path. A frame result is loaded and paused instead of playing.
+17. A successful prerender atomically records a content/source/app fingerprint and global-time coverage beside
+    its uniquely named MP4. Startup and normal Open attach only a matching existing entry; older videos are
+    disposable and removed best-effort after Windows MediaElement releases them.
 
 ### Timeline and parameter editing
 
@@ -89,7 +92,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
    view model owns snapped movement and non-primary timed-item resizing. Resize preview derives time from the
    pointer's absolute displacement since capture, avoiding nonlinear accumulation of relative Thumb deltas.
 3. Frame/grid snapping always applies. A workspace checkbox additionally aligns either moving edge to primary
-   source-clip starts and ends.
+   source-clip starts and ends; those clip boundaries receive a bounded visual priority zone before grid snap.
 4. Shared WPF range and numeric controls keep validation consistent across layers, clip effects, and plugins.
    One compact range canvas moves or resizes Start/End together; effect-value sliders and arrow buttons use
    sensible UI bounds and snap steps, while finite manual text entry may exceed those convenience bounds when
@@ -102,6 +105,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
    and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
    the original transform. Item-ID selection remains shared with the timeline and Project Layers Data panel.
+   A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing.
 
 ### Plugin discovery and effect rendering
 

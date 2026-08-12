@@ -47,8 +47,24 @@ internal sealed class FfmpegProcessRunner
         TimeSpan totalDuration,
         IProgress<RenderProgress>? progress)
     {
-        if (!line.StartsWith("out_time=", StringComparison.Ordinal) ||
-            !TimeSpan.TryParse(line["out_time=".Length..], CultureInfo.InvariantCulture, out var processed))
+        TimeSpan processed;
+        if (line.StartsWith("out_time_us=", StringComparison.Ordinal) &&
+            long.TryParse(line["out_time_us=".Length..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var microseconds))
+        {
+            processed = TimeSpan.FromTicks(microseconds * 10);
+        }
+        else if (line.StartsWith("out_time_ms=", StringComparison.Ordinal) &&
+                 long.TryParse(line["out_time_ms=".Length..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var legacyMicroseconds))
+        {
+            // FFmpeg's historical out_time_ms field is actually expressed in microseconds.
+            processed = TimeSpan.FromTicks(legacyMicroseconds * 10);
+        }
+        else if (line.StartsWith("out_time=", StringComparison.Ordinal) &&
+                 TimeSpan.TryParse(line["out_time=".Length..], CultureInfo.InvariantCulture, out var timestamp))
+        {
+            processed = timestamp;
+        }
+        else
         {
             return;
         }

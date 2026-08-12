@@ -283,8 +283,34 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: The effect-frame companion is the editor's width and opens above it where the work area allows;
-  indeterminate/determinate progress and elapsed render time remain visible. Range/all autoplay changes the
+  determinate processed/total progress and elapsed render time remain visible. Range/all autoplay changes the
   project play button to Pause only after media opens, and clicking an empty timeline lane selects that frame.
+
+### `PROJECT-PREVIEW-008` — Retain valid prerender feedback between sessions
+
+- Priority/status: P0 / Done
+- Acceptance: Each successful Frame/range/All prerender is recorded atomically under metadata storage and is
+  restored on startup or normal Open only when the app version, semantic project, referenced source/font file
+  metadata, and output file still match; loaded coverage remains seekable from ruler, lane, and block clicks.
+
+### `TIMELINE-010` — Prioritize source boundaries when clip snapping is enabled
+
+- Priority/status: P0 / Done
+- Acceptance: Within a bounded visual threshold, source clip starts/ends win over the regular grid for timed
+  block movement and either resize edge; outside that threshold ordinary frame/grid snapping remains unchanged.
+
+### `UX-OVERLAY-003` — Lock positioned-overlay transforms against accidental gestures
+
+- Priority/status: P0 / Done
+- Acceptance: Text/image blocks expose visible locked/unlocked buttons on the timeline and Project Layers Data
+  plus context actions; schema 8 persists the state, locked overlays remain selectable/editable, and Project
+  Preview cannot begin their move/scale/rotation gestures until unlocked.
+
+### `RENDER-BG-003` — Keep timed Background blur active in every prerender scope
+
+- Priority/status: P0 / Done
+- Acceptance: Background blur selects between complete normal/blurred compositions using segment-relative
+  absolute time, and the same saved project visibly applies it in Frame, selected-range, All, and final renders.
 
 ### `PROJECT-OPEN-001` — Offer disk and recent-project choices from Open
 
@@ -454,7 +480,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-001` — Save and reopen named timelines with crash recovery
 
 - Priority/status: P2 / Done
-- Acceptance: Versioned schema-7 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
+- Acceptance: Versioned schema-8 multi-track `.nya` documents and atomic `autosave.nya` recovery round-trip
   background/module metadata, optional track/item colors, and overlay transforms/fades without embedding media;
   older schema projects remain readable and GUI/CLI checks pass.
 

@@ -45,6 +45,14 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
 
     public string EnableActionText => IsEnabled ? "Disable item" : "Enable item";
 
+    public bool IsPositionableOverlay => Item?.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay;
+
+    public string TransformLockIcon => Item?.IsTransformLocked == true ? "🔒" : "🔓";
+
+    public string TransformLockActionText => Item?.IsTransformLocked == true
+        ? "Unlock overlay transform"
+        : "Lock overlay transform";
+
     public double ContentOpacity => IsEnabled ? 1 : 0.46;
 
     public static ProjectLayerRowViewModel ForTrack(ProjectTrack track) => new(
@@ -78,7 +86,7 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
     }
 
     private static string DescribeOverlayTransform(ProjectTimelineItem item) => item.HasCustomOverlayTransform
-        ? $" | X {item.OverlayX * 100:0.#}% | Y {item.OverlayY * 100:0.#}% | " +
+        ? $" | {(item.IsTransformLocked ? "LOCKED | " : string.Empty)}X {item.OverlayX * 100:0.#}% | Y {item.OverlayY * 100:0.#}% | " +
           $"scale {item.OverlayScale * 100:0.#}% | rotate {item.OverlayRotationDegrees:0.#}°"
-        : $" | {item.Position}";
+        : $" | {(item.IsTransformLocked ? "LOCKED | " : string.Empty)}{item.Position}";
 }
