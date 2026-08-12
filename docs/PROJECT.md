@@ -42,7 +42,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Durable refreshable database — Done.** SQLite tracks catalog entries and availability.
 - **Selectable thumbnails and search — Done.** Cached thumbnails support name, path, and tag search.
 - **Large-library safety and drag/drop — Done.** A recycled tile grid loads cached previews only when
-  realized, supports extended selection and mass tag editing, and drags one or many clips into a selected Video timeline.
+  realized, supports explicit Ctrl-toggle and first-anchor Shift-range selection plus mass tag editing, and
+  drags one or many clips into a selected Video timeline.
 - **Selectable browser presentation — Done.** One header control cycles through a thumbnail list, small grid,
   and large grid; Preferences stores separate bounded thumbnail sizes for both grid modes.
 - **Full-width browser focus — Done.** A left-edge arrow expands the browser while preserving the timeline
@@ -54,7 +55,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Workspace and visual design
 
-- **Main editor panels — Done.** Browser, preview, layers/used clips, and timeline occupy four resizable
+- **Main editor panels — Done.** Browser, preview, Project Layers Data, and timeline occupy four resizable
   slots. Clip and Project Preview can be joined as tabs or split into resizable side-by-side viewports.
 - **Repositionable docking — Done.** Every panel can swap into left, center, right, or bottom and persists
   its slot in the INI.
@@ -80,8 +81,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   track height use discrete minus/value/plus controls rather than narrow sliders.
 - **Add, select, remove, and reorder clips — Done.** Blocks drag to snapped interval or neighboring-block
   positions, Ctrl supports multi-selection, and selected-video controls plus Delete are available.
-- **Dynamic timelines — Done.** Background, Video, Overlay, Audio, Progress, and Effects tracks can be
-  added, named, resized, collapsed, color-coded, vertically sorted, removed when empty, and focused with
+- **Dynamic timelines — Done.** New projects default to Overlays, Video, Progress, Background, then Audio;
+  those track kinds plus optional legacy Effects tracks can be added, named, resized, collapsed, color-coded,
+  vertically sorted, removed when empty, and focused with
   Space from anywhere inside the panel; horizontal/vertical fit controls are available. Visual tracks render
   bottom-to-top so the topmost track is the topmost composite.
 - **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
@@ -102,7 +104,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   Used Clips selection. OK/Enter commits the draft and Cancel/Escape restores it. The same editor exposes the
   persisted transform plus optional fade-in from and fade-out to transparency.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
-  or custom timing and per-item style, color, size, and position.
+  or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
+  names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
 - **Editable effects/layers — Done.** Video, overlays, progress, audio, fades, volume, fit/fill/stretch, and
   timed modules project through the shared renderer. A Background module fills unused frame space from the
   active source with configurable saturation, lightness, hue, zoom, and Gaussian blur. Editors default to
@@ -114,8 +117,11 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
-  Effect dialogs can render the selected project frame in a snapped companion window and optionally refresh it
-  after a short debounce while parameters change.
+  Effect dialogs can render the selected project frame in a same-width companion above the editor, show live
+  render progress and elapsed time, and optionally refresh after a short debounce while parameters change.
+- **Effect discovery and block state — Done.** The Content Browser has a grouped Effects tab with native and
+  plugin entries repeated under every compatible timeline category. Timeline blocks can be disabled without
+  deletion; disabled blocks remain editable but render darkened/grayed and are excluded from output.
 - **Track-ordered filter composition — Done.** Video filter effects and overlays interleave bottom-to-top, so
   an overlay below Video blur is filtered and the same overlay above it stays sharp.
 - **Extensible plugin modules — Done.** Versioned media/stage/track contracts, isolated dependency loading,
@@ -151,7 +157,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.21 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.22 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

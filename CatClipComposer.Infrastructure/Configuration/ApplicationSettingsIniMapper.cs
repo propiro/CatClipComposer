@@ -40,6 +40,20 @@ internal static class ApplicationSettingsIniMapper
             "Startup",
             "FirstStartupCompleted",
             settings.FirstStartupCompleted);
+        settings.RecentProjectPaths = ini.GetSection("RecentProjects")
+            .Where(pair => pair.Key.StartsWith("Project", StringComparison.OrdinalIgnoreCase))
+            .Select(pair => new { pair.Value, Index = ParseIndexedKey(pair.Key, "Project") })
+            .Where(item => item.Index >= 0 && !string.IsNullOrWhiteSpace(item.Value))
+            .OrderBy(item => item.Index)
+            .Select(item => item.Value)
+            .ToList();
+        settings.DefaultProgressBarStyle = ReadEnum(
+            ini, "ProgressDefaults", "Style", settings.DefaultProgressBarStyle);
+        settings.DefaultProgressBarPosition = ReadEnum(
+            ini, "ProgressDefaults", "Position", settings.DefaultProgressBarPosition);
+        settings.DefaultProgressColor = ini.Get("ProgressDefaults", "Color") ?? settings.DefaultProgressColor;
+        settings.DefaultProgressHeight = ReadInt(
+            ini, "ProgressDefaults", "Height", settings.DefaultProgressHeight);
         settings.MetadataFolder = ini.Get("Library", "MetadataFolder") ?? settings.MetadataFolder;
         settings.PreviewSlideCount = ReadInt(
             ini,
@@ -118,6 +132,18 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine("[Startup]");
         builder.AppendLine(CultureInfo.InvariantCulture,
             $"FirstStartupCompleted={settings.FirstStartupCompleted.ToString().ToLowerInvariant()}");
+        builder.AppendLine();
+        builder.AppendLine("[RecentProjects]");
+        for (var index = 0; index < settings.RecentProjectPaths.Count; index++)
+        {
+            builder.AppendLine(CultureInfo.InvariantCulture, $"Project{index}={settings.RecentProjectPaths[index]}");
+        }
+        builder.AppendLine();
+        builder.AppendLine("[ProgressDefaults]");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Style={settings.DefaultProgressBarStyle}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Position={settings.DefaultProgressBarPosition}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Color={settings.DefaultProgressColor}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Height={settings.DefaultProgressHeight}");
         builder.AppendLine();
         builder.AppendLine("[Sources]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"IncludeSubfolders={settings.IncludeSubfolders.ToString().ToLowerInvariant()}");
@@ -201,6 +227,16 @@ internal static class ApplicationSettingsIniMapper
         settings.SmallThumbnailSize = Math.Clamp(settings.SmallThumbnailSize, 80, 200);
         settings.LargeThumbnailSize = Math.Clamp(settings.LargeThumbnailSize, 140, 360);
         settings.LargeThumbnailSize = Math.Max(settings.LargeThumbnailSize, settings.SmallThumbnailSize + 20);
+        settings.RecentProjectPaths = settings.RecentProjectPaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(10)
+            .ToList();
+        settings.DefaultProgressColor = IsHexColor(settings.DefaultProgressColor)
+            ? settings.DefaultProgressColor.ToUpperInvariant()
+            : "#C8C0B2";
+        settings.DefaultProgressHeight = Math.Clamp(settings.DefaultProgressHeight, 2, 100);
         settings.FfmpegPath = string.IsNullOrWhiteSpace(settings.FfmpegPath)
             ? "ffmpeg.exe"
             : settings.FfmpegPath.Trim();
@@ -251,6 +287,15 @@ internal static class ApplicationSettingsIniMapper
         int.TryParse(ini.Get(section, key), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
             ? value
             : fallback;
+
+    private static bool IsHexColor(string? value) =>
+        value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
+
+    private static int ParseIndexedKey(string key, string prefix) =>
+        key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+        int.TryParse(key[prefix.Length..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var index)
+            ? index
+            : -1;
 
     private static double ReadDouble(IniFile ini, string section, string key, double fallback) =>
         double.TryParse(ini.Get(section, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) &&

@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.21**.
+Current application and component version: **0.1.22**.
 
 ## Documentation
 
@@ -39,17 +39,20 @@ Current application and component version: **0.1.21**.
   use Windows-compatible H.264, and neither preview action records an export.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
-- Add, edit, time, and remove multiple PNG/JPG, text, music, and individually styled progress effects; choose installed Windows or visibly marked portable-folder fonts.
+- Add, edit, time, disable/enable, and remove multiple PNG/JPG, text, music, and individually styled progress
+  effects from the Content Browser's grouped Effects tab; choose installed Windows or visibly marked
+  portable-folder fonts.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
   on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
-  synchronized with the timeline and Layers / Used Clips panel, while exact X/Y, scale, rotation, placement
+  synchronized with the timeline and Project Layers Data panel, while exact X/Y, scale, rotation, placement
   presets, and transparency fade-in/out remain editable in the overlay dialog.
 - Time effects with Start/End fields (or optional duration entry), set them to the whole timeline in one click,
   adjust the interval on one compact mini timeline, and use bounded sliders/arrows for effect values while
   retaining exact manual numeric entry.
 - Set clip Fit, Fill, or Stretch plus fade-in/out and source volume; add the configurable blur-content
   background module on the Background timeline when vertical media should fill a horizontal project.
-- Render solid, segmented, or tick progress effects over the complete project, a selected segment, or a custom range.
+- Render solid, segmented, or tick progress effects over the complete project, selected clips, or a custom
+  range; accepted visual styles become defaults and can be copied/pasted between progress blocks.
 - Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
@@ -59,7 +62,8 @@ Current application and component version: **0.1.21**.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace. Panel docking, window geometry,
   splitter sizes, preview split/join state, active preview tab, focused panel, and expanded panel persist.
-- Add, remove, collapse, color-code, and vertically reorder named timelines. The topmost visual track is
+- Add, remove, collapse, color-code, and vertically reorder named timelines. New projects start with Overlays,
+  Video, Progress, Background, and Audio in that top-to-bottom order. The topmost visual track is
   composited above visual tracks below it; Ctrl-select/drag, snapping, frame playhead selection, Shift/Ctrl
   range selection, draggable range edges, Mark start/end controls, fit controls, and usable minus/value/plus
   controls for time zoom and track height are available. Timed-block dragging preserves the original grab
@@ -69,7 +73,7 @@ Current application and component version: **0.1.21**.
 - Right-click the playhead to preview from that frame or mark either range edge; right-click a selected ruler
   range to preview only that interval. Left-clicking an empty compatible lane opens its add-effect menu;
   track headers and compatible items expose the same filtered effect actions.
-- Select or double-click an item under Layers / Used Clips to edit its scaling mode, fades, and volume, or add
+- Select or double-click an item under Project Layers Data to edit its scaling mode, fades, and volume, or add
   a plugin effect pre-timed to that item's exact project interval. Timeline and Used Clips selections remain
   synchronized, and a muted-yellow block edge identifies media not covered by the current rendered preview.
 - Browse large catalogs through a recycled virtualized grid, expand the browser across the workspace while
@@ -77,7 +81,7 @@ Current application and component version: **0.1.21**.
 - Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly
   supplies blur-content background, timed video blur, and PNG splash-screen functionality.
 - Compose overlays and Video blur according to visual track order, and preview the selected timeline frame in
-  a window snapped beside the effect editor with manual or debounced automatic refresh.
+  a same-width window above the effect editor with progress, elapsed time, and manual or debounced refresh.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option;
   place the extensionless `version_<version>` marker beside both executables so an unpacked build is visibly
   distinguishable without launching it.
@@ -204,10 +208,10 @@ On the first run:
 5. Expand **Project settings** at the bottom-left of Project Preview to choose the timeline target and output preset.
 6. Drag clips to the timeline, add any still screens or timed effects, and select **Export**.
 
-To add another lane, select **+ Track** in Layers / Used Clips, choose Video, Overlay, Audio, Progress,
+To add another lane, select **+ Track** in Project Layers Data, choose Video, Overlay, Audio, Progress,
 Background, or Effects, and name it. Select that track header before adding an effect or layer item. Media
 cards can be dropped directly onto any Video lane. Click a workspace panel and press Space to focus or
-restore Content Browser, Layers / Used Clips, or Project Timeline.
+restore Content Browser, Project Layers Data, or Project Timeline.
 
 ## Configuration and local application data
 

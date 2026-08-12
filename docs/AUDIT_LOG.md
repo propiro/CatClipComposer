@@ -1,5 +1,38 @@
 # Audit log
 
+## AUDIT-2026-08-12-011 — Timeline/effect interaction and render-state audit
+
+Scope: address the reported browser selection, effect discovery, Progress insertion, preview feedback,
+lightness endpoints, lane snapping, block-state, transport-state, and project-opening usability gaps.
+
+Findings and remediation:
+
+- Extended-selection mode alone did not make selection reliable with the recycled custom card panel. Preview
+  mouse handling now performs Ctrl toggles and first-anchor Shift ranges before drag initiation.
+- Native text/image/audio/progress entries were not discoverable from one effects catalog, and the legacy
+  default Effects lane obscured semantic placement. The browser now groups alphabetized entries by compatible
+  target, while new projects use Overlays, Video, Progress, Background, Audio. Legacy Effects tracks still load.
+- Effects placed directly on Video exposed track-kind assumptions in editing and timeline mutation. Source-item
+  checks now isolate sequential clip behavior; Video-lane effects remain movable, resizable, editable,
+  removable, and enableable without being absorbed by source synchronization.
+- Progress creation derives its enclosing range from selected video/still blocks, stores accepted visual
+  defaults in `[ProgressDefaults]`, and copies/pastes only visual properties. `[RecentProjects]` records at most
+  ten distinct normal open/save paths.
+- Disabled items persist, remain editable, are visibly subdued, and are filtered by `ProjectRenderMapper` for
+  video/still, overlays, audio, background modules, and video effects. Snap candidates now use source clips only.
+- Background lightness previously used the hue filter's brightness control and allowed extreme manual values.
+  It now clamps the stored percent to -100..100 and maps it to the documented FFmpeg `eq` -1..1 interval.
+- Effect-frame preview reports process progress and elapsed time in a same-width companion above the editor;
+  project-preview play state changes only after media opens, eliminating the autoplay button mismatch.
+
+Verification: repeated full Release solution builds passed with zero warnings/errors; the XAML StaticResource
+audit passed 36 keys across 17 files. CLI project create/load emitted exactly five ordered default tracks, and
+isolated CLI config inspection returned the requested recent paths and progress defaults. Static render checks
+confirmed every relevant mapper path requires `IsEnabled`, range-handle snapping is wired to the checkbox,
+Video blur accepts Video, and lightness maps -100/+100 to -1/+1. The final portable WPF build reached the v0.1.22
+editor and exited with code 0; the user separately confirmed splash behavior and workspace preservation. No
+dependency changed, so no vulnerability audit was required.
+
 ## AUDIT-2026-08-12-010 — First-versus-returning splash audit
 
 Scope: keep the introductory splash visible for five seconds on the first successful installation launch, then

@@ -16,7 +16,7 @@ public partial class PluginEffectEditorWindow : Window
     private readonly double _framesPerSecond;
     private readonly Dictionary<string, FrameworkElement> _parameterEditors = new(StringComparer.OrdinalIgnoreCase);
     private readonly ProjectTimelineItem? _existing;
-    private readonly Func<ProjectTimelineItem, CancellationToken, Task<RenderResult>>? _framePreviewRenderer;
+    private readonly Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? _framePreviewRenderer;
     private readonly TimeSpan? _previewFrame;
     private readonly DispatcherTimer _framePreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private readonly SemaphoreSlim _framePreviewGate = new(1, 1);
@@ -35,7 +35,7 @@ public partial class PluginEffectEditorWindow : Window
         TimeSpan? initialDuration = null,
         string? initialPluginId = null,
         TimeSpan? previewFrame = null,
-        Func<ProjectTimelineItem, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
+        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
     {
         _track = track;
         _snapMode = snapMode;
@@ -282,7 +282,8 @@ public partial class PluginEffectEditorWindow : Window
             _framePreviewWindow.SetLoading(_previewFrame.Value);
             try
             {
-                var result = await _framePreviewRenderer(previewItem, _framePreviewCancellation.Token);
+                var progress = new Progress<RenderProgress>(update => _framePreviewWindow?.ReportProgress(update));
+                var result = await _framePreviewRenderer(previewItem, progress, _framePreviewCancellation.Token);
                 if (generation == _framePreviewGeneration && _framePreviewWindow is not null)
                 {
                     _framePreviewWindow.ShowPreview(result.OutputPath, _previewFrame.Value);

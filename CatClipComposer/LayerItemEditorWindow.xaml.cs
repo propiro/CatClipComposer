@@ -162,6 +162,22 @@ public partial class LayerItemEditorWindow : Window
 
     public ProjectTimelineItem? ResultItem { get; private set; }
 
+    public void ApplyProgressTemplate(ProjectTimelineItem item)
+    {
+        if (_kind != LayerEditorKind.Progress || item.Kind != ProjectItemKind.ProgressBar)
+        {
+            return;
+        }
+
+        TimeRangeEditor.Configure(item.Start, item.Duration, _projectDuration, _snapSeconds);
+        ProgressTimingComboBox.SelectedItem = item.ProgressTimeMode;
+        ProgressStyleComboBox.SelectedItem = item.ProgressBarStyle;
+        ProgressPositionComboBox.SelectedItem = item.ProgressBarPosition;
+        ProgressColorTextBox.Text = item.ProgressColor;
+        ProgressHeightEditor.SetValue(item.ProgressHeight);
+        Tag = item.Name;
+    }
+
     private void ConfigureFields()
     {
         TitleText.Text = $"Add {GetDisplayName(_kind)}";
@@ -288,7 +304,7 @@ public partial class LayerItemEditorWindow : Window
         var defaultName = _kind switch
         {
             LayerEditorKind.Text => OverlayTextBox.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Text",
-            LayerEditorKind.Progress => "Progress bar",
+            LayerEditorKind.Progress => Tag as string ?? "Progress bar",
             _ => Path.GetFileName(SourceTextBox.Text)
         };
 

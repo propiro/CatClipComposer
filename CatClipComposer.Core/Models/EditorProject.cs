@@ -98,12 +98,11 @@ public sealed class EditorProject
         Output = output,
         Tracks =
         [
-            new ProjectTrack { Name = "Background", Kind = ProjectTrackKind.Background, Order = 0 },
+            new ProjectTrack { Name = "Overlays 1", Kind = ProjectTrackKind.Overlay, Order = 0 },
             new ProjectTrack { Name = "Video 1", Kind = ProjectTrackKind.Video, Order = 1 },
-            new ProjectTrack { Name = "Overlays 1", Kind = ProjectTrackKind.Overlay, Order = 2 },
-            new ProjectTrack { Name = "Audio 1", Kind = ProjectTrackKind.Audio, Order = 3 },
-            new ProjectTrack { Name = "Progress 1", Kind = ProjectTrackKind.Progress, Order = 4 },
-            new ProjectTrack { Name = "Effects 1", Kind = ProjectTrackKind.Effects, Order = 5 }
+            new ProjectTrack { Name = "Progress 1", Kind = ProjectTrackKind.Progress, Order = 2 },
+            new ProjectTrack { Name = "Background", Kind = ProjectTrackKind.Background, Order = 3 },
+            new ProjectTrack { Name = "Audio 1", Kind = ProjectTrackKind.Audio, Order = 4 }
         ]
     };
 }

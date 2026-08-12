@@ -101,7 +101,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
    displays active text/image content with selection handles, and owns pointer capture for move, uniform-scale,
    and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
-   the original transform. Item-ID selection remains shared with the timeline and Layers / Used Clips panel.
+   the original transform. Item-ID selection remains shared with the timeline and Project Layers Data panel.
 
 ### Plugin discovery and effect rendering
 

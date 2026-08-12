@@ -7,11 +7,19 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="StatusText" Margin="0,0,0,7"
-                   Foreground="{StaticResource MutedTextBrush}" Text="Select Preview frame to render." />
-        <Border Grid.Row="1" Background="#050505"
+        <Grid Margin="0,0,0,7">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="StatusText" Foreground="{StaticResource MutedTextBrush}"
+                       Text="Select Preview frame to render." />
+            <TextBlock x:Name="ElapsedText" Grid.Column="1" Margin="10,0,0,0"
+                       Foreground="{StaticResource FaintTextBrush}" Text="0.0 s" />
+        </Grid>
+        <ProgressBar x:Name="RenderProgressBar" Grid.Row="1" Height="7" Margin="0,0,0,7"
+                     Minimum="0" Maximum="100" Visibility="Collapsed" />
+        <Border Grid.Row="2" Background="#050505"
                 BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">
             <MediaElement x:Name="FramePlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
                           Stretch="Uniform" ScrubbingEnabled="True"

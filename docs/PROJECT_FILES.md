@@ -8,20 +8,21 @@ cached previews, or final exports.
 
 ## Normal projects
 
-Use **New**, **Open**, and **Save** in the main toolbar. New projects contain six default track types:
+Use **New**, **Open**, and **Save** in the main toolbar. **Open** offers disk browsing and existing recent
+projects. New projects contain five default tracks in top-to-bottom visual/editor order:
 
-1. Background
+1. Overlays
 2. Video
-3. Overlays
-4. Audio
-5. Progress
-6. Effects
+3. Progress
+4. Background
+5. Audio
 
 The bottommost Video track is the sequential base composition. Video and other visual tracks above it are
 composited from bottom to top and can contain timed visual layers plus source audio. The Layers/Used Clips
-panel can create/remove, collapse, reorder, and color-code tracks and add, edit, and remove
-timed text, image, audio, progress, and plugin effects. Clip effects control fit/fill/stretch, fades, and
-volume. A shared Core mapper projects the enabled track model into both GUI and headless renders.
+Project Layers Data can create/remove, collapse, reorder, and color-code tracks and edit/remove timed items.
+The Content Browser's grouped Effects tab adds text, image, audio, progress, and compatible plugin effects.
+Clip effects control fit/fill/stretch, fades, and volume. Any block can remain on the timeline while disabled;
+the shared Core mapper excludes disabled blocks from both GUI and headless renders.
 
 The desktop editor keeps up to 100 in-memory undo snapshots. Ctrl+Z/Ctrl+Y and the toolbar arrows move through
 those logical project changes; recovery autosave follows the restored state. The title and project label show
@@ -47,6 +48,10 @@ The built-in Background blur effect reads the active source below the current pr
 saturation, lightness, hue, zoom, and Gaussian blur parameters. Plugin module IDs are saved in `.nya`; a
 missing or incompatible required module produces an explicit render error instead of silently changing the
 project.
+
+Background lightness is a human percentage mapped linearly to FFmpeg's -1..1 brightness interval: -100 is
+black, 0 leaves brightness unchanged, and +100 is white. Saturation uses 0 for grayscale, 1 unchanged, and 3
+as the slider maximum; hue rotates through 0..360 degrees.
 
 Source references use absolute paths and optional catalog media IDs. Loading resolves catalog media by ID
 first and path second. Missing source paths stay represented so they can be diagnosed or replaced later.

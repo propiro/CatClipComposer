@@ -12,6 +12,7 @@ public sealed class TimelineClipViewModel : ObservableObject
     private double _fadeInSeconds;
     private double _fadeOutSeconds;
     private double _volume;
+    private bool _isEnabled;
 
     private TimelineClipViewModel(
         RenderSegmentKind kind,
@@ -25,7 +26,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         double fadeInSeconds = 0,
         double fadeOutSeconds = 0,
         double volume = 1,
-        string pluginId = "")
+        string pluginId = "",
+        bool isEnabled = true)
     {
         Kind = kind;
         SourcePath = sourcePath;
@@ -39,6 +41,7 @@ public sealed class TimelineClipViewModel : ObservableObject
         _fadeOutSeconds = fadeOutSeconds;
         _volume = volume;
         PluginId = pluginId;
+        _isEnabled = isEnabled;
     }
 
     public Guid InstanceId { get; }
@@ -62,6 +65,8 @@ public sealed class TimelineClipViewModel : ObservableObject
     public double Volume => _volume;
 
     public string PluginId { get; }
+
+    public bool IsEnabled => _isEnabled;
 
     public int Order
     {
@@ -118,7 +123,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         item.FadeInSeconds,
         item.FadeOutSeconds,
         item.Volume,
-        item.PluginId);
+        item.PluginId,
+        item.IsEnabled);
 
     public ProjectTimelineItem ToProjectItem(TimeSpan start) => new()
     {
@@ -136,7 +142,8 @@ public sealed class TimelineClipViewModel : ObservableObject
         FadeInSeconds = FadeInSeconds,
         FadeOutSeconds = FadeOutSeconds,
         Volume = Volume,
-        PluginId = PluginId
+        PluginId = PluginId,
+        IsEnabled = IsEnabled
     };
 
     public RenderSegment ToRenderSegment() => new(
@@ -179,5 +186,16 @@ public sealed class TimelineClipViewModel : ObservableObject
             _volume = volume;
             OnPropertyChanged(nameof(Volume));
         }
+    }
+
+    public void SetEnabled(bool enabled)
+    {
+        if (_isEnabled == enabled)
+        {
+            return;
+        }
+
+        _isEnabled = enabled;
+        OnPropertyChanged(nameof(IsEnabled));
     }
 }

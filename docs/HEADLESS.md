@@ -119,7 +119,7 @@ Existing outputs are rejected with exit code `2` unless `--overwrite` is present
 ### `project`
 
 Creates or inspects a versioned `.nya` document. `--project-file <file>` is required. Add `--create`, optional
-`--project-name <name>`, and optional `--overwrite` to create a new empty six-track document; without
+`--project-name <name>`, and optional `--overwrite` to create a new empty five-track document; without
 `--create`, the command validates and prints the existing project. JSON includes identity, timestamps,
 output settings, ordered track metadata, and item counts.
 

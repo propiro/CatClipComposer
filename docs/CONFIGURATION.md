@@ -25,6 +25,15 @@ configuration model. Catalog data and generated previews default to `%LOCALAPPDA
 [Startup]
 FirstStartupCompleted=false
 
+[RecentProjects]
+Project0=D:\Projects\Cats.nya
+
+[ProgressDefaults]
+Style=Solid
+Position=Bottom
+Color=#C8C0B2
+Height=10
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true
@@ -80,6 +89,11 @@ These browser preferences affect cached-image presentation only and never cause 
 `Startup.FirstStartupCompleted` defaults to false. After the editor initializes successfully, the application
 atomically saves it as true. False or missing values select the five-second first-launch splash minimum; true
 selects the approximately three-second returning-launch minimum. Failed initialization does not advance it.
+
+`RecentProjects.ProjectN` keeps at most ten distinct project paths, newest first. The Open button exposes these
+as a recent-project menu and ignores entries whose files no longer exist. `ProgressDefaults` remembers the last
+accepted progress-bar style, top/bottom position, color, and 2-100 px height for the next progress item; malformed
+colors and sizes return to safe defaults.
 
 `RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. The splash
 reports the skip explicitly when this setting is false or no folder exists. When enabled with configured folders,

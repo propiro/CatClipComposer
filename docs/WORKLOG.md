@@ -2,6 +2,25 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-12 — v0.1.22 effect discovery, progress workflow, and timeline-state polish
+
+- Confirmed the user's splash timing and window/workspace restoration acceptance, then made Content Browser
+  Ctrl/Shift selection explicit and added an alphabetically grouped Effects tab with native/plugin entries for
+  every compatible timeline. Renamed the right panel to Project Layers Data and removed its old add-effect row.
+- Changed new-project track order to Overlays, Video, Progress, Background, Audio. Progress creation now inherits
+  selected-clip timing/naming, remembers visual defaults in the portable INI, and supports copy/paste style.
+- Added block enable/disable without removal, darkened/grayed disabled presentation, and shared render exclusion.
+  Corrected mixed Video-lane effect editing, movement, resizing, removal, and state changes.
+- Made empty-lane clicks select the project frame and add native compatible items, applied clip-boundary snapping
+  to range and block edges, kept source-only clip boundaries authoritative, widened/iconized preview transport,
+  synchronized autoplay state after MediaOpened, and added disk/recent choices to Open.
+- Mapped Background lightness -100..100 to FFmpeg `eq` brightness -1..1 and documented calculation ranges.
+  The effect-frame companion now opens at editor width above it where possible and reports render progress plus
+  elapsed time.
+- Verification included repeated zero-warning Release builds, XAML-resource and source invariants, CLI creation
+  of the exact five-track project, settings parsing for recent/progress defaults, and an isolated real WPF start
+  to the versioned editor followed by exit code 0. The user separately confirmed splash/layout preservation.
+
 ## 2026-08-12 — v0.1.21 first-launch splash duration
 
 - Added portable `Startup.FirstStartupCompleted` state, defaulting false and saved atomically only after the editor

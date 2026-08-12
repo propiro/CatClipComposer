@@ -41,6 +41,12 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
             ? Track.Color
             : IsTrackHeader ? "#24231F" : "Transparent";
 
+    public bool IsEnabled => Item?.IsEnabled ?? Track.IsEnabled;
+
+    public string EnableActionText => IsEnabled ? "Disable item" : "Enable item";
+
+    public double ContentOpacity => IsEnabled ? 1 : 0.46;
+
     public static ProjectLayerRowViewModel ForTrack(ProjectTrack track) => new(
         track,
         null,
@@ -67,7 +73,8 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
             track,
             item,
             item.Name,
-            $"{DurationFormatter.Format(item.Start)} -> {DurationFormatter.Format(item.Start + item.Duration)} | {item.Kind}{details}");
+            $"{DurationFormatter.Format(item.Start)} -> {DurationFormatter.Format(item.Start + item.Duration)} | " +
+            $"{item.Kind}{details}{(item.IsEnabled ? string.Empty : " | DISABLED")}");
     }
 
     private static string DescribeOverlayTransform(ProjectTimelineItem item) => item.HasCustomOverlayTransform

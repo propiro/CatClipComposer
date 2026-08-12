@@ -1,19 +1,39 @@
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Threading;
+using CatClipComposer.Core.Models;
 using CatClipComposer.Desktop;
 
 namespace CatClipComposer;
 
 public partial class EffectFramePreviewWindow : Window
 {
+    private readonly Stopwatch _renderTimer = new();
+    private readonly DispatcherTimer _elapsedTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+
     public EffectFramePreviewWindow()
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
+        _elapsedTimer.Tick += (_, _) => UpdateElapsedText();
     }
 
     public void SetLoading(TimeSpan frame)
     {
         StatusText.Text = $"Rendering selected frame {FormatTime(frame)}…";
+        RenderProgressBar.Value = 0;
+        RenderProgressBar.IsIndeterminate = true;
+        RenderProgressBar.Visibility = Visibility.Visible;
+        _renderTimer.Restart();
+        _elapsedTimer.Start();
+        UpdateElapsedText();
+    }
+
+    public void ReportProgress(RenderProgress progress)
+    {
+        RenderProgressBar.IsIndeterminate = false;
+        RenderProgressBar.Value = progress.Percent;
+        StatusText.Text = $"Rendering selected frame… {progress.Percent:0}%";
     }
 
     public void ShowPreview(string path, TimeSpan frame)
@@ -22,22 +42,25 @@ public partial class EffectFramePreviewWindow : Window
         FramePlayer.Source = new Uri(path, UriKind.Absolute);
         FramePlayer.IsMuted = true;
         StatusText.Text = $"Selected frame {FormatTime(frame)}";
+        CompleteProgress();
         FramePlayer.Play();
     }
 
     public void ShowError(string message)
     {
         StatusText.Text = message;
+        CompleteProgress();
     }
 
     public void SnapBeside(Window editor)
     {
         var workArea = SystemParameters.WorkArea;
-        var desiredLeft = editor.Left + editor.ActualWidth + 8;
-        Left = desiredLeft + Width <= workArea.Right
-            ? desiredLeft
-            : Math.Max(workArea.Left, editor.Left - Width - 8);
-        Top = Math.Clamp(editor.Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
+        Width = Math.Max(MinWidth, editor.ActualWidth);
+        Left = Math.Clamp(editor.Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
+        var desiredTop = editor.Top - Height - 8;
+        Top = desiredTop >= workArea.Top
+            ? desiredTop
+            : Math.Clamp(editor.Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
     }
 
     private void FramePlayer_MediaOpened(object sender, RoutedEventArgs e)
@@ -49,14 +72,27 @@ public partial class EffectFramePreviewWindow : Window
     private void FramePlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
     {
         StatusText.Text = "Windows could not display the rendered frame preview.";
+        CompleteProgress();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         FramePlayer.Stop();
         FramePlayer.Source = null;
+        _elapsedTimer.Stop();
         base.OnClosed(e);
     }
+
+    private void CompleteProgress()
+    {
+        _renderTimer.Stop();
+        _elapsedTimer.Stop();
+        RenderProgressBar.IsIndeterminate = false;
+        RenderProgressBar.Value = 100;
+        UpdateElapsedText();
+    }
+
+    private void UpdateElapsedText() => ElapsedText.Text = $"{_renderTimer.Elapsed.TotalSeconds:0.0} s";
 
     private static string FormatTime(TimeSpan value) =>
         value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss\.fff") : value.ToString(@"m\:ss\.fff");

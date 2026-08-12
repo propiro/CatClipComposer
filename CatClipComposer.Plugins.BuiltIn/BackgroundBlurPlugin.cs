@@ -14,9 +14,12 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
         PluginRenderStage.Background,
         [ProjectTrackKind.Background],
         [
-            new("saturation", "Saturation", PluginParameterType.Number, "1", 0, 3),
-            new("lightness", "Lightness (%)", PluginParameterType.Number, "0", -100, 100),
-            new("hue", "Hue rotation (degrees)", PluginParameterType.Number, "0", 0, 360),
+            new("saturation", "Saturation", PluginParameterType.Number, "1", 0, 3,
+                Description: "1 is unchanged, 0 is grayscale, and 3 is the slider maximum."),
+            new("lightness", "Lightness (%)", PluginParameterType.Number, "0", -100, 100,
+                Description: "Maps linearly to FFmpeg brightness: -100 is black, 0 is unchanged, +100 is white."),
+            new("hue", "Hue rotation (degrees)", PluginParameterType.Number, "0", 0, 360,
+                Description: "Rotates the color wheel; 0 and 360 represent the same hue."),
             new("zoom", "Background zoom", PluginParameterType.Number, "1.15", 1, 3),
             new("blur", "Gaussian blur", PluginParameterType.Number, "32", 0, 100)
         ]);
@@ -26,7 +29,7 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
         IReadOnlyDictionary<string, string> parameters)
     {
         var saturation = PluginValues.Number(parameters, "saturation", 1, -10, 10);
-        var lightness = PluginValues.Number(parameters, "lightness", 0, -1000, 1000) / 100;
+        var lightness = PluginValues.Number(parameters, "lightness", 0, -100, 100) / 100;
         var hue = PluginValues.Number(parameters, "hue", 0, -36000, 36000);
         var zoom = PluginValues.Number(parameters, "zoom", 1.15, 1, 10);
         var blur = PluginValues.Number(parameters, "blur", 32, 0, 1000);
@@ -43,8 +46,8 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
             $"[{prefix}plain]scale={context.Width}:{context.Height}:force_original_aspect_ratio=decrease," +
             $"pad={context.Width}:{context.Height}:(ow-iw)/2:(oh-ih)/2:color={PluginValues.Color(context.BackgroundColor)}[{prefix}base];" +
             $"[{prefix}bg]scale={backgroundWidth}:{backgroundHeight}:force_original_aspect_ratio=increase," +
-            $"crop={context.Width}:{context.Height},hue=h={PluginValues.Format(hue)}:" +
-            $"s={PluginValues.Format(saturation)}:b={PluginValues.Format(lightness)}," +
+            $"crop={context.Width}:{context.Height},hue=h={PluginValues.Format(hue)}," +
+            $"eq=saturation={PluginValues.Format(saturation)}:brightness={PluginValues.Format(lightness)}," +
             $"gblur=sigma={PluginValues.Format(blur)}[{prefix}back];" +
             $"[{prefix}fg]scale={context.Width}:{context.Height}:force_original_aspect_ratio=decrease[{prefix}front];" +
             $"[{prefix}back][{prefix}front]overlay=(W-w)/2:(H-h)/2:shortest=1[{prefix}blurred];" +

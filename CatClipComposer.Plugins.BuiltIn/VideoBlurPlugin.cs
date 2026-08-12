@@ -12,7 +12,7 @@ public sealed class VideoBlurPlugin : ICatClipVideoEffectPlugin
         "Applies a timed Gaussian blur to the composited video pixels.",
         PluginMediaType.Video,
         PluginRenderStage.Filter,
-        [ProjectTrackKind.Effects],
+        [ProjectTrackKind.Video, ProjectTrackKind.Effects],
         [new("blur", "Gaussian blur", PluginParameterType.Number, "12", 0, 100)]);
 
     public string BuildFilterGraph(

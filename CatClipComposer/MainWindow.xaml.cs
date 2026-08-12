@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Data;
 using System.Windows.Threading;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
@@ -61,6 +62,8 @@ public partial class MainWindow : Window
     private bool _rangeHandleMovesStart;
     private bool _allowClose;
     private bool _closeSaveInProgress;
+    private int _catalogSelectionAnchor = -1;
+    private ProjectTimelineItem? _copiedProgressStyle;
 
     private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds, TimeSpan GrabOffset);
     private sealed record TrackDragData(Guid TrackId);
@@ -99,6 +102,9 @@ public partial class MainWindow : Window
         ApplyPersistedWorkspaceGeometry(settings);
         _workspaceLayout.Apply(settings, _expandedPanel);
         DataContext = _viewModel;
+        var effectsView = new ListCollectionView(CreateEffectCatalogEntries().ToList());
+        effectsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(EffectCatalogEntry.Category)));
+        EffectsCatalogItemsControl.ItemsSource = effectsView;
         PreviewTabs.SelectedIndex = Math.Clamp(settings.ActivePreviewTab, 0, 1);
         SetPreviewLayout(settings.PreviewsSplit);
         UpdateExpandedPanelButton();
@@ -207,7 +213,31 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OpenProject_Click(object sender, RoutedEventArgs e)
+    private void OpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Bottom };
+        menu.Items.Add(CreateContextMenuItem("Open from disk…", async (_, _) => await OpenProjectFromDiskAsync()));
+        var recent = _viewModel.RecentProjectPaths.Where(File.Exists).ToList();
+        if (recent.Count > 0)
+        {
+            menu.Items.Add(new Separator());
+            foreach (var path in recent)
+            {
+                var recentItem = new MenuItem { Header = Path.GetFileNameWithoutExtension(path), ToolTip = path };
+                recentItem.Click += async (_, _) => await OpenProjectPathAsync(path);
+                menu.Items.Add(recentItem);
+            }
+        }
+
+        menu.IsOpen = true;
+    }
+
+    private async Task OpenProjectFromDiskAsync()
     {
         var dialog = new OpenFileDialog
         {
@@ -223,7 +253,19 @@ public partial class MainWindow : Window
 
         try
         {
-            await _viewModel.OpenProjectAsync(dialog.FileName);
+            await OpenProjectPathAsync(dialog.FileName);
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not open the project.", exception);
+        }
+    }
+
+    private async Task OpenProjectPathAsync(string projectPath)
+    {
+        try
+        {
+            await _viewModel.OpenProjectAsync(projectPath);
         }
         catch (Exception exception)
         {
@@ -460,8 +502,49 @@ public partial class MainWindow : Window
     private void CatalogListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
         AddSelectedCatalogItems();
 
-    private void CatalogListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+    private void CatalogListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
         _catalogDragStart = e.GetPosition(CatalogListBox);
+        var container = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
+        if (container is null)
+        {
+            return;
+        }
+
+        var index = CatalogListBox.ItemContainerGenerator.IndexFromContainer(container);
+        var modifiers = Keyboard.Modifiers;
+        if (modifiers.HasFlag(ModifierKeys.Shift) && _catalogSelectionAnchor >= 0)
+        {
+            var start = Math.Min(_catalogSelectionAnchor, index);
+            var end = Math.Max(_catalogSelectionAnchor, index);
+            if (!modifiers.HasFlag(ModifierKeys.Control))
+            {
+                CatalogListBox.SelectedItems.Clear();
+            }
+            for (var itemIndex = start; itemIndex <= end; itemIndex++)
+            {
+                var item = CatalogListBox.Items[itemIndex];
+                if (!CatalogListBox.SelectedItems.Contains(item))
+                {
+                    CatalogListBox.SelectedItems.Add(item);
+                }
+            }
+            e.Handled = true;
+        }
+        else if (modifiers.HasFlag(ModifierKeys.Control))
+        {
+            container.IsSelected = !container.IsSelected;
+            if (_catalogSelectionAnchor < 0)
+            {
+                _catalogSelectionAnchor = index;
+            }
+            e.Handled = true;
+        }
+        else
+        {
+            _catalogSelectionAnchor = index;
+        }
+    }
 
     private void CatalogListBox_PreviewMouseMove(object sender, MouseEventArgs e)
     {
@@ -752,11 +835,6 @@ public partial class MainWindow : Window
                         ? $"Selected range prerendered: {_viewModel.Timeline.RangeText}"
                         : $"Preview prerendered from {FormatPreviewTime(rangeStart.Value)}";
             ProjectPreviewPlayer.Play();
-            if (autoplay)
-            {
-                _projectPreviewTimer.Start();
-                SetProjectPlaybackState(true);
-            }
         }
         catch (OperationCanceledException)
         {
@@ -807,7 +885,14 @@ public partial class MainWindow : Window
         _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
         ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
         SeekProjectPreview(_projectPreviewTimelineOffset);
-        if (!_projectPreviewAutoplayPending)
+        if (_projectPreviewAutoplayPending)
+        {
+            _projectPreviewAutoplayPending = false;
+            ProjectPreviewPlayer.Play();
+            _projectPreviewTimer.Start();
+            SetProjectPlaybackState(true);
+        }
+        else
         {
             ProjectPreviewPlayer.Pause();
             _projectPreviewTimer.Stop();
@@ -1049,6 +1134,79 @@ public partial class MainWindow : Window
         _viewModel.AddMediaToTimeline(selected);
     }
 
+    private IReadOnlyList<EffectCatalogEntry> CreateEffectCatalogEntries()
+    {
+        var entries = new List<EffectCatalogEntry>
+        {
+            new("AUDIO TIMELINES", "Music / audio", "Add a timed audio file with volume and fades.", ProjectTrackKind.Audio, LayerEditorKind.Audio),
+            new("OVERLAY TIMELINES", "Image / PNG overlay", "Add a positionable, scalable, rotatable image overlay.", ProjectTrackKind.Overlay, LayerEditorKind.Image),
+            new("OVERLAY TIMELINES", "Text overlay", "Add positionable styled text over the composition.", ProjectTrackKind.Overlay, LayerEditorKind.Text),
+            new("PROGRESS TIMELINES", "Progress", "Add a styled progress bar for the selected clip range.", ProjectTrackKind.Progress, LayerEditorKind.Progress)
+        };
+        foreach (var plugin in _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>())
+        {
+            foreach (var trackKind in plugin.Descriptor.CompatibleTracks)
+            {
+                entries.Add(new EffectCatalogEntry(
+                    $"{trackKind.ToString().ToUpperInvariant()} TIMELINES",
+                    plugin.Descriptor.Name,
+                    plugin.Descriptor.Description,
+                    trackKind,
+                    PluginId: plugin.Descriptor.Id));
+            }
+        }
+
+        return entries.OrderBy(entry => entry.Category).ThenBy(entry => entry.Name).ToList();
+    }
+
+    private void EffectCatalogAdd_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { CommandParameter: EffectCatalogEntry entry })
+        {
+            return;
+        }
+
+        AddEffectCatalogEntry(entry);
+    }
+
+    private void EffectCatalogAddButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: EffectCatalogEntry entry })
+        {
+            AddEffectCatalogEntry(entry);
+        }
+    }
+
+    private void EffectCatalogEntry_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2 && sender is Border { DataContext: EffectCatalogEntry entry })
+        {
+            AddEffectCatalogEntry(entry);
+            e.Handled = true;
+        }
+    }
+
+    private void AddEffectCatalogEntry(EffectCatalogEntry entry)
+    {
+
+        var row = _viewModel.ProjectLayers.FirstOrDefault(candidate =>
+            candidate.IsTrackHeader && candidate.Track.Kind == entry.TrackKind);
+        if (row is null)
+        {
+            return;
+        }
+
+        _viewModel.SelectedProjectLayer = row;
+        if (!string.IsNullOrWhiteSpace(entry.PluginId))
+        {
+            OpenCompatibleEffectEditor(row, useSelectedItemTiming: true, initialPluginId: entry.PluginId);
+        }
+        else if (entry.LayerKind.HasValue)
+        {
+            OpenLayerItemEditor(entry.LayerKind.Value, row.Track);
+        }
+    }
+
     private async void EditSelectedTags_Click(object sender, RoutedEventArgs e)
     {
         var selected = CatalogListBox.SelectedItems.Cast<MediaCardViewModel>().ToList();
@@ -1094,21 +1252,59 @@ public partial class MainWindow : Window
             return;
         }
 
+        OpenLayerItemEditor(kind);
+    }
+
+    private async void OpenLayerItemEditor(
+        LayerEditorKind kind,
+        ProjectTrack? targetTrack = null,
+        TimeSpan? initialStart = null,
+        TimeSpan? initialDuration = null)
+    {
         var selectedRange = _viewModel.GetSelectedVideoRange();
+        ProjectTimelineItem? progressTemplate = null;
+        if (kind == LayerEditorKind.Progress)
+        {
+            var start = initialStart ?? selectedRange?.Start ?? _viewModel.Timeline.Playhead;
+            var duration = initialDuration ?? selectedRange?.Duration ?? TimeSpan.FromSeconds(Math.Min(
+                5,
+                Math.Max(_viewModel.Timeline.SnapIncrement, (_viewModel.Timeline.Duration - start).TotalSeconds)));
+            progressTemplate = _viewModel.CreateProgressItem(
+                start,
+                duration,
+                _viewModel.GetSelectedVideoProgressName());
+        }
+
         var dialog = new LayerItemEditorWindow(
             kind,
             _viewModel.Timeline.Duration,
             _viewModel.Settings.CustomFontFolder,
             _viewModel.Timeline.SnapMode,
             _viewModel.Timeline.FramesPerSecond,
-            selectedRange?.Start,
-            selectedRange?.Duration)
+            initialStart ?? selectedRange?.Start,
+            initialDuration ?? selectedRange?.Duration)
         {
             Owner = this
         };
+        if (progressTemplate is not null)
+        {
+            dialog.ApplyProgressTemplate(progressTemplate);
+        }
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
-            _viewModel.AddLayerItem(dialog.TrackKind, dialog.ResultItem);
+            if (targetTrack is null)
+            {
+                _viewModel.AddLayerItem(dialog.TrackKind, dialog.ResultItem);
+            }
+            else
+            {
+                _viewModel.AddLayerItem(targetTrack.Id, dialog.ResultItem);
+            }
+
+            if (dialog.ResultItem.Kind == ProjectItemKind.ProgressBar)
+            {
+                await _viewModel.RememberProgressDefaultsAsync(dialog.ResultItem);
+            }
         }
     }
 
@@ -1279,10 +1475,11 @@ public partial class MainWindow : Window
             initialPluginId: initialPluginId,
             previewFrame: previewFrame,
             framePreviewRenderer: previewFrame.HasValue
-                ? (item, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                ? (item, progress, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
                     targetTrack.Id,
                     item,
                     previewFrame.Value,
+                    progress,
                     cancellationToken)
                 : null)
         {
@@ -1304,16 +1501,14 @@ public partial class MainWindow : Window
             return sourceRow.Track;
         }
 
-        var isVideoSource = sourceRow?.Track.Kind == ProjectTrackKind.Video ||
-                            sourceRow?.Item?.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage;
-        if (!isVideoSource && !allowDefaultEffectsTrack)
+        if (!allowDefaultEffectsTrack)
         {
             return null;
         }
 
-        return _viewModel.ProjectLayers
-            .FirstOrDefault(row => row.IsTrackHeader && row.Track.Kind == ProjectTrackKind.Effects)
-            ?.Track;
+        return _viewModel.ProjectLayers.FirstOrDefault(row =>
+            row.IsTrackHeader && _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>()
+                .Any(plugin => plugin.Descriptor.CompatibleTracks.Contains(row.Track.Kind)))?.Track;
     }
 
     private void RemoveTrack_Click(object sender, RoutedEventArgs e)
@@ -1381,7 +1576,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void EditLayer_Click(object sender, RoutedEventArgs e)
+    private async void EditLayer_Click(object sender, RoutedEventArgs e)
     {
         var row = _viewModel.SelectedProjectLayer;
         if (row?.Item is null)
@@ -1389,7 +1584,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (row.Track.Kind == ProjectTrackKind.Video)
+        if (row.Item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
         {
             ClipEffects_Click(sender, e);
             return;
@@ -1409,10 +1604,11 @@ public partial class MainWindow : Window
                 row.Item,
                 previewFrame: previewFrame,
                 framePreviewRenderer: previewFrame.HasValue
-                    ? (item, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                    ? (item, progress, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
                         row.Track.Id,
                         item,
                         previewFrame.Value,
+                        progress,
                         cancellationToken)
                     : null)
             {
@@ -1438,6 +1634,10 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
             _viewModel.UpdateSelectedLayerItem(dialog.ResultItem);
+            if (dialog.ResultItem.Kind == ProjectItemKind.ProgressBar)
+            {
+                await _viewModel.RememberProgressDefaultsAsync(dialog.ResultItem);
+            }
         }
     }
 
@@ -1712,6 +1912,7 @@ public partial class MainWindow : Window
         }
 
         var pointer = e.GetPosition(laneBorder);
+        SetPlayheadFromTimelineLane(laneBorder, e);
         var menu = new ContextMenu
         {
             Placement = PlacementMode.RelativePoint,
@@ -1722,6 +1923,7 @@ public partial class MainWindow : Window
         AddTimelineLaneEffectItems(menu, lane, pointer.X);
         if (menu.Items.Count == 0)
         {
+            e.Handled = true;
             return;
         }
 
@@ -1733,11 +1935,12 @@ public partial class MainWindow : Window
     {
         var row = _viewModel.ProjectLayers.FirstOrDefault(candidate =>
             candidate.IsTrackHeader && candidate.Track.Id == lane.TrackId);
-        var targetTrack = ResolveEffectTargetTrack(row, allowDefaultEffectsTrack: false);
-        if (row is null || targetTrack is null)
+        if (row is null)
         {
             return;
         }
+
+        var targetTrack = row.Track;
 
         var rawStart = TimeSpan.FromSeconds(Math.Max(
             0,
@@ -1748,6 +1951,20 @@ public partial class MainWindow : Window
             maximumStart > TimeSpan.Zero && rawStart > maximumStart ? maximumStart : rawStart,
             targetTrack.Id,
             snapToClipRanges: SnapToClipRangesCheckBox.IsChecked == true);
+        if (targetTrack.Kind == ProjectTrackKind.Overlay)
+        {
+            AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Image, "Add image / PNG overlay…");
+            AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Text, "Add text overlay…");
+        }
+        else if (targetTrack.Kind == ProjectTrackKind.Audio)
+        {
+            AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Audio, "Add music / audio…");
+        }
+        else if (targetTrack.Kind == ProjectTrackKind.Progress)
+        {
+            AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Progress, "Add progress…");
+        }
+
         var compatible = _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>()
             .Where(plugin => plugin.Descriptor.CompatibleTracks.Contains(targetTrack.Kind))
             .OrderBy(plugin => plugin.Descriptor.Name)
@@ -1776,6 +1993,27 @@ public partial class MainWindow : Window
             };
             menu.Items.Add(item);
         }
+    }
+
+    private void AddNativeLayerMenuItem(
+        ContextMenu menu,
+        ProjectLayerRowViewModel row,
+        ProjectTrack targetTrack,
+        TimeSpan start,
+        LayerEditorKind kind,
+        string header)
+    {
+        var item = new MenuItem { Header = header };
+        item.Click += (_, _) =>
+        {
+            _viewModel.SelectedProjectLayer = row;
+            var selectedRange = _viewModel.GetSelectedVideoRange();
+            var duration = selectedRange?.Duration ?? TimeSpan.FromSeconds(Math.Min(
+                5,
+                Math.Max(_viewModel.Timeline.SnapIncrement, (_viewModel.Timeline.Duration - start).TotalSeconds)));
+            OpenLayerItemEditor(kind, targetTrack, start, duration);
+        };
+        menu.Items.Add(item);
     }
 
     private static MenuItem CreateContextMenuItem(string header, RoutedEventHandler handler)
@@ -1823,6 +2061,21 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SetPlayheadFromTimelineLane(Border lane, MouseEventArgs e)
+    {
+        var position = TimeSpan.FromSeconds(Math.Max(
+            0,
+            e.GetPosition(lane).X / Math.Max(0.1, _viewModel.Timeline.PixelsPerSecond)));
+        _viewModel.Timeline.SetPlayhead(position);
+        if (ProjectPreviewPlayer.Source is not null)
+        {
+            ProjectPreviewPlayer.Pause();
+            _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
+            SeekProjectPreview(position);
+        }
+    }
+
     private void TimelineRangeHandle_DragStarted(object sender, DragStartedEventArgs e)
     {
         if (sender is not Thumb thumb || !_viewModel.Timeline.HasRangeSelection)
@@ -1847,8 +2100,14 @@ public partial class MainWindow : Window
         if (_rangeHandleMovesStart)
         {
             var maximumStart = _rangeHandleEndAnchor.TotalSeconds - frameSeconds;
-            var candidate = Math.Clamp(
+            var rawCandidate = Math.Clamp(
                 _rangeHandleStartAnchor.TotalSeconds + deltaSeconds,
+                0,
+                Math.Max(0, maximumStart));
+            var candidate = Math.Clamp(
+                _viewModel.SnapTimelineEdge(
+                    TimeSpan.FromSeconds(rawCandidate),
+                    SnapToClipRangesCheckBox.IsChecked == true).TotalSeconds,
                 0,
                 Math.Max(0, maximumStart));
             _viewModel.Timeline.SetRangeSelection(TimeSpan.FromSeconds(candidate), _rangeHandleEndAnchor);
@@ -1860,8 +2119,14 @@ public partial class MainWindow : Window
                 _viewModel.Timeline.TargetDuration.TotalSeconds,
                 _viewModel.Timeline.Duration.TotalSeconds);
             var minimumEnd = _rangeHandleStartAnchor.TotalSeconds + frameSeconds;
-            var candidate = Math.Clamp(
+            var rawCandidate = Math.Clamp(
                 _rangeHandleEndAnchor.TotalSeconds + deltaSeconds,
+                Math.Min(maximum, minimumEnd),
+                maximum);
+            var candidate = Math.Clamp(
+                _viewModel.SnapTimelineEdge(
+                    TimeSpan.FromSeconds(rawCandidate),
+                    SnapToClipRangesCheckBox.IsChecked == true).TotalSeconds,
                 Math.Min(maximum, minimumEnd),
                 maximum);
             _viewModel.Timeline.SetRangeSelection(_rangeHandleStartAnchor, TimeSpan.FromSeconds(candidate));
@@ -2222,6 +2487,60 @@ public partial class MainWindow : Window
 
         _viewModel.SelectedProjectLayer = row;
         ColorCode_Click(sender, e);
+    }
+
+    private void TimelineItemToggleEnabled_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is not null)
+        {
+            _viewModel.SetTimelineItemEnabled(item.Id, !item.IsEnabled);
+        }
+    }
+
+    private void LayerItemToggleEnabled_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender);
+        if (row?.Item is not null)
+        {
+            _viewModel.SetTimelineItemEnabled(row.Item.Id, !row.Item.IsEnabled);
+        }
+    }
+
+    private void TimelineProgressCopyStyle_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        var row = item is null ? null : _viewModel.ProjectLayers.FirstOrDefault(candidate => candidate.Item?.Id == item.Id);
+        if (row?.Item is not { Kind: ProjectItemKind.ProgressBar } progress)
+        {
+            return;
+        }
+
+        _copiedProgressStyle = new ProjectTimelineItem
+        {
+            Kind = ProjectItemKind.ProgressBar,
+            ProgressBarStyle = progress.ProgressBarStyle,
+            ProgressBarPosition = progress.ProgressBarPosition,
+            ProgressColor = progress.ProgressColor,
+            ProgressHeight = progress.ProgressHeight
+        };
+    }
+
+    private async void TimelineProgressPasteStyle_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        var row = item is null ? null : _viewModel.ProjectLayers.FirstOrDefault(candidate => candidate.Item?.Id == item.Id);
+        if (row?.Item is not { Kind: ProjectItemKind.ProgressBar } progress || _copiedProgressStyle is null)
+        {
+            return;
+        }
+
+        progress.ProgressBarStyle = _copiedProgressStyle.ProgressBarStyle;
+        progress.ProgressBarPosition = _copiedProgressStyle.ProgressBarPosition;
+        progress.ProgressColor = _copiedProgressStyle.ProgressColor;
+        progress.ProgressHeight = _copiedProgressStyle.ProgressHeight;
+        _viewModel.UpdateSelectedLayerItem(progress);
+        await _viewModel.RememberProgressDefaultsAsync(progress);
     }
 
     private void TimelineItemAddEffect_Click(object sender, RoutedEventArgs e)

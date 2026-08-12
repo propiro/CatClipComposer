@@ -108,15 +108,16 @@ public sealed class TimelineLaneItemViewModel
         Left = Math.Max(0, item.Start.TotalSeconds * pixelsPerSecond);
         Width = Math.Max(20, item.Duration.TotalSeconds * pixelsPerSecond);
         Height = Math.Max(22, trackHeight - 5);
-        IsVideo = track.Kind == ProjectTrackKind.Video;
+        IsVideo = item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage;
         IsSelected = isSelected;
         TrackId = track.Id;
         Start = item.Start;
         Duration = item.Duration;
         ShowClipActions = IsVideo && isSelected;
         NeedsProjectPreview = needsProjectPreview;
-        CanResize = canResize;
-        Background = !string.IsNullOrWhiteSpace(item.Color)
+        CanResize = canResize || item.Kind == ProjectItemKind.Effect;
+        IsEnabled = item.IsEnabled;
+        var enabledBackground = !string.IsNullOrWhiteSpace(item.Color)
             ? item.Color
             : !string.IsNullOrWhiteSpace(track.Color)
                 ? track.Color
@@ -128,6 +129,7 @@ public sealed class TimelineLaneItemViewModel
                     ProjectTrackKind.Progress => "#39352A",
                     _ => "#302F2C"
                 };
+        Background = IsEnabled ? enabledBackground : "#171716";
     }
 
     public Guid Id { get; }
@@ -158,6 +160,8 @@ public sealed class TimelineLaneItemViewModel
 
     public bool IsVideo { get; }
 
+    public bool IsProgress => Kind == ProjectItemKind.ProgressBar;
+
     public bool IsSelected { get; }
 
     public bool ShowClipActions { get; }
@@ -165,6 +169,12 @@ public sealed class TimelineLaneItemViewModel
     public bool NeedsProjectPreview { get; }
 
     public bool CanResize { get; }
+
+    public bool IsEnabled { get; }
+
+    public string EnableActionText => IsEnabled ? "Disable item" : "Enable item";
+
+    public double ContentOpacity => IsEnabled ? 1 : 0.42;
 
     public string ToolTipText => NeedsProjectPreview
         ? $"{Title}\nNot included in the current Project Preview. Render preview to update it."

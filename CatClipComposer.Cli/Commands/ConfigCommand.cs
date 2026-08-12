@@ -38,6 +38,14 @@ internal static class ConfigCommand
                 settings.ShowFileNames,
                 settings.RescanLibraryOnStartup,
                 settings.FirstStartupCompleted,
+                recentProjectPaths = settings.RecentProjectPaths,
+                progressDefaults = new
+                {
+                    style = settings.DefaultProgressBarStyle.ToString(),
+                    position = settings.DefaultProgressBarPosition.ToString(),
+                    color = settings.DefaultProgressColor,
+                    height = settings.DefaultProgressHeight
+                },
                 settings.OutputFolder,
                 settings.ProjectFolder,
                 settings.FfmpegPath,
@@ -106,6 +114,10 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
         await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");
         await context.Output.WriteLineAsync($"First startup completed: {settings.FirstStartupCompleted}");
+        await context.Output.WriteLineAsync($"Recent projects: {settings.RecentProjectPaths.Count}");
+        await context.Output.WriteLineAsync(
+            $"Progress defaults: {settings.DefaultProgressBarStyle}, {settings.DefaultProgressBarPosition}, " +
+            $"{settings.DefaultProgressColor}, {settings.DefaultProgressHeight}px");
         await context.Output.WriteLineAsync(
             $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
             $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");

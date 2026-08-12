@@ -99,6 +99,8 @@ public sealed class MainViewModel : ObservableObject
 
     public IReadOnlyList<ICatClipPlugin> Plugins => _plugins.Plugins;
 
+    public IReadOnlyList<string> RecentProjectPaths => _settings.RecentProjectPaths;
+
     public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
 
     public IReadOnlyList<ProjectTimelineItem> GetActivePositionableOverlayItems(TimeSpan position) =>
@@ -127,6 +129,22 @@ public sealed class MainViewModel : ObservableObject
         var start = selected.Min(item => item.Start);
         var end = selected.Max(item => item.Start + item.Duration);
         return (start, end - start);
+    }
+
+    public string GetSelectedVideoProgressName()
+    {
+        var selected = _project.Tracks
+            .SelectMany(track => track.Items)
+            .Where(item => _selectedTimelineItemIds.Contains(item.Id) &&
+                           item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+            .OrderBy(item => item.StartTicks)
+            .ToList();
+        return selected.Count switch
+        {
+            1 => $"PROGRESS {selected[0].Name}",
+            > 1 => $"PROGRESS {selected.Count} CLIPS",
+            _ => "PROGRESS"
+        };
     }
 
     public bool IsDirty
@@ -425,6 +443,7 @@ public sealed class MainViewModel : ObservableObject
         _projectHistory.Reset(_project, isSaved: true);
         NotifyHistoryStateChanged();
         IsDirty = false;
+        await RecordRecentProjectAsync(projectPath, cancellationToken);
         StatusText = $"Opened project: {project.Name}";
     }
 
@@ -449,7 +468,23 @@ public sealed class MainViewModel : ObservableObject
         _projectHistory.MarkSaved(_project);
         NotifyHistoryStateChanged();
         IsDirty = false;
+        await RecordRecentProjectAsync(fullPath, cancellationToken);
         StatusText = $"Saved project: {_project.Name}";
+    }
+
+    private async Task RecordRecentProjectAsync(string projectPath, CancellationToken cancellationToken)
+    {
+        var fullPath = Path.GetFullPath(projectPath);
+        _settings.RecentProjectPaths.RemoveAll(path =>
+            path.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+        _settings.RecentProjectPaths.Insert(0, fullPath);
+        if (_settings.RecentProjectPaths.Count > 10)
+        {
+            _settings.RecentProjectPaths.RemoveRange(10, _settings.RecentProjectPaths.Count - 10);
+        }
+
+        await _settingsStore.SaveAsync(_settings, cancellationToken);
+        OnPropertyChanged(nameof(RecentProjectPaths));
     }
 
     public async Task SaveRecoveryNowAsync(CancellationToken cancellationToken = default)
@@ -511,12 +546,11 @@ public sealed class MainViewModel : ObservableObject
     {
         var expectedTracks = new[]
         {
-            ("Background", ProjectTrackKind.Background, 0),
+            ("Overlays 1", ProjectTrackKind.Overlay, 0),
             ("Video 1", ProjectTrackKind.Video, 1),
-            ("Overlays 1", ProjectTrackKind.Overlay, 2),
-            ("Audio 1", ProjectTrackKind.Audio, 3),
-            ("Progress 1", ProjectTrackKind.Progress, 4),
-            ("Effects 1", ProjectTrackKind.Effects, 5)
+            ("Progress 1", ProjectTrackKind.Progress, 2),
+            ("Background", ProjectTrackKind.Background, 3),
+            ("Audio 1", ProjectTrackKind.Audio, 4)
         };
         var output = project.Output;
         return project.Name.Equals("Untitled project", StringComparison.OrdinalIgnoreCase) &&
@@ -796,6 +830,7 @@ public sealed class MainViewModel : ObservableObject
         Guid trackId,
         ProjectTimelineItem previewItem,
         TimeSpan frame,
+        IProgress<RenderProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         if (IsBusy)
@@ -861,7 +896,7 @@ public sealed class MainViewModel : ObservableObject
                     duration,
                     previewProject),
                 _settings.FfmpegPath,
-                progress: null,
+                progress,
                 _operationCancellation.Token);
             foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{previewProject.Id:N}-*.mp4")
                          .Where(path => !path.Equals(outputPath, StringComparison.OrdinalIgnoreCase)))
@@ -1074,6 +1109,33 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Added {item.Name} to {track.Name}";
     }
 
+    public ProjectTimelineItem CreateProgressItem(TimeSpan start, TimeSpan duration, string name) => new()
+    {
+        Kind = ProjectItemKind.ProgressBar,
+        Name = name,
+        StartTicks = Math.Max(0, start.Ticks),
+        DurationTicks = Math.Max(TimeSpan.FromSeconds(Timeline.SnapIncrement).Ticks, duration.Ticks),
+        ProgressTimeMode = ProgressTimeMode.SourceSegment,
+        ProgressBarStyle = _settings.DefaultProgressBarStyle,
+        ProgressBarPosition = _settings.DefaultProgressBarPosition,
+        ProgressColor = _settings.DefaultProgressColor,
+        ProgressHeight = _settings.DefaultProgressHeight
+    };
+
+    public async Task RememberProgressDefaultsAsync(ProjectTimelineItem item)
+    {
+        if (item.Kind != ProjectItemKind.ProgressBar)
+        {
+            return;
+        }
+
+        _settings.DefaultProgressBarStyle = item.ProgressBarStyle;
+        _settings.DefaultProgressBarPosition = item.ProgressBarPosition;
+        _settings.DefaultProgressColor = item.ProgressColor;
+        _settings.DefaultProgressHeight = item.ProgressHeight;
+        await _settingsStore.SaveAsync(_settings);
+    }
+
     public void AddTrack(ProjectTrackKind kind, string name)
     {
         foreach (var existing in _project.Tracks)
@@ -1098,7 +1160,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var row = SelectedProjectLayer;
         if (row is null || !row.IsTrackHeader || row.Track.Items.Count > 0 ||
-            _project.Tracks.Count(track => track.Kind == row.Track.Kind) <= 1)
+            (row.Track.Kind != ProjectTrackKind.Effects &&
+             _project.Tracks.Count(track => track.Kind == row.Track.Kind) <= 1))
         {
             return false;
         }
@@ -1235,7 +1298,7 @@ public sealed class MainViewModel : ObservableObject
     public void UpdateSelectedLayerItem(ProjectTimelineItem updatedItem)
     {
         var row = SelectedProjectLayer;
-        if (row?.Item is null || row.Track.Kind == ProjectTrackKind.Video)
+        if (row?.Item is null || row.Item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
         {
             return;
         }
@@ -1252,6 +1315,36 @@ public sealed class MainViewModel : ObservableObject
         RefreshProjectLayers(updatedItem.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer item updated";
+    }
+
+    public bool SetTimelineItemEnabled(Guid itemId, bool enabled)
+    {
+        var entry = _project.Tracks
+            .SelectMany(track => track.Items.Select(item => (Track: track, Item: item)))
+            .FirstOrDefault(candidate => candidate.Item.Id == itemId);
+        if (entry.Item is null || entry.Item.IsEnabled == enabled)
+        {
+            return false;
+        }
+
+        if (entry.Track.Id == GetPrimaryVideoTrack().Id &&
+            entry.Item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+        {
+            if (!Timeline.SetEnabled(itemId, enabled))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            entry.Item.IsEnabled = enabled;
+            MarkProjectDirty();
+            RefreshProjectLayers(itemId);
+            _ = SaveRecoverySafelyAsync();
+        }
+
+        StatusText = $"{(enabled ? "Enabled" : "Disabled")} {entry.Item.Name}";
+        return true;
     }
 
     public bool BeginOverlayTransformEdit(Guid itemId)
@@ -1408,14 +1501,19 @@ public sealed class MainViewModel : ObservableObject
             .Where(track => track.Kind == ProjectTrackKind.Video)
             .OrderByDescending(track => track.Order)
             .First();
-        var primaryIds = selected.Where(id => primary.Items.Any(item => item.Id == id)).ToHashSet();
+        var primarySourceIds = selected.Where(id => primary.Items.Any(item =>
+            item.Id == id && item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)).ToHashSet();
+        var primaryNonSourceIds = selected.Where(id => primary.Items.Any(item =>
+            item.Id == id && item.Kind is not (ProjectItemKind.Video or ProjectItemKind.StillImage))).ToHashSet();
         _suppressProjectAutosave = true;
         try
         {
-            if (primaryIds.Count > 0)
+            if (primarySourceIds.Count > 0)
             {
-                Timeline.Remove(primaryIds);
+                Timeline.Remove(primarySourceIds);
             }
+
+            primary.Items.RemoveAll(item => primaryNonSourceIds.Contains(item.Id));
 
             foreach (var track in _project.Tracks.Where(track => track.Id != primary.Id))
             {
@@ -1504,6 +1602,7 @@ public sealed class MainViewModel : ObservableObject
         if (snapToClipRanges)
         {
             foreach (var boundary in GetPrimaryVideoTrack().Items
+                         .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
                          .SelectMany(item => new[] { item.Start, item.Start + item.Duration })
                          .Append(TimeSpan.Zero)
                          .Distinct())
@@ -1529,6 +1628,7 @@ public sealed class MainViewModel : ObservableObject
         if (snapToClipRanges)
         {
             candidates.AddRange(GetPrimaryVideoTrack().Items
+                .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
                 .SelectMany(item => new[] { item.Start.TotalSeconds, (item.Start + item.Duration).TotalSeconds }));
         }
 
@@ -1566,7 +1666,8 @@ public sealed class MainViewModel : ObservableObject
         var selectionStart = moving[0].Start;
         var selectionEnd = moving.Max(item => item.Start + item.Duration);
         var selectionDuration = selectionEnd - selectionStart;
-        if (target.Id == GetPrimaryVideoTrack().Id)
+        if (target.Id == GetPrimaryVideoTrack().Id &&
+            moving.All(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage))
         {
             selectionDuration = TimeSpan.FromTicks(moving.Sum(item => item.Duration.Ticks));
             var remaining = target.Items.Where(item => !itemIds.Contains(item.Id)).OrderBy(item => item.StartTicks).ToList();
@@ -1621,7 +1722,9 @@ public sealed class MainViewModel : ObservableObject
             .Where(track => track.Kind == ProjectTrackKind.Video)
             .OrderByDescending(track => track.Order)
             .First();
-        if (target.Id == primary.Id)
+        if (target.Id == primary.Id &&
+            target.Items.Where(item => itemIds.Contains(item.Id)).All(item =>
+                item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage))
         {
             var moved = Timeline.MoveSelection(itemIds, targetStart);
             if (moved)
@@ -1673,7 +1776,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var track = _project.Tracks.FirstOrDefault(candidate => candidate.Items.Any(item => item.Id == itemId));
         var item = track?.Items.FirstOrDefault(candidate => candidate.Id == itemId);
-        if (track is null || item is null || track.Id == GetPrimaryVideoTrack().Id)
+        if (track is null || item is null ||
+            item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
         {
             return false;
         }
@@ -1853,7 +1957,10 @@ public sealed class MainViewModel : ObservableObject
     {
         EnsureProjectTracks(_project);
         var videoTrack = GetPrimaryVideoTrack();
-        videoTrack.Items = Timeline.CreateProjectItems().ToList();
+        var nonSourceItems = videoTrack.Items
+            .Where(item => item.Kind is not (ProjectItemKind.Video or ProjectItemKind.StillImage))
+            .ToList();
+        videoTrack.Items = Timeline.CreateProjectItems().Concat(nonSourceItems).ToList();
         _project.ModifiedUtc = DateTime.UtcNow;
     }
 
@@ -2034,7 +2141,7 @@ public sealed class MainViewModel : ObservableObject
             });
         }
 
-        foreach (var kind in Enum.GetValues<ProjectTrackKind>())
+        foreach (var kind in Enum.GetValues<ProjectTrackKind>().Where(kind => kind != ProjectTrackKind.Effects))
         {
             if (project.Tracks.All(track => track.Kind != kind))
             {

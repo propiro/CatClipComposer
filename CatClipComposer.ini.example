@@ -3,6 +3,14 @@
 [Startup]
 FirstStartupCompleted=false
 
+[RecentProjects]
+
+[ProgressDefaults]
+Style=Solid
+Position=Bottom
+Color=#C8C0B2
+Height=10
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true

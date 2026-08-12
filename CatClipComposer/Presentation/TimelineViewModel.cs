@@ -482,6 +482,19 @@ public sealed class TimelineViewModel : ObservableObject
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    public bool SetEnabled(Guid instanceId, bool enabled)
+    {
+        var clip = _clips.FirstOrDefault(candidate => candidate.InstanceId == instanceId);
+        if (clip is null || clip.IsEnabled == enabled)
+        {
+            return false;
+        }
+
+        clip.SetEnabled(enabled);
+        Changed?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public IReadOnlyList<RenderSegment> CreateRenderSegments() =>
         _clips.Select(item => item.ToRenderSegment()).ToList();
 

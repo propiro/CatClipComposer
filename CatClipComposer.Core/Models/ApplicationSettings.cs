@@ -75,6 +75,16 @@ public sealed class ApplicationSettings
 
     public bool FirstStartupCompleted { get; set; }
 
+    public List<string> RecentProjectPaths { get; set; } = [];
+
+    public ProgressBarStyle DefaultProgressBarStyle { get; set; } = ProgressBarStyle.Solid;
+
+    public ProgressBarPosition DefaultProgressBarPosition { get; set; } = ProgressBarPosition.Bottom;
+
+    public string DefaultProgressColor { get; set; } = "#C8C0B2";
+
+    public int DefaultProgressHeight { get; set; } = 10;
+
     public WorkspaceDockSlot ContentBrowserDock { get; set; } = WorkspaceDockSlot.Left;
 
     public WorkspaceDockSlot PreviewDock { get; set; } = WorkspaceDockSlot.Center;
@@ -125,6 +135,11 @@ public sealed class ApplicationSettings
         ShowFileNames = ShowFileNames,
         RescanLibraryOnStartup = RescanLibraryOnStartup,
         FirstStartupCompleted = FirstStartupCompleted,
+        RecentProjectPaths = [.. RecentProjectPaths],
+        DefaultProgressBarStyle = DefaultProgressBarStyle,
+        DefaultProgressBarPosition = DefaultProgressBarPosition,
+        DefaultProgressColor = DefaultProgressColor,
+        DefaultProgressHeight = DefaultProgressHeight,
         ContentBrowserDock = ContentBrowserDock,
         PreviewDock = PreviewDock,
         LayersDock = LayersDock,

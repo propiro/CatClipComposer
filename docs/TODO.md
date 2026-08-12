@@ -258,6 +258,46 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Bottom-to-top filter/overlay operations retain their project track order; a real image below
   Video blur renders blurred, while moving its track above the effect renders the image sharp.
 
+### `BROWSER-005` — Make multi-selection modifiers explicit and expose a grouped effect catalog
+
+- Priority/status: P0 / Done
+- Acceptance: Ctrl-click toggles individual clips, Shift-click selects from the first selection anchor, and
+  Add selected clips consumes the full selection. A separate Content Browser Effects tab groups native and
+  plugin entries alphabetically by compatible timeline, repeating plugins where appropriate.
+
+### `TIMELINE-009` — Add default semantic track order and persistent block disable state
+
+- Priority/status: P0 / Done
+- Acceptance: New projects open with Overlays, Video, Progress, Background, and Audio from top to bottom;
+  obsolete default Effects tracks are no longer created. Any block can be disabled/enabled without deletion,
+  stays editable, renders darkened/grayed while disabled, and the shared GUI/CLI mapper excludes it.
+
+### `PROGRESS-001` — Create progress blocks from selected clips and reuse their visual style
+
+- Priority/status: P0 / Done
+- Acceptance: Progress is addable from its lane and the Effects tab; one selected clip creates
+  `PROGRESS <clipname>`, multiple clips define the enclosing interval, accepted visuals become portable INI
+  defaults, and timeline context actions copy/paste style without changing timing.
+
+### `PROJECT-PREVIEW-007` — Show effect-preview work and synchronize transport state
+
+- Priority/status: P0 / Done
+- Acceptance: The effect-frame companion is the editor's width and opens above it where the work area allows;
+  indeterminate/determinate progress and elapsed render time remain visible. Range/all autoplay changes the
+  project play button to Pause only after media opens, and clicking an empty timeline lane selects that frame.
+
+### `PROJECT-OPEN-001` — Offer disk and recent-project choices from Open
+
+- Priority/status: P1 / Done
+- Acceptance: Open presents a disk command plus up to ten newest distinct existing `.nya` paths; normal open
+  and save update the portable INI list without storing project content.
+
+### `FX-LIGHTNESS-001` — Give Background lightness literal endpoint behavior
+
+- Priority/status: P0 / Done
+- Acceptance: The -100..100 slider maps linearly to FFmpeg `eq` brightness -1..1, with -100 yielding black,
+  0 unchanged, and +100 white; the editor documents lightness, saturation, and hue calculation ranges.
+
 ### `RENDER-BG-002` — Define optional overlay contribution to Blur content background
 
 - Priority/status: P1 / Open
@@ -337,8 +377,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `LAYERS-001` — Persist and edit a project layer/track model
 
 - Priority/status: P1 / Done
-- Acceptance: Six default track types, additional named tracks, background color, and requested item fields
-  persist; add/edit/remove controls and the shared GUI/CLI renderer projection pass.
+- Acceptance: Five semantic default tracks plus load-compatible optional legacy Effects tracks, additional
+  named tracks, background color, and requested item fields persist; add/edit/remove controls and the shared
+  GUI/CLI renderer projection pass.
 
 ### `FX-001` — Add timed fades, overlays, music, progress ranges, and fit modes
 
@@ -536,7 +577,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `AUD-PROJECT-001` — Verify project versioning, recovery identity, and overwrite safety
 
 - Priority/status: P0 / Done
-- Evidence: CLI create/load preserved schema, GUID, six default tracks, background/plugin metadata, and
+- Evidence: CLI create/load preserved schema, GUID, the then-current default tracks, background/plugin metadata, and
   output; overwrite returned 2; GUI startup and additive SQLite migration passed.
 
 ### `AUD-UX-003` — Verify project settings, timeline precision, preview, fonts, and splash
