@@ -23,7 +23,9 @@ values; the next process reported v0.1.16 and `GetWindowRect` returned the exact
 clean close. Recovery was absent after both closes. An existing schema-6 project with semantically identical
 schema-7 recovery opened without a dirty asterisk, removed recovery during startup, and closed without a prompt.
 Changing only target duration in recovery retained the asterisk and recovery file. No dependency changed, so a
-new vulnerability audit was not required.
+new vulnerability audit was not required. The validated self-contained ZIP was published as GitHub Release
+v0.1.16: the public asset reports 280,252,855 bytes, and its separately downloaded checksum matches
+`sha256:1fcba2e6fecc02f29a1879045dda6e343f05c356f800ea15830f7cdfe8c1ef3d`.
 
 ## AUDIT-2026-08-12-004 — Editing-session interaction and persistence audit
 

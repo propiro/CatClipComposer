@@ -13,6 +13,8 @@ This is an append-only record of material project work. Newest entries go first.
   verified the exact INI values, reopened at the exact geometry, and closed cleanly again. A schema-6 saved
   project plus equivalent schema-7 recovery opened without an asterisk and deleted recovery; a changed recovery
   retained both its asterisk and recovery file.
+- Published GitHub Release v0.1.16 with the validated 280,252,855-byte self-contained Windows x64 ZIP and its
+  separately downloadable SHA-256 file; public download metadata and checksum content were verified.
 
 ## 2026-08-12 — Session restoration, undo, contextual prerender, and transactional overlays
 
