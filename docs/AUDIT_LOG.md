@@ -20,6 +20,8 @@ markers were removed by the next build, leaving only byte-identical `version_0.1
 FFmpeg-aware publisher passed into a fresh folder; its root contained exactly that marker beside both executables,
 and packaged CLI plus the real WPF title reported v0.1.17. A packaged-text privacy scan found no private path or
 credential match. No dependency changed, so a new vulnerability audit was not required.
+GitHub Release v0.1.17 was then published; the public ZIP reports 280,254,521 bytes and its separately downloaded
+checksum matches `sha256:5b1557dced586949b9ffb358d11b2d28c0b8b02c25904c0e6b375d70bb076e51`.
 
 ## AUDIT-2026-08-12-005 — v0.1.16 clean-session and workspace-restoration correction
 

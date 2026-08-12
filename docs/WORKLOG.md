@@ -12,6 +12,8 @@ This is an append-only record of material project work. Newest entries go first.
 - Verified expected rejection of a deliberately mismatched version, automatic removal of planted stale markers,
   a warning-free Release build, XAML resource audit, fresh full portable publish, packaged CLI version, and real
   WPF v0.1.17 title. Package text contained no private-path or credential match.
+- Published GitHub Release v0.1.17 with the validated 280,254,521-byte Windows x64 ZIP and separately downloadable
+  checksum; public metadata and checksum content match the local archive.
 
 ## 2026-08-12 — v0.1.16 session-state correction
 
