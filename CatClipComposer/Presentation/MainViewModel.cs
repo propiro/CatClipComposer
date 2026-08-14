@@ -745,7 +745,8 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task<RenderResult> RenderProjectPreviewAsync(
         TimeSpan? rangeStart = null,
-        TimeSpan? rangeEnd = null)
+        TimeSpan? rangeEnd = null,
+        bool highQuality = false)
     {
         if (IsBusy)
         {
@@ -784,10 +785,13 @@ public sealed class MainViewModel : ObservableObject
         Directory.CreateDirectory(previewFolder);
         var previewDuration = outputRangeDuration ?? compositionDuration;
         var fingerprint = ProjectContentComparer.CreateContentFingerprint(_project);
+        var previewQuality = highQuality ? 100 : _settings.PreviewQualityPercent;
+        var preserveSelectedObjectQuality = !highQuality && _settings.PreserveSelectedPreviewObjectQuality;
+        var selectedObjectId = preserveSelectedObjectQuality ? SelectedProjectLayer?.Item?.Id : null;
         var outputPath = Path.Combine(
             previewFolder,
             $"{_project.Id:N}-{fingerprint[..16]}-{(outputRangeStart ?? TimeSpan.Zero).Ticks}-" +
-            $"{previewDuration.Ticks}-{DateTime.UtcNow.Ticks}.mp4");
+            $"{previewDuration.Ticks}-q{previewQuality}-{DateTime.UtcNow.Ticks}.mp4");
         var orientation = _project.Output.Height > _project.Output.Width
             ? OutputOrientation.Portrait
             : OutputOrientation.Landscape;
@@ -810,7 +814,10 @@ public sealed class MainViewModel : ObservableObject
                     orientation,
                     VideoEncoderPreset.WindowsMediaFoundationH264,
                     outputRangeStart,
-                    outputRangeDuration),
+                    outputRangeDuration,
+                    previewScale: previewQuality / 100d,
+                    preserveSelectedObjectQuality: preserveSelectedObjectQuality,
+                    selectedObjectId: selectedObjectId),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -819,6 +826,9 @@ public sealed class MainViewModel : ObservableObject
                 outputPath,
                 outputRangeStart ?? TimeSpan.Zero,
                 result.Duration,
+                previewQuality,
+                preserveSelectedObjectQuality,
+                selectedObjectId,
                 _operationCancellation.Token);
             DeleteSupersededProjectPreviews(previewFolder, outputPath);
             ScanProgress = 100;
@@ -875,6 +885,9 @@ public sealed class MainViewModel : ObservableObject
         string outputPath,
         TimeSpan rangeStart,
         TimeSpan duration,
+        int previewQualityPercent,
+        bool preserveSelectedObjectQuality,
+        Guid? selectedObjectId,
         CancellationToken cancellationToken)
     {
         var entry = new ProjectPreviewCacheEntry
@@ -883,6 +896,9 @@ public sealed class MainViewModel : ObservableObject
             OutputPath = outputPath,
             RangeStartTicks = rangeStart.Ticks,
             DurationTicks = duration.Ticks,
+            PreviewQualityPercent = previewQualityPercent,
+            PreserveSelectedObjectQuality = preserveSelectedObjectQuality,
+            SelectedObjectId = selectedObjectId,
             RenderedUtc = DateTime.UtcNow
         };
         var metadataPath = GetProjectPreviewMetadataPath(previewFolder);
@@ -1006,7 +1022,10 @@ public sealed class MainViewModel : ObservableObject
                     VideoEncoderPreset.WindowsMediaFoundationH264,
                     start,
                     duration,
-                    previewProject),
+                    previewProject,
+                    previewScale: _settings.PreviewQualityPercent / 100d,
+                    preserveSelectedObjectQuality: _settings.PreserveSelectedPreviewObjectQuality,
+                    selectedObjectId: previewItem.Id),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
@@ -2255,7 +2274,10 @@ public sealed class MainViewModel : ObservableObject
         VideoEncoderPreset? videoEncoderOverride = null,
         TimeSpan? outputRangeStart = null,
         TimeSpan? outputRangeDuration = null,
-        EditorProject? sourceProject = null)
+        EditorProject? sourceProject = null,
+        double previewScale = 1,
+        bool preserveSelectedObjectQuality = false,
+        Guid? selectedObjectId = null)
     {
         sourceProject ??= _project;
         return new RenderRequest(
@@ -2276,7 +2298,10 @@ public sealed class MainViewModel : ObservableObject
             AudioLayers: renderPlan.AudioLayers,
             PluginEffects: renderPlan.PluginEffects,
             OutputRangeStart: outputRangeStart,
-            OutputRangeDuration: outputRangeDuration);
+            OutputRangeDuration: outputRangeDuration,
+            PreviewScale: previewScale,
+            PreserveSelectedObjectQuality: preserveSelectedObjectQuality,
+            SelectedObjectId: selectedObjectId);
     }
 
     private static void EnsureProjectTracks(EditorProject project)

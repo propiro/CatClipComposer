@@ -53,8 +53,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    items into one renderer plan without WPF/CLI duplication. Track order is top-to-bottom in the editor;
    the bottom Video track supplies the base and higher visual tracks are composited over it in reverse order.
 3. Project output dimensions/FPS/encoder/quality/bitrates are copied into export requests, with narrow
-   command-line overrides. Temporary WPF previews retain project dimensions/FPS/quality but select the
-   Media Foundation H.264 compatibility encoder for stable Windows playback.
+   command-line overrides. Final export retains all project settings. Temporary WPF previews select the
+   Media Foundation H.264 compatibility encoder for stable Windows playback and may apply a 10–100% even
+   canvas scale without changing the saved output profile.
 4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
 5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
 6. FFmpeg renders to a unique partial path.
@@ -79,10 +80,17 @@ The executable modules may reference Core and Infrastructure for composition. Co
 15. Text/image fade values become alpha fades on each transparent overlay stream at its absolute project
     interval. They do not fade the composed video or reuse audio/source fade semantics.
 16. The primary Project Preview action sends either the active range or a short slice at the playhead; explicit
-    Frame and All actions share the same render path. A frame result is loaded and paused instead of playing.
+    Frame LQ, Frame HQ, and All actions share the same render path. A frame result is loaded and paused instead
+    of playing.
 17. A successful prerender atomically records a content/source/app fingerprint and global-time coverage beside
     its uniquely named MP4. Startup and normal Open attach only a matching existing entry; older videos are
     disposable and removed best-effort after Windows MediaElement releases them.
+18. LQ previews use the same mapped timeline and ordered filter graph on the scaled canvas. Source fitting,
+    overlay geometry, text, margins, progress height, and blur radius scale together. Selected image overlays
+    may use Lanczos instead of the default bilinear preview scaler; whole-frame effects still execute at the
+    temporary canvas size. Cache metadata records resolution, preservation mode, and the object that received
+    the optional higher-quality scaler. Preference/selection-only changes do not invalidate still-useful video;
+    the UI identifies its recorded percentage and applies new choices on the next prerender.
 
 ### Timeline and parameter editing
 
@@ -97,8 +105,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    One compact range canvas moves or resizes Start/End together; effect-value sliders and arrow buttons use
    sensible UI bounds and snap steps, while finite manual text entry may exceed those convenience bounds when
    the renderer's hard safety limits permit it.
-5. Effect frame preview clones the in-memory project, replaces only the working effect item, renders a 0.1-second
-   H.264 slice at the selected playhead, and never saves the candidate or records export history. The editor
+5. Effect frame preview clones the in-memory project, replaces only the working native overlay/progress item or
+   plugin effect, renders a 0.1-second H.264 slice at the selected playhead, and never saves the candidate or
+   records export history. The editor
    owns cancellation/debounce and a snapped non-modal preview window. The window paints immediately, reports
    preparation phases over the first quarter, and maps process progress monotonically over the remainder.
 6. `ProjectPreviewOverlayCanvas` maps the project frame into the MediaElement's actual letterboxed viewport,
@@ -107,7 +116,10 @@ The executable modules may reference Core and Infrastructure for composition. Co
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
    the original transform. Item-ID selection remains shared with the timeline and Project Layers Data panel.
    A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing;
-   schema 9 opacity flows through the same shared mapper to FFmpeg alpha/color controls.
+   schema 9 opacity flows through the same shared mapper to FFmpeg alpha/color controls. Once a render exists,
+   unchanged items contribute only hit-testing/selection chrome over the MediaElement. A stale item paints one
+   exact-alpha live proxy; if its transform changed, a snapshot of the rendered transform supplies the crossed
+   stale-location marker until the next successful prerender.
 
 ### Plugin discovery and effect rendering
 
@@ -116,6 +128,8 @@ The executable modules may reference Core and Infrastructure for composition. Co
 2. Each plugin assembly receives its own non-collectible `AssemblyLoadContext` and dependency resolver;
    the shared Core contract assembly stays in the default context.
 3. The catalog validates API version, stable ID, metadata, compatible tracks, and unique parameter keys.
+   Plugin API 2 adds preview scale plus a selected-object quality hint to the video filter context so current
+   and future effects can preserve their visual units when rendering on a smaller temporary canvas.
 4. Project items persist a plugin ID and string parameter dictionary rather than a concrete module type.
 5. `ProjectRenderMapper` resolves and validates required source/effect modules. Background effects receive
    the current source before fit/pad; filter and overlay effects receive the composited stream at their

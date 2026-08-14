@@ -50,6 +50,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     private const double DirectManipulationMinimumScale = 0.05;
     private readonly Dictionary<string, BitmapSource?> _imageCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<Guid> _staleItemIds = [];
+    private readonly Dictionary<Guid, ProjectTimelineItem> _renderedItemSnapshots = [];
     private IReadOnlyList<ProjectTimelineItem> _items = [];
     private Guid? _selectedItemId;
     private Guid? _editingItemId;
@@ -108,6 +109,13 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         _items = items;
         _selectedItemId = selectedItemId;
         _hasRenderedPreview = hasRenderedPreview;
+        if (_hasRenderedPreview)
+        {
+            foreach (var item in _items.Where(item => !_staleItemIds.Contains(item.Id)))
+            {
+                _renderedItemSnapshots.TryAdd(item.Id, CloneOverlayState(item));
+            }
+        }
         if (_interaction is null)
         {
             Redraw();
@@ -128,7 +136,19 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
     public void MarkPreviewRendered()
     {
         _staleItemIds.Clear();
+        _renderedItemSnapshots.Clear();
+        foreach (var item in _items)
+        {
+            _renderedItemSnapshots[item.Id] = CloneOverlayState(item);
+        }
+
         _hasRenderedPreview = true;
+        Redraw();
+    }
+
+    public void MarkItemStale(Guid itemId)
+    {
+        _staleItemIds.Add(itemId);
         Redraw();
     }
 
@@ -156,6 +176,16 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
                     visual.Top + visual.Height + 4,
                     2,
                     Math.Max(2, ActualHeight - 30)));
+            }
+
+            if (_hasRenderedPreview && _staleItemIds.Contains(item.Id) &&
+                _renderedItemSnapshots.TryGetValue(item.Id, out var renderedState) &&
+                HasMovedFromRenderedState(item, renderedState))
+            {
+                var markerVisual = CreateStaleMarkerVisual(renderedState, viewport);
+                Children.Add(markerVisual.Element);
+                SetLeft(markerVisual.Element, markerVisual.Left);
+                SetTop(markerVisual.Element, markerVisual.Top);
             }
         }
     }
@@ -193,8 +223,8 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         {
             Stretch = Stretch.Fill,
             Opacity = showContentProxy
-                ? (selected ? 0.82 : 0.5) * Math.Clamp(item.OverlayOpacity, 0, 1)
-                : selected ? 0.12 : 0.01,
+                ? Math.Clamp(item.OverlayOpacity, 0, 1)
+                : 0,
             Child = content
         });
         root.Children.Add(new Border
@@ -245,6 +275,26 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         }
 
         return new ItemVisual(root, center.X - width / 2, center.Y - height / 2, height);
+    }
+
+    private ItemVisual CreateStaleMarkerVisual(ProjectTimelineItem item, Rect viewport)
+    {
+        var (baseWidth, baseHeight, _) = CreateContent(item, viewport);
+        var transformScale = item.HasCustomOverlayTransform
+            ? OverlayTransformValues.NormalizeScale(item.OverlayScale)
+            : 1;
+        var width = Math.Max(18, baseWidth * transformScale);
+        var height = Math.Max(18, baseHeight * transformScale);
+        var center = ResolveCenter(item, viewport, width, height);
+        var marker = CreateMovedContentMarker();
+        marker.Width = width;
+        marker.Height = height;
+        marker.RenderTransformOrigin = new Point(0.5, 0.5);
+        marker.RenderTransform = new RotateTransform(
+            item.HasCustomOverlayTransform
+                ? OverlayTransformValues.NormalizeRotation(item.OverlayRotationDegrees)
+                : 0);
+        return new ItemVisual(marker, center.X - width / 2, center.Y - height / 2, height);
     }
 
     private (double Width, double Height, FrameworkElement Content) CreateContent(
@@ -376,6 +426,72 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         Cursor = Cursors.Hand,
         ToolTip = "Rotate overlay"
     };
+
+    private static Grid CreateMovedContentMarker()
+    {
+        var marker = new Grid
+        {
+            Background = new SolidColorBrush(Color.FromArgb(72, 20, 19, 18)),
+            IsHitTestVisible = false,
+            ToolTip = "This overlay moved after the displayed project frame was prerendered. Prerender the frame again to refresh it."
+        };
+        marker.Children.Add(new Border
+        {
+            BorderBrush = new SolidColorBrush(Color.FromArgb(210, 235, 115, 101)),
+            BorderThickness = new Thickness(2)
+        });
+        marker.Children.Add(new System.Windows.Shapes.Path
+        {
+            Stretch = Stretch.Fill,
+            Margin = new Thickness(5),
+            Stroke = new SolidColorBrush(Color.FromArgb(205, 235, 115, 101)),
+            StrokeThickness = 2,
+            Data = Geometry.Parse("M 0,0 L 1,1 M 1,0 L 0,1")
+        });
+        marker.Children.Add(new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(6, 3, 6, 3),
+            Background = new SolidColorBrush(Color.FromArgb(225, 16, 15, 14)),
+            Child = new TextBlock
+            {
+                Text = "MOVED CONTENT\nPRERENDER FRAME",
+                TextAlignment = TextAlignment.Center,
+                FontSize = 9,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Color.FromRgb(246, 213, 207))
+            }
+        });
+        return marker;
+    }
+
+    private static ProjectTimelineItem CloneOverlayState(ProjectTimelineItem item) => new()
+    {
+        Id = item.Id,
+        Kind = item.Kind,
+        SourcePath = item.SourcePath,
+        Text = item.Text,
+        FontFamily = item.FontFamily,
+        FontSize = item.FontSize,
+        Position = item.Position,
+        HasCustomOverlayTransform = item.HasCustomOverlayTransform,
+        OverlayX = item.OverlayX,
+        OverlayY = item.OverlayY,
+        OverlayScale = item.OverlayScale,
+        OverlayRotationDegrees = item.OverlayRotationDegrees,
+        OverlayOpacity = item.OverlayOpacity
+    };
+
+    private static bool HasMovedFromRenderedState(
+        ProjectTimelineItem current,
+        ProjectTimelineItem rendered) =>
+        current.Position != rendered.Position ||
+        current.HasCustomOverlayTransform != rendered.HasCustomOverlayTransform ||
+        Math.Abs(current.OverlayX - rendered.OverlayX) > 0.0001 ||
+        Math.Abs(current.OverlayY - rendered.OverlayY) > 0.0001 ||
+        Math.Abs(current.OverlayScale - rendered.OverlayScale) > 0.0001 ||
+        Math.Abs(current.OverlayRotationDegrees - rendered.OverlayRotationDegrees) > 0.0001;
 
     private StackPanel CreateActionPanel(Guid itemId)
     {

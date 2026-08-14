@@ -2,6 +2,24 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.26 preview-quality and editor-feedback pass
+
+- Corrected the remaining scrollbar compression by separating horizontal width from vertical height and gave
+  both thumb orientations a usable minimum. Replaced WPF's native menu icon gutter with a six-pixel detail rail.
+- Removed all editor-only opacity reduction from stale overlay content. Unchanged rendered selections now paint
+  only chrome; moved overlays show an exact-alpha live proxy and a crossed notice at the old rendered transform.
+- Reorganized native/plugin item editors into consistent content/module, timeline, transform, and adjustment
+  sections. Native PNG/text settings can prerender unsaved changes over the real project background through the
+  same snapped, progress-reporting frame companion as plugin effects.
+- Added persisted 10/25/50/75/90/100% LQ preview resolution, selected-image Lanczos scaling, explicit Frame LQ
+  and Frame HQ actions, scaled effect geometry/radii, and cache metadata for preview settings/selection.
+- Added a high-contrast dark tooltip theme, 500 ms delay, focused descriptions on the new controls, and baseline
+  hover help for standard interactive controls. Advanced all component metadata and the marker to 0.1.26.
+- Verification covered clean Release builds, static XAML resources, CLI config output, and a real 25% FFmpeg
+  render combining Background Blur, Video Blur, opaque transformed PNG, text, and progress at 80×46 for a
+  320×180 project; the direct/transitive NuGet vulnerability audit was clear. Commit: recorded by the commit
+  containing this entry.
+
 ## 2026-08-13 — v0.1.25 overlay fidelity and editor-shell polish
 
 - Replaced effect-frame's long nearly-empty wait with an immediately painted five-percent bar, named project

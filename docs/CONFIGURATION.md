@@ -1,6 +1,6 @@
 # INI configuration
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-14
 
 ## Location
 
@@ -49,6 +49,10 @@ SmallThumbnailSize=120
 LargeThumbnailSize=220
 ExtraLargeThumbnailSize=420
 
+[Preview]
+QualityPercent=50
+PreserveSelectedObjectQuality=true
+
 [Output]
 Folder=C:\Videos\Compositions
 ProjectFolder=C:\Videos\CatClipComposer Projects
@@ -89,6 +93,14 @@ each `.nya` project and can be changed from **Project settings** or the timeline
 `LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size;
 `ExtraLargeThumbnailSize` is clamped to 240-640 and kept at least 40 pixels larger than Large.
 These browser preferences affect cached-image presentation only and never cause source videos to be loaded.
+
+`Preview.QualityPercent` controls the temporary LQ preview canvas and accepts the six UI stops `10`, `25`,
+`50`, `75`, `90`, or `100`; another finite integer is normalized to the nearest stop. It does not change the
+project's final output dimensions or export quality. `Preview.PreserveSelectedObjectQuality` defaults to true
+and asks the renderer to use higher-quality scaling for a selected image overlay where the filter graph can do
+so safely. Whole-frame effects still run on the smaller preview canvas. A previous valid cached prerender can
+still be displayed after either preference changes; its recorded percentage is shown, and the next prerender
+uses the new choice. `config` exposes both values in text and JSON output.
 
 `Startup.FirstStartupCompleted` defaults to false. After the editor initializes successfully, the application
 atomically saves it as true. False or missing values select the five-second first-launch splash minimum; true

@@ -39,6 +39,11 @@ internal static class ConfigCommand
                 settings.ShowFileNames,
                 settings.RescanLibraryOnStartup,
                 settings.FirstStartupCompleted,
+                previewRendering = new
+                {
+                    qualityPercent = settings.PreviewQualityPercent,
+                    preserveSelectedObjectQuality = settings.PreserveSelectedPreviewObjectQuality
+                },
                 recentProjectPaths = settings.RecentProjectPaths,
                 progressDefaults = new
                 {
@@ -116,6 +121,9 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
         await context.Output.WriteLineAsync($"Rescan on startup: {settings.RescanLibraryOnStartup}");
+        await context.Output.WriteLineAsync(
+            $"Preview rendering: {settings.PreviewQualityPercent}% resolution; " +
+            $"selected-overlay quality={settings.PreserveSelectedPreviewObjectQuality}");
         await context.Output.WriteLineAsync($"First startup completed: {settings.FirstStartupCompleted}");
         await context.Output.WriteLineAsync($"Recent projects: {settings.RecentProjectPaths.Count}");
         await context.Output.WriteLineAsync(

@@ -1,5 +1,48 @@
 # Audit log
 
+## AUDIT-2026-08-14-001 — Preview scale, stale overlay, and shell-control audit
+
+Scope: investigate residual context-menu gutter width, compressed scrollbars, effect-editor ordering, misleading
+source-only PNG alpha feedback, stale rendered/live overlay duplication, preview-performance controls, and
+unreadable/incomplete hover help.
+
+Findings and remediation:
+
+- The implicit ScrollBar style assigned both `Width=16` and `Height=16`, so each horizontal instance remained
+  only 16 pixels wide and each vertical instance only 16 pixels tall even after its track bindings were fixed.
+  Orientation-specific dimensions plus 48-pixel minimum thumbs restore useful timeline and browser bars.
+- WPF's default MenuItem template retained its icon/check column despite compact header content. A focused
+  template reduces this to a six-pixel detail rail with a two-pixel hover mark and preserves submenu behavior.
+- The overlay canvas multiplied stale content by 0.82/0.5 and showed unmarked rendered selections at 0.12. A
+  dialog Apply also failed to mark content stale, explaining the reported near-10% proxy. Stale content now uses
+  exactly the item's persisted opacity; unchanged rendered items add no second image. Snapshot transforms mark
+  the old location with a crossed `MOVED CONTENT` notice only when position/scale/rotation actually changed.
+- Native image/text and plugin effect editors now follow a stable section order and keep background-aware frame
+  prerender at the bottom. Native candidates reuse the existing cloned-project renderer, so source alpha is
+  judged over the actual composition instead of the checkerless source-only image.
+- Preview-quality research found the established editor pattern is a lower playback/monitor resolution that
+  leaves export settings untouched. Adobe documents fractional Program Monitor playback resolution and preview
+  files; Kdenlive documents monitor preview resolution and optional preview-resolution rendering. FFmpeg's
+  scaler/filter documentation supports a single reduced even canvas with explicit per-overlay scaler flags.
+  The implementation therefore reuses the complete graph at one of six resolution stops rather than creating
+  effect-specific bypasses. Blur radii, text, margins, progress height, and overlay geometry scale with it.
+- Tooltip colors previously depended on platform defaults. A near-black, light-text tooltip style plus a 500 ms
+  delay, explicit new-control descriptions, dynamic plugin parameter descriptions, and implicit baseline help
+  cover interactive WPF types without changing control behavior.
+
+Sources reviewed:
+
+- Adobe Program Monitor display quality: <https://helpx.adobe.com/premiere/desktop/get-started/source-and-program-monitor-adjustments/set-display-quality-for-the-source-and-program-monitors.html>
+- Adobe preview files: <https://helpx.adobe.com/ca/premiere/desktop/render-and-export/render-sequences-for-playback/use-preview-files-when-rendering.html>
+- Kdenlive monitor preview resolution: <https://docs.kdenlive.org/en/user_interface/monitors.html>
+- Kdenlive render at preview resolution: <https://docs.kdenlive.org/en/exporting/render.html>
+- FFmpeg scaler/filter references: <https://ffmpeg.org/ffmpeg-scaler.html>, <https://ffmpeg.org/ffmpeg-filters.html>
+
+Verification: complete Release builds and XAML resource checks passed. A direct renderer smoke used the bundled
+LGPL FFmpeg with a 320×180 still composition, Background Blur, Video Blur, 100%-opaque transformed PNG, text,
+and progress; the 25% request completed as a decodable 80×46, 0.5-second MPEG-4 file. No dependency changed;
+the full direct/transitive NuGet vulnerability audit was nevertheless rerun and reported no vulnerable package.
+
 ## AUDIT-2026-08-13-001 — Overlay alpha and editor interaction audit
 
 Scope: investigate weak frame-preview feedback, ambiguous lock presentation, maximum browser-card sizing, Space

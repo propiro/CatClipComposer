@@ -496,8 +496,10 @@
                                         <Button Padding="14,5" Click="ProjectPreview_Click"
                                                 Style="{StaticResource PrimaryButtonStyle}" Content="PRERENDER PREVIEW"
                                                 ToolTip="Prerender the selected timeline range, or the selected frame when there is no range" />
-                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrame_Click"
-                                                Content="Frame" ToolTip="Prerender only the selected project frame" />
+                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrameLowQuality_Click"
+                                                Content="Frame LQ" ToolTip="Prerender the selected frame at the configured preview resolution" />
+                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrameHighQuality_Click"
+                                                Content="Frame HQ" ToolTip="Prerender the selected frame at the full project resolution" />
                                         <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderAll_Click"
                                                 Content="All" ToolTip="Prerender the complete project" />
                                     </WrapPanel>
@@ -529,6 +531,47 @@
                                                            Text="{Binding ProjectFilePath, TargetNullValue=Not saved yet}" />
                                                 <Button HorizontalAlignment="Left" Click="OutputSettings_Click"
                                                         Content="Edit project settings…" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Expander>
+                                    <Expander x:Name="PreviewSettingsExpander"
+                                              Grid.Row="1" Grid.Column="2"
+                                              Margin="8,7,0,0" MaxWidth="390"
+                                              HorizontalAlignment="Right" IsExpanded="False"
+                                              Style="{StaticResource LayerExpanderStyle}"
+                                              ToolTip="Configure temporary preview rendering without changing final export settings.">
+                                        <Expander.Header>
+                                            <TextBlock FontSize="11" FontWeight="SemiBold" Text="PREVIEW SETTINGS" />
+                                        </Expander.Header>
+                                        <Border Margin="22,4,0,0" Padding="7"
+                                                Background="{StaticResource InputBrush}"
+                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Text="Preview resolution" />
+                                                <TextBlock Margin="0,2,0,5" FontSize="10" TextWrapping="Wrap"
+                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                           Text="Lower resolution keeps the same timeline and effect graph but renders a smaller temporary frame." />
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="48" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider x:Name="PreviewQualitySlider" Minimum="0" Maximum="5" Value="2"
+                                                            TickFrequency="1" IsSnapToTickEnabled="True"
+                                                            ValueChanged="PreviewQualitySlider_ValueChanged"
+                                                            ToolTip="Choose 10, 25, 50, 75, 90, or 100 percent of the project resolution for LQ frame, range, and All previews." />
+                                                    <TextBlock x:Name="PreviewQualityValueText" Grid.Column="1" Margin="7,0,0,0"
+                                                               VerticalAlignment="Center" TextAlignment="Right" Text="50%"
+                                                               ToolTip="Current temporary preview resolution." />
+                                                </Grid>
+                                                <CheckBox x:Name="PreserveSelectedPreviewObjectCheckBox" Margin="0,7,0,0"
+                                                          Checked="PreserveSelectedPreviewObjectCheckBox_Changed"
+                                                          Unchecked="PreserveSelectedPreviewObjectCheckBox_Changed"
+                                                          Content="Higher-quality scaling for selected image"
+                                                          ToolTip="Use a higher-quality scaler for the selected image overlay while the composition uses the preview resolution. Whole-frame effects still run on the smaller preview canvas." />
+                                                <TextBlock Margin="0,5,0,0" FontSize="9" TextWrapping="Wrap"
+                                                           Foreground="{StaticResource FaintTextBrush}"
+                                                           Text="Frame HQ always uses the full project resolution. Final export settings are never changed." />
                                             </StackPanel>
                                         </Border>
                                     </Expander>

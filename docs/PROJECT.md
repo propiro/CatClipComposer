@@ -89,8 +89,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
   Shift/Ctrl drag paints a frame-snapped range, Mark start/end creates one from the playhead, and either edge
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
-  double-clicks. Prerender Preview defaults to that active range or the current frame, while adjacent Frame
-  and All actions are explicit. Project preview maps local playback back onto project time and uses
+  double-clicks. Prerender Preview defaults to that active range or the current frame, while adjacent LQ/HQ
+  Frame and All actions are explicit. A six-stop 10–100% temporary-resolution control uses the same
+  composition/effect graph on a smaller canvas without changing export settings, while optional selected-image
+  scaling uses a higher-quality scaler. Project preview maps local playback back onto project time and uses
   Windows-compatible H.264 without recording export history. The latest valid prerender is restored between
   sessions and exact project/source/app fingerprints prevent stale reuse; timeline clicks pause and seek within
   its available coverage. Project Settings is a compact rollout at the bottom-left of Project Preview rather
@@ -106,7 +108,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   Used Clips selection; double-clicking it opens the item's preferences. Visible gray transparent per-block lock
   controls prevent project-view transform gestures while retaining selection and form editing. OK/Enter commits
   the draft and Cancel/Escape restores it. The same editor exposes transform, explicit 0–100% opacity, and
-  optional fade-in from and fade-out to transparency.
+  optional fade-in from and fade-out to transparency. Live stale proxies retain that exact opacity; moved
+  content leaves a crossed notice over its old prerendered location until the frame is refreshed.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
   names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
@@ -121,8 +124,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
-  Effect dialogs can render the selected project frame in a same-width companion above the editor, show staged
-  preparation plus live FFmpeg progress and elapsed time, and optionally refresh after a short debounce.
+  Native overlay and plugin-effect dialogs group content/module, timing, transform, and appearance/adjustment
+  controls consistently. They can render unsaved settings over the selected real project frame in a same-width
+  companion above the editor, show staged preparation plus live FFmpeg progress and elapsed time, and optionally
+  refresh plugin effects after a short debounce.
 - **Effect discovery and block state — Done.** The Content Browser has a grouped Effects tab with native and
   plugin entries repeated under every compatible timeline category. Timeline blocks can be disabled without
   deletion; disabled blocks remain editable but render darkened/grayed and are excluded from output.
@@ -161,7 +166,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.25 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.26 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

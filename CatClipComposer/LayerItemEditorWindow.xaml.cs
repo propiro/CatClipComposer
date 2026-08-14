@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
@@ -28,6 +29,11 @@ public partial class LayerItemEditorWindow : Window
     private bool _existingCustomTransform;
     private bool _transformEdited;
     private bool _positionPresetChanged;
+    private readonly Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? _framePreviewRenderer;
+    private readonly TimeSpan? _previewFrame;
+    private readonly SemaphoreSlim _framePreviewGate = new(1, 1);
+    private EffectFramePreviewWindow? _framePreviewWindow;
+    private CancellationTokenSource? _framePreviewCancellation;
 
     public LayerItemEditorWindow(
         LayerEditorKind kind,
@@ -36,10 +42,22 @@ public partial class LayerItemEditorWindow : Window
         TimelineSnapMode snapMode,
         double framesPerSecond,
         TimeSpan? selectedSegmentStart = null,
-        TimeSpan? selectedSegmentDuration = null)
+        TimeSpan? selectedSegmentDuration = null,
+        TimeSpan? previewFrame = null,
+        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
     {
+        _previewFrame = previewFrame;
+        _framePreviewRenderer = framePreviewRenderer;
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
+        PreviewFrameButton.IsEnabled = previewFrame.HasValue && framePreviewRenderer is not null;
+        if (!PreviewFrameButton.IsEnabled)
+        {
+            PreviewFrameButton.ToolTip = "Add project video content before prerendering this item's frame with its background.";
+        }
+        LocationChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
+        SizeChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
+        Closed += (_, _) => CloseFramePreview();
         _kind = kind;
         _projectDuration = projectDuration;
         _snapSeconds = snapMode switch
@@ -111,8 +129,17 @@ public partial class LayerItemEditorWindow : Window
         TimeSpan projectDuration,
         string customFontFolder,
         TimelineSnapMode snapMode,
-        double framesPerSecond)
-        : this(GetEditorKind(item.Kind), projectDuration, customFontFolder, snapMode, framesPerSecond)
+        double framesPerSecond,
+        TimeSpan? previewFrame = null,
+        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
+        : this(
+            GetEditorKind(item.Kind),
+            projectDuration,
+            customFontFolder,
+            snapMode,
+            framesPerSecond,
+            previewFrame: previewFrame,
+            framePreviewRenderer: framePreviewRenderer)
     {
         _loadingTransformFields = true;
         _existingId = item.Id;
@@ -283,6 +310,20 @@ public partial class LayerItemEditorWindow : Window
 
     private void Add_Click(object sender, RoutedEventArgs e)
     {
+        if (!TryCreateResultItem(out var resultItem, out var error))
+        {
+            MessageBox.Show(this, error, "Invalid layer item", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        ResultItem = resultItem;
+        DialogResult = true;
+    }
+
+    private bool TryCreateResultItem(out ProjectTimelineItem resultItem, out string error)
+    {
+        resultItem = null!;
+        error = string.Empty;
         var fontSizeValid = int.TryParse(FontSizeEditor.Text, NumberStyles.Integer,
             CultureInfo.InvariantCulture, out var fontSize) && fontSize is >= 8 and <= 240;
         var volumeValid = TryParse(VolumeEditor.Text, 0, 4, out var volume);
@@ -335,10 +376,8 @@ public partial class LayerItemEditorWindow : Window
                                                  fadeIn > durationTime.TotalSeconds || fadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
-            MessageBox.Show(this,
-                "Check the required source/text, start, positive duration, font size 8–240, overlay transform/opacity/fades, audio values, and progress color/height.",
-                "Invalid layer item", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            error = "Check the required source/text, start, positive duration, font size 8–240, overlay transform/opacity/fades, audio values, and progress color/height.";
+            return false;
         }
 
         var start = startTime.TotalSeconds;
@@ -373,7 +412,7 @@ public partial class LayerItemEditorWindow : Window
             _ => Path.GetFileName(SourceTextBox.Text)
         };
 
-        ResultItem = new ProjectTimelineItem
+        resultItem = new ProjectTimelineItem
         {
             Id = _existingId ?? Guid.NewGuid(),
             Kind = itemKind,
@@ -408,7 +447,85 @@ public partial class LayerItemEditorWindow : Window
             ProgressColor = progressColor,
             ProgressHeight = progressHeight
         };
-        DialogResult = true;
+        return true;
+    }
+
+    private async void PreviewFrame_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_previewFrame.HasValue || _framePreviewRenderer is null)
+        {
+            return;
+        }
+
+        EnsureFramePreviewWindow();
+        if (!TryCreateResultItem(out var previewItem, out var error))
+        {
+            _framePreviewWindow?.ShowError(error);
+            return;
+        }
+
+        _framePreviewCancellation?.Cancel();
+        await _framePreviewGate.WaitAsync();
+        try
+        {
+            if (_framePreviewWindow is null)
+            {
+                return;
+            }
+
+            _framePreviewCancellation?.Dispose();
+            _framePreviewCancellation = new CancellationTokenSource();
+            _framePreviewWindow.SetLoading(_previewFrame.Value);
+            await Dispatcher.Yield(DispatcherPriority.Render);
+            try
+            {
+                var progress = new Progress<RenderProgress>(update => _framePreviewWindow?.ReportProgress(update));
+                var result = await _framePreviewRenderer(previewItem, progress, _framePreviewCancellation.Token);
+                _framePreviewWindow?.ShowPreview(result.OutputPath, _previewFrame.Value);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                _framePreviewWindow?.ShowError($"Frame preview failed: {exception.Message}");
+            }
+        }
+        finally
+        {
+            _framePreviewGate.Release();
+        }
+    }
+
+    private void EnsureFramePreviewWindow()
+    {
+        if (_framePreviewWindow is not null)
+        {
+            _framePreviewWindow.Activate();
+            return;
+        }
+
+        _framePreviewWindow = new EffectFramePreviewWindow { Owner = this };
+        _framePreviewWindow.Closed += (_, _) =>
+        {
+            _framePreviewCancellation?.Cancel();
+            _framePreviewWindow = null;
+        };
+        _framePreviewWindow.Show();
+        _framePreviewWindow.SnapBeside(this);
+    }
+
+    private void CloseFramePreview()
+    {
+        _framePreviewCancellation?.Cancel();
+        _framePreviewCancellation?.Dispose();
+        _framePreviewCancellation = null;
+        if (_framePreviewWindow is not null)
+        {
+            var window = _framePreviewWindow;
+            _framePreviewWindow = null;
+            window.Close();
+        }
     }
 
     private void PositionComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

@@ -14,17 +14,34 @@
         </StackPanel>
         <ScrollViewer Grid.Row="1" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <TextBlock Margin="0,0,0,4" Text="Module" />
-                <ComboBox x:Name="PluginComboBox" DisplayMemberPath="Descriptor.Name"
-                          SelectionChanged="PluginComboBox_SelectionChanged" />
-                <TextBlock x:Name="DescriptionText" Margin="0,5,0,13" TextWrapping="Wrap"
-                           Foreground="{StaticResource MutedTextBrush}" />
-                <controls:TimeRangeEditorControl x:Name="TimeRangeEditor" Margin="0,0,0,12" />
-                <TextBlock x:Name="SnapText" Margin="0,-7,0,12" FontSize="10"
-                           Foreground="{StaticResource FaintTextBrush}" />
-                <Border Padding="11" Background="{StaticResource PanelBrush}"
+                <Border Margin="0,0,0,10" Padding="10" Background="{StaticResource InputBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                    <StackPanel x:Name="ParametersPanel" />
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="EFFECT MODULE" />
+                        <TextBlock Margin="0,0,0,4" Text="Effect type" />
+                        <ComboBox x:Name="PluginComboBox" DisplayMemberPath="Descriptor.Name"
+                                  SelectionChanged="PluginComboBox_SelectionChanged"
+                                  ToolTip="Choose an effect compatible with the target timeline." />
+                        <TextBlock x:Name="DescriptionText" Margin="0,5,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource MutedTextBrush}" />
+                    </StackPanel>
+                </Border>
+                <Border Margin="0,0,0,10" Padding="10" Background="{StaticResource InputBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="TIMELINE RANGE" />
+                        <controls:TimeRangeEditorControl x:Name="TimeRangeEditor"
+                                                         ToolTip="Set when this effect starts and ends on the project timeline." />
+                        <TextBlock x:Name="SnapText" Margin="0,5,0,0" FontSize="10"
+                                   Foreground="{StaticResource FaintTextBrush}" />
+                    </StackPanel>
+                </Border>
+                <Border Padding="10" Background="{StaticResource InputBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="EFFECT ADJUSTMENTS" />
+                        <StackPanel x:Name="ParametersPanel" />
+                    </StackPanel>
                 </Border>
             </StackPanel>
         </ScrollViewer>
@@ -34,14 +51,19 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel x:Name="FramePreviewControls" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="PreviewFrameButton" Click="PreviewFrame_Click" Content="Preview selected frame" />
+                <Button x:Name="PreviewFrameButton" Click="PreviewFrame_Click"
+                        Content="Prerender frame with background"
+                        ToolTip="Render this effect with its unsaved settings over the current project frame." />
                 <CheckBox x:Name="AutoPreviewCheckBox" Margin="9,0,0,0" VerticalAlignment="Center"
-                          Content="Auto refresh" />
+                          Content="Auto refresh"
+                          ToolTip="Refresh the open frame preview after effect settings change." />
             </StackPanel>
             <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button MinWidth="80" IsCancel="True" Content="Cancel" />
+                <Button MinWidth="80" IsCancel="True" Content="Cancel"
+                        ToolTip="Close without applying these effect settings." />
                 <Button x:Name="ApplyButton" MinWidth="110" Margin="5,0,0,0" Click="Apply_Click"
-                        Style="{StaticResource PrimaryButtonStyle}" Content="Add effect" />
+                        Style="{StaticResource PrimaryButtonStyle}" Content="Add effect"
+                        ToolTip="Apply these settings to the timeline effect." />
             </StackPanel>
         </Grid>
     </Grid>

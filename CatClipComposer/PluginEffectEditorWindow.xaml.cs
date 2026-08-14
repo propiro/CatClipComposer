@@ -47,9 +47,12 @@ public partial class PluginEffectEditorWindow : Window
         DesktopWindowTheme.Apply(this);
         _framePreviewDebounce.Tick += FramePreviewDebounce_Tick;
         TimeRangeEditor.RangeEdited += EditorValueChanged;
-        FramePreviewControls.Visibility = previewFrame.HasValue && framePreviewRenderer is not null
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        PreviewFrameButton.IsEnabled = previewFrame.HasValue && framePreviewRenderer is not null;
+        AutoPreviewCheckBox.IsEnabled = PreviewFrameButton.IsEnabled;
+        if (!PreviewFrameButton.IsEnabled)
+        {
+            PreviewFrameButton.ToolTip = "Add project video content before prerendering this effect with its background.";
+        }
         LocationChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
         SizeChanged += (_, _) => _framePreviewWindow?.SnapBeside(this);
         Closed += (_, _) => CloseFramePreview();
@@ -124,6 +127,9 @@ public partial class PluginEffectEditorWindow : Window
                 PluginParameterType.Number => CreateNumberEditor(parameter, value),
                 _ => new TextBox { Text = value }
             };
+            editor.ToolTip = string.IsNullOrWhiteSpace(parameter.Description)
+                ? $"Adjust {parameter.DisplayName}."
+                : parameter.Description;
             _parameterEditors[parameter.Key] = editor;
             ParametersPanel.Children.Add(editor);
             WatchEditor(editor);

@@ -24,6 +24,10 @@ SmallThumbnailSize=120
 LargeThumbnailSize=220
 ExtraLargeThumbnailSize=420
 
+[Preview]
+QualityPercent=50
+PreserveSelectedObjectQuality=true
+
 [Output]
 Folder=
 ProjectFolder=

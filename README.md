@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.25**.
+Current application and component version: **0.1.26**.
 
 ## Documentation
 
@@ -35,8 +35,10 @@ Current application and component version: **0.1.25**.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
   resizable left/right viewports. Prerender Preview renders the selected timeline range when one exists and
-  otherwise renders only the current frame; adjacent Frame and All actions are explicit. Temporary previews
-  use Windows-compatible H.264, and neither preview action records an export.
+  otherwise renders only the current frame; adjacent Frame LQ, Frame HQ, and All actions are explicit. A
+  Preview Settings rollout offers six temporary-resolution stops from 10% through 100% plus higher-quality
+  scaling for the selected image overlay. Temporary previews use Windows-compatible H.264, and no preview
+  action records an export or changes final export settings.
 - Add clips more than once, reorder them, remove them, and compare the total against a project-specific target duration.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, disable/enable, and remove multiple PNG/JPG, text, music, and individually styled progress
@@ -45,7 +47,9 @@ Current application and component version: **0.1.25**.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
   on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
   synchronized with the timeline and Project Layers Data panel, while exact X/Y, scale, rotation, placement
-  presets, and transparency fade-in/out remain editable in the overlay dialog.
+  presets, and transparency fade-in/out remain editable in the overlay dialog. A moved live proxy uses the
+  exact configured opacity; the old prerendered location receives a crossed **MOVED CONTENT** notice until
+  the frame is prerendered again.
 - Time effects with Start/End fields (or optional duration entry), set them to the whole timeline in one click,
   adjust the interval on one compact mini timeline, and use bounded sliders/arrows for effect values while
   retaining exact manual numeric entry.
@@ -81,7 +85,9 @@ Current application and component version: **0.1.25**.
 - Load versioned effect/source modules from the portable `plugins` folder. The built-in module assembly
   supplies blur-content background, timed video blur, and PNG splash-screen functionality.
 - Compose overlays and Video blur according to visual track order, and preview the selected timeline frame in
-  a same-width window above the effect editor with progress, elapsed time, and manual or debounced refresh.
+  a same-width window above native overlay or plugin-effect editors with the actual project background,
+  progress, elapsed time, and manual or debounced refresh. Editors consistently group content, timeline,
+  transform, and appearance/effect adjustment sections.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option;
   place the extensionless `version_<version>` marker beside both executables so an unpacked build is visibly
   distinguishable without launching it.

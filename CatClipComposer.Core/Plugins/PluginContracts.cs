@@ -4,7 +4,7 @@ namespace CatClipComposer.Core.Plugins;
 
 public static class PluginContract
 {
-    public const int CurrentApiVersion = 1;
+    public const int CurrentApiVersion = 2;
 }
 
 public static class BuiltInPluginIds
@@ -71,7 +71,9 @@ public sealed record PluginVideoFilterContext(
     double FramesPerSecond,
     TimeSpan EffectStart,
     TimeSpan EffectDuration,
-    string BackgroundColor);
+    string BackgroundColor,
+    double PreviewScale = 1,
+    bool PreserveFullQuality = false);
 
 public sealed record PluginAudioFilterContext(
     string InputLabel,

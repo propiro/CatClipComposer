@@ -32,7 +32,7 @@ public sealed class BackgroundBlurPlugin : ICatClipVideoEffectPlugin
         var lightness = PluginValues.Number(parameters, "lightness", 0, -100, 100) / 100;
         var hue = PluginValues.Number(parameters, "hue", 0, -36000, 36000);
         var zoom = PluginValues.Number(parameters, "zoom", 1.15, 1, 10);
-        var blur = PluginValues.Number(parameters, "blur", 32, 0, 1000);
+        var blur = PluginValues.Number(parameters, "blur", 32, 0, 1000) * context.PreviewScale;
         var backgroundWidth = MakeEven((int)Math.Ceiling(context.Width * zoom));
         var backgroundHeight = MakeEven((int)Math.Ceiling(context.Height * zoom));
         var start = PluginValues.Format(Math.Max(0, context.EffectStart.TotalSeconds));

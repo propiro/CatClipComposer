@@ -19,7 +19,7 @@ public sealed class VideoBlurPlugin : ICatClipVideoEffectPlugin
         PluginVideoFilterContext context,
         IReadOnlyDictionary<string, string> parameters)
     {
-        var blur = PluginValues.Number(parameters, "blur", 12, 0, 1000);
+        var blur = PluginValues.Number(parameters, "blur", 12, 0, 1000) * context.PreviewScale;
         var start = PluginValues.Format(context.EffectStart.TotalSeconds);
         var end = PluginValues.Format((context.EffectStart + context.EffectDuration).TotalSeconds);
         return $"[{context.InputLabel}]gblur=sigma={PluginValues.Format(blur)}:" +

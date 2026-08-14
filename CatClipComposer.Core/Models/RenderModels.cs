@@ -26,7 +26,8 @@ public sealed record RenderPluginEffect(
     TimeSpan Start,
     TimeSpan Duration,
     IReadOnlyDictionary<string, string> Parameters,
-    int TrackOrder = 0);
+    int TrackOrder = 0,
+    Guid? ProjectItemId = null);
 
 public enum RenderOverlayKind
 {
@@ -59,7 +60,8 @@ public sealed record RenderOverlay(
     double TransformRotationDegrees = 0,
     double Opacity = 1,
     double FadeInSeconds = 0,
-    double FadeOutSeconds = 0);
+    double FadeOutSeconds = 0,
+    Guid? ProjectItemId = null);
 
 public sealed record RenderAudioLayer(
     string SourcePath,
@@ -87,7 +89,10 @@ public sealed record RenderRequest(
     IReadOnlyList<RenderAudioLayer>? AudioLayers = null,
     IReadOnlyList<RenderPluginEffect>? PluginEffects = null,
     TimeSpan? OutputRangeStart = null,
-    TimeSpan? OutputRangeDuration = null);
+    TimeSpan? OutputRangeDuration = null,
+    double PreviewScale = 1,
+    bool PreserveSelectedObjectQuality = false,
+    Guid? SelectedObjectId = null);
 
 public sealed record RenderProgress(
     double Percent,

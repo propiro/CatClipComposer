@@ -80,6 +80,16 @@ internal static class ApplicationSettingsIniMapper
             "Library",
             "ExtraLargeThumbnailSize",
             settings.ExtraLargeThumbnailSize);
+        settings.PreviewQualityPercent = ReadInt(
+            ini,
+            "Preview",
+            "QualityPercent",
+            settings.PreviewQualityPercent);
+        settings.PreserveSelectedPreviewObjectQuality = ReadBool(
+            ini,
+            "Preview",
+            "PreserveSelectedObjectQuality",
+            settings.PreserveSelectedPreviewObjectQuality);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
@@ -173,6 +183,12 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"ExtraLargeThumbnailSize={settings.ExtraLargeThumbnailSize}");
 
         builder.AppendLine();
+        builder.AppendLine("[Preview]");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"QualityPercent={settings.PreviewQualityPercent}");
+        builder.AppendLine(CultureInfo.InvariantCulture,
+            $"PreserveSelectedObjectQuality={settings.PreserveSelectedPreviewObjectQuality.ToString().ToLowerInvariant()}");
+
+        builder.AppendLine();
         builder.AppendLine("[Output]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ProjectFolder={settings.ProjectFolder}");
@@ -241,6 +257,7 @@ internal static class ApplicationSettingsIniMapper
         settings.LargeThumbnailSize = Math.Max(settings.LargeThumbnailSize, settings.SmallThumbnailSize + 20);
         settings.ExtraLargeThumbnailSize = Math.Clamp(settings.ExtraLargeThumbnailSize, 240, 640);
         settings.ExtraLargeThumbnailSize = Math.Max(settings.ExtraLargeThumbnailSize, settings.LargeThumbnailSize + 40);
+        settings.PreviewQualityPercent = NormalizePreviewQuality(settings.PreviewQualityPercent);
         settings.RecentProjectPaths = settings.RecentProjectPaths
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => path.Trim())
@@ -274,6 +291,12 @@ internal static class ApplicationSettingsIniMapper
         settings.ActivePreviewTab = Math.Clamp(settings.ActivePreviewTab, 0, 1);
         NormalizeWorkspace(settings);
         return settings;
+    }
+
+    private static int NormalizePreviewQuality(int value)
+    {
+        int[] choices = [10, 25, 50, 75, 90, 100];
+        return choices.OrderBy(choice => Math.Abs(choice - value)).First();
     }
 
     private static void NormalizeWorkspace(ApplicationSettings settings)

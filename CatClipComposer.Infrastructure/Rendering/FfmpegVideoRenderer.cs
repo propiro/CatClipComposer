@@ -28,8 +28,11 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         var (fallbackWidth, fallbackHeight) = request.Orientation == OutputOrientation.Portrait
             ? (1080, 1920)
             : (1920, 1080);
-        var width = request.OutputWidth > 0 ? request.OutputWidth : fallbackWidth;
-        var height = request.OutputHeight > 0 ? request.OutputHeight : fallbackHeight;
+        var sourceWidth = request.OutputWidth > 0 ? request.OutputWidth : fallbackWidth;
+        var sourceHeight = request.OutputHeight > 0 ? request.OutputHeight : fallbackHeight;
+        var scale = Math.Clamp(request.PreviewScale, 0.1, 1);
+        var width = MakeEven(Math.Max(2, (int)Math.Round(sourceWidth * scale)));
+        var height = MakeEven(Math.Max(2, (int)Math.Round(sourceHeight * scale)));
 
         try
         {
@@ -114,6 +117,11 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
             throw new ArgumentOutOfRangeException(nameof(request), "Frame rate must be between 1 and 240.");
         }
 
+        if (!double.IsFinite(request.PreviewScale) || request.PreviewScale is < 0.1 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(request), "Preview scale must be between 10% and 100%.");
+        }
+
         if ((request.OutputWidth == 0) != (request.OutputHeight == 0) ||
             request.OutputWidth < 0 || request.OutputHeight < 0 ||
             request.OutputWidth > 7680 || request.OutputHeight > 7680 ||
@@ -172,6 +180,8 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
             outputDirectory,
             $".{Path.GetFileNameWithoutExtension(outputPath)}.{operationId}.partial{Path.GetExtension(outputPath)}");
     }
+
+    private static int MakeEven(int value) => value % 2 == 0 ? value : value + 1;
 
     private static async Task<IReadOnlyDictionary<int, string>> CreateTimedOverlayTextFilesAsync(
         RenderRequest request,

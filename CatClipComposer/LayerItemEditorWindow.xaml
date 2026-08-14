@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:CatClipComposer.Controls"
-        Title="Layer item" Width="700" Height="760" MinWidth="620" MinHeight="580"
+        Title="Layer item" Width="700" Height="790" MinWidth="620" MinHeight="600"
         Background="{StaticResource WindowBrush}" WindowStartupLocation="CenterOwner">
     <Grid Margin="14" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
@@ -14,186 +14,207 @@
         <Border Grid.Row="1" Margin="0,10,0,0" Padding="12"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          ToolTip="Scroll through all settings for this timeline item.">
                 <StackPanel>
-                    <StackPanel x:Name="SourceFields" Margin="0,0,0,10">
-                        <TextBlock x:Name="SourceLabel" Margin="0,0,0,4" Text="Source file" />
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <TextBox x:Name="SourceTextBox" TextChanged="SourceTextBox_TextChanged" />
-                            <Button Grid.Column="1" Margin="5,0,0,0" Click="Browse_Click" Content="Browse…" />
-                        </Grid>
-                    </StackPanel>
-
-                    <StackPanel x:Name="OverlayOpacityField" Margin="0,0,0,10">
-                        <TextBlock Margin="0,0,0,4" Text="Opacity (%)" />
-                        <controls:NumericEditorControl x:Name="OverlayOpacityEditor"
-                                                       Minimum="0" Maximum="100" Step="5"
-                                                       Edited="OverlayOpacityEditor_Edited" />
-                    </StackPanel>
-
-                    <Border x:Name="ImagePreviewFields" Height="210" Margin="0,0,0,10" Padding="6"
-                            Background="{StaticResource PreviewBrush}"
+                    <Border x:Name="ContentSection" Margin="0,0,0,10" Padding="10"
+                            Background="{StaticResource InputBrush}"
                             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                        <Grid>
-                            <TextBlock x:Name="ImagePreviewStatusText" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" Foreground="{StaticResource FaintTextBrush}"
-                                       Text="Choose a PNG or image to preview it here." />
-                            <Image x:Name="ImageOverlayPreview" Stretch="Uniform" />
-                        </Grid>
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="CONTENT" />
+                            <StackPanel x:Name="SourceFields">
+                                <TextBlock x:Name="SourceLabel" Margin="0,0,0,4" Text="Source file" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <TextBox x:Name="SourceTextBox" TextChanged="SourceTextBox_TextChanged"
+                                             ToolTip="Path to the PNG/image or audio file used by this timeline item." />
+                                    <Button Grid.Column="1" Margin="5,0,0,0" Click="Browse_Click" Content="Browse…"
+                                            ToolTip="Choose a source file from disk." />
+                                </Grid>
+                            </StackPanel>
+                            <StackPanel x:Name="TextFields">
+                                <TextBlock Margin="0,0,0,4" Text="Text" />
+                                <TextBox x:Name="OverlayTextBox" Height="70" AcceptsReturn="True"
+                                         TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         ToolTip="Enter the text displayed by this overlay." />
+                            </StackPanel>
+                            <StackPanel x:Name="FontFields" Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4" Text="Font" />
+                                <ComboBox x:Name="FontComboBox" ToolTip="Choose a system or configured custom font.">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ToolTip="{Binding Details}">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock FontFamily="{Binding PreviewFontFamily}" Text="{Binding FamilyName}" />
+                                                <TextBlock Grid.Column="1" Margin="12,0,0,0" FontSize="9"
+                                                           Foreground="{StaticResource AccentBrush}" Text="{Binding SourceBadge}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Margin="0,3,0,0" FontSize="10" Foreground="{StaticResource FaintTextBrush}"
+                                           Text="System fonts are installed in Windows; ◆ marks a file from the configured custom font folder." />
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
 
-                    <StackPanel x:Name="TextFields" Margin="0,0,0,10">
-                        <TextBlock Margin="0,0,0,4" Text="Text" />
-                        <TextBox x:Name="OverlayTextBox" Height="70" AcceptsReturn="True"
-                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
-                    </StackPanel>
+                    <Border x:Name="TimelineSection" Margin="0,0,0,10" Padding="10"
+                            Background="{StaticResource InputBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="TIMELINE RANGE" />
+                            <controls:TimeRangeEditorControl x:Name="TimeRangeEditor"
+                                                             ToolTip="Set when this item starts and ends on the project timeline." />
+                            <TextBlock x:Name="SnapDescriptionText" Margin="0,5,0,0" FontSize="10"
+                                       Foreground="{StaticResource FaintTextBrush}" />
+                        </StackPanel>
+                    </Border>
 
-                    <StackPanel x:Name="FontFields" Margin="0,0,0,10">
-                        <TextBlock Margin="0,0,0,4" Text="Font" />
-                        <ComboBox x:Name="FontComboBox">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ToolTip="{Binding Details}">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock FontFamily="{Binding PreviewFontFamily}" Text="{Binding FamilyName}" />
-                                        <TextBlock Grid.Column="1" Margin="12,0,0,0" FontSize="9"
-                                                   Foreground="{StaticResource AccentBrush}" Text="{Binding SourceBadge}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                        <TextBlock Margin="0,3,0,0" FontSize="10" Foreground="{StaticResource FaintTextBrush}"
-                                   Text="System fonts are installed in Windows; ◆ marks a file from the configured custom font folder." />
-                    </StackPanel>
+                    <Border x:Name="TextPlacementFields" Margin="0,0,0,10" Padding="10"
+                            Background="{StaticResource InputBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="TRANSFORM" />
+                            <TextBlock Margin="0,0,0,4" Text="Position preset (resets transform)" />
+                            <ComboBox x:Name="PositionComboBox" SelectionChanged="PositionComboBox_SelectionChanged"
+                                      ToolTip="Place the item at a preset location and reset its custom transform." />
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition /><ColumnDefinition Width="8" /><ColumnDefinition />
+                                    <ColumnDefinition Width="8" /><ColumnDefinition /><ColumnDefinition Width="8" /><ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,4" Text="X center (%)" />
+                                    <controls:NumericEditorControl x:Name="OverlayXEditor" Minimum="0" Maximum="100" Step="1"
+                                                                   Edited="TransformEditor_Edited"
+                                                                   ToolTip="Horizontal center of the item within the project frame." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Margin="0,0,0,4" Text="Y center (%)" />
+                                    <controls:NumericEditorControl x:Name="OverlayYEditor" Minimum="0" Maximum="100" Step="1"
+                                                                   Edited="TransformEditor_Edited"
+                                                                   ToolTip="Vertical center of the item within the project frame." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Margin="0,0,0,4" Text="Scale (%)" />
+                                    <controls:NumericEditorControl x:Name="OverlayScaleEditor" Minimum="5" Maximum="400" Step="5"
+                                                                   Edited="TransformEditor_Edited"
+                                                                   ToolTip="Scale the item around its center." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="6">
+                                    <TextBlock Margin="0,0,0,4" Text="Rotation (°)" />
+                                    <controls:NumericEditorControl x:Name="OverlayRotationEditor" Minimum="-180" Maximum="180" Step="1"
+                                                                   Edited="TransformEditor_Edited"
+                                                                   ToolTip="Rotate the item around its center in degrees." />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                    <StackPanel x:Name="TextPlacementFields" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <StackPanel x:Name="FontSizeField">
+                    <Border x:Name="AppearanceSection" Margin="0,0,0,10" Padding="10"
+                            Background="{StaticResource InputBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="APPEARANCE" />
+                            <StackPanel x:Name="FontSizeField" Margin="0,0,0,10">
                                 <TextBlock Margin="0,0,0,4" Text="Font size" />
-                                <controls:NumericEditorControl x:Name="FontSizeEditor"
-                                                               Minimum="8" Maximum="120" Step="1" />
+                                <controls:NumericEditorControl x:Name="FontSizeEditor" Minimum="8" Maximum="120" Step="1"
+                                                               ToolTip="Set the text size used by the renderer." />
                             </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Position preset (resets transform)" />
-                                <ComboBox x:Name="PositionComboBox"
-                                          SelectionChanged="PositionComboBox_SelectionChanged" />
+                            <StackPanel x:Name="OverlayOpacityField" Margin="0,0,0,10">
+                                <TextBlock Margin="0,0,0,4" Text="Opacity (%)" />
+                                <controls:NumericEditorControl x:Name="OverlayOpacityEditor" Minimum="0" Maximum="100" Step="5"
+                                                               Edited="OverlayOpacityEditor_Edited"
+                                                               ToolTip="Set 0% for transparent and 100% for the source image/text opacity." />
                             </StackPanel>
-                        </Grid>
-                        <TextBlock Margin="0,10,0,4" Text="Preview transform" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="X center (%)" />
-                                <controls:NumericEditorControl x:Name="OverlayXEditor"
-                                                               Minimum="0" Maximum="100" Step="1"
-                                                               Edited="TransformEditor_Edited" />
+                            <StackPanel x:Name="OverlayFadeFields" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Margin="0,0,0,4" Text="Fade in to visible (seconds)" />
+                                        <controls:NumericEditorControl x:Name="OverlayFadeInEditor"
+                                                                       ToolTip="Time used to fade from transparent to the configured opacity." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,4" Text="Fade out to transparent (seconds)" />
+                                        <controls:NumericEditorControl x:Name="OverlayFadeOutEditor"
+                                                                       ToolTip="Time used to fade from the configured opacity to transparent." />
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Y center (%)" />
-                                <controls:NumericEditorControl x:Name="OverlayYEditor"
-                                                               Minimum="0" Maximum="100" Step="1"
-                                                               Edited="TransformEditor_Edited" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Margin="0,0,0,4" Text="Scale (%)" />
-                                <controls:NumericEditorControl x:Name="OverlayScaleEditor"
-                                                               Minimum="5" Maximum="400" Step="5"
-                                                               Edited="TransformEditor_Edited" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="6">
-                                <TextBlock Margin="0,0,0,4" Text="Rotation (°)" />
-                                <controls:NumericEditorControl x:Name="OverlayRotationEditor"
-                                                               Minimum="-180" Maximum="180" Step="1"
-                                                               Edited="TransformEditor_Edited" />
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
+                            <Border x:Name="ImagePreviewFields" Height="210" Padding="6"
+                                    Background="{StaticResource PreviewBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                    ToolTip="Source-only image preview. Use Prerender frame with background below to check the real composition.">
+                                <Grid>
+                                    <TextBlock x:Name="ImagePreviewStatusText" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" Foreground="{StaticResource FaintTextBrush}"
+                                               Text="Choose a PNG or image to preview it here." />
+                                    <Image x:Name="ImageOverlayPreview" Stretch="Uniform" />
+                                    <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="5" Padding="4,2"
+                                               FontSize="9" Background="#C0080808" Foreground="{StaticResource MutedTextBrush}"
+                                               Text="SOURCE ONLY — use frame prerender for background" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
 
-                    <controls:TimeRangeEditorControl x:Name="TimeRangeEditor" Margin="0,0,0,10" />
-                    <TextBlock x:Name="SnapDescriptionText" Margin="0,-5,0,10" FontSize="10"
-                               Foreground="{StaticResource FaintTextBrush}" />
+                    <Border x:Name="AudioFields" Margin="0,0,0,10" Padding="10"
+                            Background="{StaticResource InputBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="AUDIO ADJUSTMENTS" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,4" Text="Volume" />
+                                    <controls:NumericEditorControl x:Name="VolumeEditor" Minimum="0" Maximum="2" Step="0.05"
+                                                                   ToolTip="Set the audio layer volume multiplier." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Margin="0,0,0,4" Text="Fade in (seconds)" />
+                                    <controls:NumericEditorControl x:Name="FadeInEditor" ToolTip="Fade audio in from silence." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Margin="0,0,0,4" Text="Fade out (seconds)" />
+                                    <controls:NumericEditorControl x:Name="FadeOutEditor" ToolTip="Fade audio out to silence." />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                    <StackPanel x:Name="OverlayFadeFields" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="10" />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="Fade in to visible (seconds)" />
-                                <controls:NumericEditorControl x:Name="OverlayFadeInEditor" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Fade out to transparent (seconds)" />
-                                <controls:NumericEditorControl x:Name="OverlayFadeOutEditor" />
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-
-                    <StackPanel x:Name="AudioFields" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="Volume" />
-                                <controls:NumericEditorControl x:Name="VolumeEditor"
-                                                               Minimum="0" Maximum="2" Step="0.05" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Fade in (seconds)" />
-                                <controls:NumericEditorControl x:Name="FadeInEditor" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Margin="0,0,0,4" Text="Fade out (seconds)" />
-                                <controls:NumericEditorControl x:Name="FadeOutEditor" />
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-
-                    <StackPanel x:Name="ProgressFields">
-                        <TextBlock Margin="0,0,0,4" Text="Timing" />
-                        <ComboBox x:Name="ProgressTimingComboBox" Margin="0,0,0,10" />
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="Style" />
-                                <ComboBox x:Name="ProgressStyleComboBox" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Screen position" />
-                                <ComboBox x:Name="ProgressPositionComboBox" />
-                            </StackPanel>
-                        </Grid>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Margin="0,0,0,4" Text="Color (#RRGGBB)" />
-                                <TextBox x:Name="ProgressColorTextBox" Text="#C8C0B2" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Margin="0,0,0,4" Text="Height (pixels)" />
-                                <controls:NumericEditorControl x:Name="ProgressHeightEditor"
-                                                               Minimum="2" Maximum="50" Step="1" />
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
+                    <Border x:Name="ProgressFields" Padding="10"
+                            Background="{StaticResource InputBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,8" FontSize="13" FontWeight="SemiBold" Text="PROGRESS APPEARANCE" />
+                            <TextBlock Margin="0,0,0,4" Text="Timing" />
+                            <ComboBox x:Name="ProgressTimingComboBox" Margin="0,0,0,10"
+                                      ToolTip="Choose whether progress represents the whole project, source selection, or a custom range." />
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <StackPanel><TextBlock Margin="0,0,0,4" Text="Style"/><ComboBox x:Name="ProgressStyleComboBox" ToolTip="Choose the visual progress-bar pattern."/></StackPanel>
+                                <StackPanel Grid.Column="2"><TextBlock Margin="0,0,0,4" Text="Screen position"/><ComboBox x:Name="ProgressPositionComboBox" ToolTip="Place the progress bar at the top or bottom of the frame."/></StackPanel>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <StackPanel><TextBlock Margin="0,0,0,4" Text="Color (#RRGGBB)"/><TextBox x:Name="ProgressColorTextBox" Text="#C8C0B2" ToolTip="Enter the progress color as a six-digit RGB hexadecimal value."/></StackPanel>
+                                <StackPanel Grid.Column="2"><TextBlock Margin="0,0,0,4" Text="Height (pixels)"/><controls:NumericEditorControl x:Name="ProgressHeightEditor" Minimum="2" Maximum="50" Step="1" ToolTip="Set the final-project progress-bar height in pixels."/></StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Border>
-        <StackPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button MinWidth="80" IsCancel="True" Content="Cancel" />
-            <Button x:Name="AddButton" MinWidth="90" Margin="5,0,0,0" Click="Add_Click"
-                    Style="{StaticResource PrimaryButtonStyle}" Content="Add" />
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <Button x:Name="PreviewFrameButton" HorizontalAlignment="Left" Click="PreviewFrame_Click"
+                    Content="Prerender frame with background"
+                    ToolTip="Render the current project frame with these unsaved settings, including the video background and all compatible effects." />
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button MinWidth="80" IsCancel="True" Content="Cancel" ToolTip="Close without applying these settings." />
+                <Button x:Name="AddButton" MinWidth="90" Margin="5,0,0,0" Click="Add_Click"
+                        Style="{StaticResource PrimaryButtonStyle}" Content="Add"
+                        ToolTip="Apply these settings to the timeline item." />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

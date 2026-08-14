@@ -48,7 +48,8 @@ public static class ProjectRenderMapper
                         item.Duration,
                         SourcePath: item.SourcePath,
                         FitMode: item.FitMode,
-                        TrackOrder: track.Order));
+                        TrackOrder: track.Order,
+                        ProjectItemId: item.Id));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.TextOverlay)
                 {
@@ -69,7 +70,8 @@ public static class ProjectRenderMapper
                         TransformRotationDegrees: item.OverlayRotationDegrees,
                         Opacity: item.OverlayOpacity,
                         FadeInSeconds: item.FadeInSeconds,
-                        FadeOutSeconds: item.FadeOutSeconds));
+                        FadeOutSeconds: item.FadeOutSeconds,
+                        ProjectItemId: item.Id));
                 }
                 else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.ImageOverlay)
                 {
@@ -87,7 +89,8 @@ public static class ProjectRenderMapper
                         TransformRotationDegrees: item.OverlayRotationDegrees,
                         Opacity: item.OverlayOpacity,
                         FadeInSeconds: item.FadeInSeconds,
-                        FadeOutSeconds: item.FadeOutSeconds));
+                        FadeOutSeconds: item.FadeOutSeconds,
+                        ProjectItemId: item.Id));
                 }
                 else if (track.Kind == ProjectTrackKind.Progress && item.Kind == ProjectItemKind.ProgressBar)
                 {
@@ -99,7 +102,8 @@ public static class ProjectRenderMapper
                         ProgressBarPosition: item.ProgressBarPosition,
                         ProgressColor: item.ProgressColor,
                         ProgressHeight: item.ProgressHeight,
-                        TrackOrder: track.Order));
+                        TrackOrder: track.Order,
+                        ProjectItemId: item.Id));
                 }
             }
         }
@@ -212,6 +216,7 @@ public static class ProjectRenderMapper
             item.Start,
             item.Duration,
             new Dictionary<string, string>(item.PluginParameters, StringComparer.OrdinalIgnoreCase),
-            trackOrder);
+            trackOrder,
+            item.Id);
     }
 }

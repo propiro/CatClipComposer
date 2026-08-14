@@ -1,6 +1,6 @@
 # Headless command-line interface
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-14
 
 `CatClipComposer.Cli` exposes catalog, metadata, project, render, history, and configuration workflows without starting WPF. It uses the same Core services, Infrastructure adapters, SQLite catalog, INI/project schemas, FFmpeg renderer, and export-history transaction as the desktop application.
 
@@ -37,7 +37,8 @@ All commands except help/version initialize the selected SQLite catalog. Human-r
 
 Shows the resolved INI path, whether the file exists, the resolved data/database paths, loaded plugin
 modules/diagnostics, and all effective settings, including content-browser mode, thumbnail sizes, panel docks,
-window/workspace dimensions, preview layout/tab, focused/expanded panels, and first-startup completion state.
+window/workspace dimensions, preview layout/tab, LQ preview resolution/selected-overlay quality mode,
+focused/expanded panels, and first-startup completion state.
 A missing INI is valid and displays normalized defaults.
 
 ```powershell

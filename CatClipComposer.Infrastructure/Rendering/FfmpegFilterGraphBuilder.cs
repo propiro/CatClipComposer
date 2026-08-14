@@ -67,6 +67,7 @@ internal static class FfmpegFilterGraphBuilder
                 case RenderOverlayKind.Image:
                     currentLabel = AddImageOverlay(
                         graph,
+                        request,
                         overlay,
                         overlayInputIndexes[index],
                         currentLabel,
@@ -183,7 +184,9 @@ internal static class FfmpegFilterGraphBuilder
                     request.FramesPerSecond,
                     clippedStart,
                     clippedEnd - clippedStart,
-                    request.BackgroundColor),
+                    request.BackgroundColor,
+                    request.PreviewScale,
+                    request.PreserveSelectedObjectQuality && effect.ProjectItemId == request.SelectedObjectId),
                 effect.Parameters));
             graph.Append(CultureInfo.InvariantCulture, $"[{pluginOutput}]");
         }
@@ -232,7 +235,9 @@ internal static class FfmpegFilterGraphBuilder
                 request.FramesPerSecond,
                 effect.Start,
                 effect.Duration,
-                request.BackgroundColor),
+                request.BackgroundColor,
+                request.PreviewScale,
+                request.PreserveSelectedObjectQuality && effect.ProjectItemId == request.SelectedObjectId),
             effect.Parameters));
         return outputLabel;
     }
@@ -324,6 +329,7 @@ internal static class FfmpegFilterGraphBuilder
 
     private static string AddImageOverlay(
         StringBuilder graph,
+        RenderRequest request,
         RenderOverlay overlay,
         int inputIndex,
         string currentLabel,
@@ -334,17 +340,22 @@ internal static class FfmpegFilterGraphBuilder
         var scale = overlay.HasCustomTransform
             ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
             : 1;
+        var previewScale = Math.Clamp(request.PreviewScale, 0.1, 1);
+        var baseWidth = Math.Max(2, (int)Math.Round(480 * previewScale));
+        var scaler = request.PreserveSelectedObjectQuality && overlay.ProjectItemId == request.SelectedObjectId
+            ? ":flags=lanczos"
+            : ":flags=bilinear";
         graph.Append(
             $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlayDuration)}," +
             $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
-            $"scale='min(480,iw)*{FormatNumber(scale)}':-2,setsar=1,format=yuva420p," +
+            $"scale='min({baseWidth},iw)*{FormatNumber(scale)}':-2{scaler},setsar=1,format=yuva420p," +
             $"colorchannelmixer=aa={FormatNumber(Math.Clamp(overlay.Opacity, 0, 1))}");
         AppendOverlayAlphaFades(graph, overlay);
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
         graph.Append(CultureInfo.InvariantCulture, $"[layerimage{stage}];");
         var (x, y) = overlay.HasCustomTransform
             ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
-            : GetImageOverlayCoordinates(overlay.Position);
+            : GetImageOverlayCoordinates(overlay.Position, request.PreviewScale);
         var enable = CreateEnable(overlay.Start, overlay.Duration);
         graph.Append(CultureInfo.InvariantCulture,
             $"[{currentLabel}][layerimage{stage}]overlay=x={x}:y={y}:" +
@@ -398,16 +409,19 @@ internal static class FfmpegFilterGraphBuilder
             : $"fontfile='{EscapeFilterValue(overlay.FontPath)}':";
         var opacity = Math.Clamp(overlay.Opacity, 0, 1);
         var borderOpacity = opacity * 0.72;
+        var previewScale = Math.Clamp(request.PreviewScale, 0.1, 1);
+        var previewFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * previewScale), 1, 2400);
+        var borderWidth = Math.Max(1, (int)Math.Round(3 * previewScale));
         var hasFade = overlay.FadeInSeconds > 0 || overlay.FadeOutSeconds > 0;
         if (!overlay.HasCustomTransform && !hasFade)
         {
-            var (presetX, presetY) = GetTextOverlayCoordinates(overlay.Position);
+            var (presetX, presetY) = GetTextOverlayCoordinates(overlay.Position, request.PreviewScale);
             graph.Append(CultureInfo.InvariantCulture,
                 $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
             graph.Append(CultureInfo.InvariantCulture,
-                $"fontcolor=white@{FormatNumber(opacity)}:fontsize={Math.Clamp(overlay.FontSize, 8, 240)}:");
+                $"fontcolor=white@{FormatNumber(opacity)}:fontsize={previewFontSize}:");
             graph.Append(CultureInfo.InvariantCulture,
-                $"borderw=3:bordercolor=black@{FormatNumber(borderOpacity)}:x={presetX}:y={presetY}" +
+                $"borderw={borderWidth}:bordercolor=black@{FormatNumber(borderOpacity)}:x={presetX}:y={presetY}" +
                 $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
             return $"stage{stage}";
         }
@@ -415,19 +429,19 @@ internal static class FfmpegFilterGraphBuilder
         var scale = overlay.HasCustomTransform
             ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
             : 1;
-        var scaledFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * scale), 1, 2400);
+        var scaledFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * scale * previewScale), 1, 2400);
         var duration = FormatSeconds(overlay.Duration);
         var start = FormatSeconds(overlay.Start);
         var (drawX, drawY) = overlay.HasCustomTransform
             ? ("(w-text_w)/2", "(h-text_h)/2")
-            : GetTextOverlayCoordinates(overlay.Position);
+            : GetTextOverlayCoordinates(overlay.Position, request.PreviewScale);
         graph.Append(
             $"color=c=black@0.0:s={width}x{height}:r={FormatNumber(request.FramesPerSecond)}:d={duration}," +
             $"format=yuva420p,drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
         graph.Append(CultureInfo.InvariantCulture,
             $"fontcolor=white@{FormatNumber(opacity)}:fontsize={scaledFontSize}:");
         graph.Append(CultureInfo.InvariantCulture,
-            $"borderw=3:bordercolor=black@{FormatNumber(borderOpacity)}:x={drawX}:y={drawY}");
+            $"borderw={borderWidth}:bordercolor=black@{FormatNumber(borderOpacity)}:x={drawX}:y={drawY}");
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
         graph.Append(CultureInfo.InvariantCulture,
             $",setpts=PTS+{start}/TB");
@@ -487,7 +501,10 @@ internal static class FfmpegFilterGraphBuilder
     {
         var startSeconds = FormatSeconds(start);
         var seconds = FormatSeconds(duration);
-        var barHeight = Math.Clamp(height, 2, 100);
+        var barHeight = Math.Clamp(
+            (int)Math.Round(height * Math.Clamp(request.PreviewScale, 0.1, 1)),
+            2,
+            100);
         var barColor = NormalizeColor(color);
         var pattern = style switch
         {
@@ -553,23 +570,35 @@ internal static class FfmpegFilterGraphBuilder
             ? $":enable='between(t,{FormatSeconds(start.Value)},{FormatSeconds(start.Value + duration.Value)})'"
             : string.Empty;
 
-    private static (string X, string Y) GetImageOverlayCoordinates(OverlayPosition position) => position switch
+    private static (string X, string Y) GetImageOverlayCoordinates(
+        OverlayPosition position,
+        double previewScale)
     {
-        OverlayPosition.TopLeft => ("28", "28"),
-        OverlayPosition.TopRight => ("W-w-28", "28"),
-        OverlayPosition.BottomLeft => ("28", "H-h-28"),
-        OverlayPosition.BottomRight => ("W-w-28", "H-h-28"),
-        _ => ("(W-w)/2", "(H-h)/2")
-    };
+        var margin = Math.Max(2, (int)Math.Round(28 * Math.Clamp(previewScale, 0.1, 1)));
+        return position switch
+        {
+            OverlayPosition.TopLeft => ($"{margin}", $"{margin}"),
+            OverlayPosition.TopRight => ($"W-w-{margin}", $"{margin}"),
+            OverlayPosition.BottomLeft => ($"{margin}", $"H-h-{margin}"),
+            OverlayPosition.BottomRight => ($"W-w-{margin}", $"H-h-{margin}"),
+            _ => ("(W-w)/2", "(H-h)/2")
+        };
+    }
 
-    private static (string X, string Y) GetTextOverlayCoordinates(OverlayPosition position) => position switch
+    private static (string X, string Y) GetTextOverlayCoordinates(
+        OverlayPosition position,
+        double previewScale)
     {
-        OverlayPosition.TopLeft => ("28", "28"),
-        OverlayPosition.TopRight => ("w-text_w-28", "28"),
-        OverlayPosition.BottomLeft => ("28", "h-text_h-28"),
-        OverlayPosition.BottomRight => ("w-text_w-28", "h-text_h-28"),
-        _ => ("(w-text_w)/2", "(h-text_h)/2")
-    };
+        var margin = Math.Max(2, (int)Math.Round(28 * Math.Clamp(previewScale, 0.1, 1)));
+        return position switch
+        {
+            OverlayPosition.TopLeft => ($"{margin}", $"{margin}"),
+            OverlayPosition.TopRight => ($"w-text_w-{margin}", $"{margin}"),
+            OverlayPosition.BottomLeft => ($"{margin}", $"h-text_h-{margin}"),
+            OverlayPosition.BottomRight => ($"w-text_w-{margin}", $"h-text_h-{margin}"),
+            _ => ("(w-text_w)/2", "(h-text_h)/2")
+        };
+    }
 
     private static (string X, string Y) GetCustomOverlayCoordinates(double x, double y) =>
         ($"'W*{FormatNumber(OverlayTransformValues.NormalizeCoordinate(x))}-w/2'",

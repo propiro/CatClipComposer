@@ -1,6 +1,6 @@
 # TODO register
 
-Last audited: 2026-08-12
+Last audited: 2026-08-14
 
 Statuses are `Open`, `In progress`, `Blocked`, `Done`, and `Deferred`.
 
@@ -227,7 +227,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: Prerender Preview renders the active timeline range or, without one, a short slice at the current
-  frame and pauses on it; adjacent Frame and All controls force their named scope, and none records export history.
+  frame and pauses on it; adjacent Frame LQ, Frame HQ, and All controls force their named scope, and none records
+  export history.
 
 ### `UX-OVERLAY-001` — Directly manipulate positioned overlays in Project Preview
 
@@ -293,6 +294,15 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   restored on startup or normal Open only when the app version, semantic project, referenced source/font file
   metadata, and output file still match; loaded coverage remains seekable from ruler, lane, and block clicks.
 
+### `PROJECT-PREVIEW-009` — Add safe low-resolution and explicit HQ frame prerenders
+
+- Priority/status: P0 / Done
+- Acceptance: Preview Settings persist discrete 10/25/50/75/90/100% temporary canvas choices; LQ previews
+  run the same ordered effect graph at even scaled dimensions, Frame HQ uses the full project canvas, optional
+  selected-image scaling uses Lanczos, and final project/export settings remain unchanged. Preview-cache
+  metadata includes the resolution, mode, and selected-object identity used for the temporary output, while a
+  later selection-only change does not invalidate otherwise reusable video feedback.
+
 ### `TIMELINE-010` — Prioritize source boundaries when clip snapping is enabled
 
 - Priority/status: P0 / Done
@@ -326,6 +336,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   attenuation, the editor preview follows the setting, and transparent gray open/closed lock glyphs communicate
   state without black button tiles. Double-clicking an overlay proxy opens that item's preferences.
 
+### `UX-OVERLAY-005` — Keep live overlay feedback opaque and identify stale moved content
+
+- Priority/status: P0 / Done
+- Acceptance: A changed/moved overlay proxy uses its exact configured alpha instead of an editor-only fade;
+  the already-rendered old transform receives a crossed `MOVED CONTENT` notice until the frame is prerendered;
+  selecting an unchanged rendered overlay does not paint a second translucent copy. Native image/text editors
+  can prerender unsaved values over the real project background with progress and elapsed time.
+
 ### `BROWSER-006` — Add extra-large cards and reliable panel keyboard focus
 
 - Priority/status: P1 / Done
@@ -338,6 +356,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Priority/status: P1 / Done
 - Acceptance: Context menus cap and ellipsize long labels without the prior empty width, and custom horizontal
   and vertical scrollbar tracks bind min/max/value/viewport so their thumbs represent the visible fraction.
+
+### `UX-SHELL-002` — Remove residual menu/scrollbar compression and make hover help readable
+
+- Priority/status: P1 / Done
+- Acceptance: Context menus use a six-pixel/two-pixel detail gutter instead of the native icon column;
+  horizontal bars no longer inherit a fixed width, vertical bars no longer inherit a fixed height, and both
+  orientations retain a usable 48-pixel minimum thumb. Tooltips use a dark high-contrast palette, a 500 ms
+  delay, meaningful explicit descriptions for new controls, and baseline help for standard interactive types.
 
 ### `PROJECT-OPEN-001` — Offer disk and recent-project choices from Open
 

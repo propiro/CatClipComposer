@@ -66,6 +66,10 @@ public sealed class ApplicationSettings
 
     public int ExtraLargeThumbnailSize { get; set; } = 420;
 
+    public int PreviewQualityPercent { get; set; } = 50;
+
+    public bool PreserveSelectedPreviewObjectQuality { get; set; } = true;
+
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
     public string CustomFontFolder { get; set; } = Path.Combine(AppContext.BaseDirectory, "fonts");
@@ -137,6 +141,8 @@ public sealed class ApplicationSettings
         SmallThumbnailSize = SmallThumbnailSize,
         LargeThumbnailSize = LargeThumbnailSize,
         ExtraLargeThumbnailSize = ExtraLargeThumbnailSize,
+        PreviewQualityPercent = PreviewQualityPercent,
+        PreserveSelectedPreviewObjectQuality = PreserveSelectedPreviewObjectQuality,
         FfmpegPath = FfmpegPath,
         CustomFontFolder = CustomFontFolder,
         IncludeSubfolders = IncludeSubfolders,

@@ -21,6 +21,7 @@ namespace CatClipComposer;
 
 public partial class MainWindow : Window
 {
+    private static readonly int[] PreviewQualityLevels = [10, 25, 50, 75, 90, 100];
     private readonly MainViewModel _viewModel;
     private readonly IMediaCatalog _catalog;
     private readonly WorkspaceLayoutController _workspaceLayout;
@@ -107,6 +108,10 @@ public partial class MainWindow : Window
         EffectsCatalogItemsControl.ItemsSource = effectsView;
         PreviewTabs.SelectedIndex = Math.Clamp(settings.ActivePreviewTab, 0, 1);
         SetPreviewLayout(settings.PreviewsSplit);
+        var previewQualityIndex = Array.IndexOf(PreviewQualityLevels, settings.PreviewQualityPercent);
+        PreviewQualitySlider.Value = previewQualityIndex >= 0 ? previewQualityIndex : 2;
+        PreviewQualityValueText.Text = $"{settings.PreviewQualityPercent}%";
+        PreserveSelectedPreviewObjectCheckBox.IsChecked = settings.PreserveSelectedPreviewObjectQuality;
         UpdateExpandedPanelButton();
         _previewTimer.Tick += PreviewTimer_Tick;
         _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
@@ -291,7 +296,8 @@ public partial class MainWindow : Window
             cachedPreview.RangeStart,
             cachedPreview.Duration,
             autoplay: false,
-            $"Restored cached prerender from {cachedPreview.RenderedUtc.ToLocalTime():g}");
+            $"Restored {cachedPreview.PreviewQualityPercent}% cached prerender from " +
+            $"{cachedPreview.RenderedUtc.ToLocalTime():g}");
     }
 
     private async void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -798,13 +804,16 @@ public partial class MainWindow : Window
         await PrerenderSelectedFrameAsync();
     }
 
-    private async void PrerenderFrame_Click(object sender, RoutedEventArgs e) =>
-        await PrerenderSelectedFrameAsync();
+    private async void PrerenderFrameLowQuality_Click(object sender, RoutedEventArgs e) =>
+        await PrerenderSelectedFrameAsync(highQuality: false);
+
+    private async void PrerenderFrameHighQuality_Click(object sender, RoutedEventArgs e) =>
+        await PrerenderSelectedFrameAsync(highQuality: true);
 
     private async void PrerenderAll_Click(object sender, RoutedEventArgs e) =>
         await RenderAndPlayProjectPreviewAsync(null, null);
 
-    private async Task PrerenderSelectedFrameAsync()
+    private async Task PrerenderSelectedFrameAsync(bool highQuality = false)
     {
         var duration = _viewModel.Timeline.Duration;
         if (duration <= TimeSpan.Zero)
@@ -833,14 +842,15 @@ public partial class MainWindow : Window
             end = duration;
         }
 
-        await RenderAndPlayProjectPreviewAsync(start, end, autoplay: false, isFrame: true);
+        await RenderAndPlayProjectPreviewAsync(start, end, autoplay: false, isFrame: true, highQuality: highQuality);
     }
 
     private async Task RenderAndPlayProjectPreviewAsync(
         TimeSpan? rangeStart,
         TimeSpan? rangeEnd,
         bool autoplay = true,
-        bool isFrame = false)
+        bool isFrame = false,
+        bool highQuality = false)
     {
         if (_viewModel.IsBusy)
         {
@@ -857,10 +867,10 @@ public partial class MainWindow : Window
             _projectPreviewTimer.Stop();
             SetProjectPlaybackState(false);
             ProjectPreviewPlayer.Source = null;
-            var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd);
+            var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd, highQuality);
             var previewOffset = rangeStart ?? TimeSpan.Zero;
             var status = isFrame
-                ? $"Frame prerendered at {FormatPreviewTime(previewOffset)}"
+                ? $"Frame {(highQuality ? "HQ" : $"LQ {_viewModel.Settings.PreviewQualityPercent}%")} prerendered at {FormatPreviewTime(previewOffset)}"
                 : !rangeStart.HasValue
                     ? "Full project prerender ready"
                     : _viewModel.Timeline.HasRangeSelection &&
@@ -1208,6 +1218,48 @@ public partial class MainWindow : Window
         ProjectPreviewPlayPauseButton.ToolTip = playing ? "Pause project preview" : "Play project preview";
     }
 
+    private async void PreviewQualitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        var index = Math.Clamp((int)Math.Round(e.NewValue), 0, PreviewQualityLevels.Length - 1);
+        var quality = PreviewQualityLevels[index];
+        if (PreviewQualityValueText is not null)
+        {
+            PreviewQualityValueText.Text = $"{quality}%";
+        }
+
+        if (!IsLoaded ||
+            _viewModel.Settings.PreviewQualityPercent == quality)
+        {
+            return;
+        }
+
+        var settings = _viewModel.Settings.Copy();
+        settings.PreviewQualityPercent = quality;
+        await _viewModel.ApplySettingsAsync(settings);
+        ProjectPreviewStatusText.Text = $"Preview resolution set to {quality}% — prerender to apply.";
+    }
+
+    private async void PreserveSelectedPreviewObjectCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        var enabled = PreserveSelectedPreviewObjectCheckBox.IsChecked == true;
+        if (_viewModel.Settings.PreserveSelectedPreviewObjectQuality == enabled)
+        {
+            return;
+        }
+
+        var settings = _viewModel.Settings.Copy();
+        settings.PreserveSelectedPreviewObjectQuality = enabled;
+        await _viewModel.ApplySettingsAsync(settings);
+        ProjectPreviewStatusText.Text = enabled
+            ? "Selected-object preview quality enabled — prerender to apply."
+            : "Uniform preview quality enabled — prerender to apply.";
+    }
+
     private void OpenSource_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SelectedMedia is null)
@@ -1375,6 +1427,18 @@ public partial class MainWindow : Window
                 _viewModel.GetSelectedVideoProgressName());
         }
 
+        var editorTrackKind = kind switch
+        {
+            LayerEditorKind.Audio => ProjectTrackKind.Audio,
+            LayerEditorKind.Progress => ProjectTrackKind.Progress,
+            _ => ProjectTrackKind.Overlay
+        };
+        var editorTrack = targetTrack ?? _viewModel.ProjectLayers
+            .FirstOrDefault(row => row.IsTrackHeader && row.Track.Kind == editorTrackKind)?.Track;
+        var previewFrame = _viewModel.Timeline.Duration > TimeSpan.Zero && editorTrack is not null
+            ? _viewModel.Timeline.Playhead
+            : (TimeSpan?)null;
+
         var dialog = new LayerItemEditorWindow(
             kind,
             _viewModel.Timeline.Duration,
@@ -1382,7 +1446,16 @@ public partial class MainWindow : Window
             _viewModel.Timeline.SnapMode,
             _viewModel.Timeline.FramesPerSecond,
             initialStart ?? selectedRange?.Start,
-            initialDuration ?? selectedRange?.Duration)
+            initialDuration ?? selectedRange?.Duration,
+            previewFrame,
+            previewFrame.HasValue && editorTrack is not null
+                ? (item, progress, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                    editorTrack.Id,
+                    item,
+                    previewFrame.Value,
+                    progress,
+                    cancellationToken)
+                : null)
         {
             Owner = this
         };
@@ -1717,6 +1790,8 @@ public partial class MainWindow : Window
             if (pluginDialog.ShowDialog() == true && pluginDialog.ResultItem is not null)
             {
                 _viewModel.UpdateSelectedLayerItem(pluginDialog.ResultItem);
+                ProjectPreviewOverlayCanvas.MarkItemStale(pluginDialog.ResultItem.Id);
+                QueueProjectPreviewOverlayRefresh();
             }
 
             return;
@@ -1727,13 +1802,28 @@ public partial class MainWindow : Window
             _viewModel.Timeline.Duration,
             _viewModel.Settings.CustomFontFolder,
             _viewModel.Timeline.SnapMode,
-            _viewModel.Timeline.FramesPerSecond)
+            _viewModel.Timeline.FramesPerSecond,
+            _viewModel.Timeline.Duration > TimeSpan.Zero ? _viewModel.Timeline.Playhead : null,
+            _viewModel.Timeline.Duration > TimeSpan.Zero
+                ? (item, progress, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
+                    row.Track.Id,
+                    item,
+                    _viewModel.Timeline.Playhead,
+                    progress,
+                    cancellationToken)
+                : null)
         {
             Owner = this
         };
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
             _viewModel.UpdateSelectedLayerItem(dialog.ResultItem);
+            if (dialog.ResultItem.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay)
+            {
+                ProjectPreviewOverlayCanvas.MarkItemStale(dialog.ResultItem.Id);
+                ProjectPreviewStatusText.Text = "Overlay settings changed — prerender the frame to refresh the composition.";
+                QueueProjectPreviewOverlayRefresh();
+            }
             if (dialog.ResultItem.Kind == ProjectItemKind.ProgressBar)
             {
                 await _viewModel.RememberProgressDefaultsAsync(dialog.ResultItem);
