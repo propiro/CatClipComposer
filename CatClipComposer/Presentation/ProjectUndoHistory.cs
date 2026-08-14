@@ -26,6 +26,31 @@ internal sealed class ProjectUndoHistory
 
     public string LastActionDescription { get; private set; } = "Project change";
 
+    public IReadOnlyList<ProjectHistoryNavigationEntry> GetUndoChoices()
+    {
+        var choices = new List<ProjectHistoryNavigationEntry>(_undo.Count);
+        for (var step = 1; step <= _undo.Count; step++)
+        {
+            var description = step == 1
+                ? _current.Description
+                : _undo[_undo.Count - step + 1].Description;
+            choices.Add(new ProjectHistoryNavigationEntry(step, description));
+        }
+
+        return choices;
+    }
+
+    public IReadOnlyList<ProjectHistoryNavigationEntry> GetRedoChoices()
+    {
+        var choices = new List<ProjectHistoryNavigationEntry>(_redo.Count);
+        for (var step = 1; step <= _redo.Count; step++)
+        {
+            choices.Add(new ProjectHistoryNavigationEntry(step, _redo[^step].Description));
+        }
+
+        return choices;
+    }
+
     public void SetMaximumEntries(int maximumEntries)
     {
         _maximumEntries = Math.Clamp(maximumEntries, 1, 256);
@@ -64,32 +89,42 @@ internal sealed class ProjectUndoHistory
         _savePoint = [.. _current.Data];
     }
 
-    public EditorProject? Undo()
+    public EditorProject? Undo(int steps = 1)
     {
-        if (!CanUndo)
+        if (steps < 1 || steps > _undo.Count)
         {
             return null;
         }
 
-        LastActionDescription = _current.Description;
-        _redo.Add(_current);
-        _current = _undo[^1];
-        _undo.RemoveAt(_undo.Count - 1);
+        var choices = GetUndoChoices();
+        LastActionDescription = choices[steps - 1].Description;
+        for (var step = 0; step < steps; step++)
+        {
+            _redo.Add(_current);
+            _current = _undo[^1];
+            _undo.RemoveAt(_undo.Count - 1);
+        }
+
         return Deserialize(_current.Data);
     }
 
-    public EditorProject? Redo()
+    public EditorProject? Redo(int steps = 1)
     {
-        if (!CanRedo)
+        if (steps < 1 || steps > _redo.Count)
         {
             return null;
         }
 
-        _undo.Add(_current);
-        Trim(_undo);
-        _current = _redo[^1];
-        _redo.RemoveAt(_redo.Count - 1);
-        LastActionDescription = _current.Description;
+        var choices = GetRedoChoices();
+        LastActionDescription = choices[steps - 1].Description;
+        for (var step = 0; step < steps; step++)
+        {
+            _undo.Add(_current);
+            Trim(_undo);
+            _current = _redo[^1];
+            _redo.RemoveAt(_redo.Count - 1);
+        }
+
         return Deserialize(_current.Data);
     }
 
@@ -108,3 +143,5 @@ internal sealed class ProjectUndoHistory
         JsonSerializer.Deserialize<EditorProject>(snapshot) ??
         throw new InvalidOperationException("The undo snapshot could not be restored.");
 }
+
+internal sealed record ProjectHistoryNavigationEntry(int StepCount, string Description);

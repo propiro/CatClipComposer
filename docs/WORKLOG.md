@@ -2,6 +2,26 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.31 history navigation, About/update visibility, and code audit
+
+- Split both toolbar history controls into a one-step arrow and adjacent dropdown. Dynamic action lists expose
+  every reachable undo/redo destination; a selected entry performs one atomic N-step snapshot transition, one
+  recovery save, and one fingerprint-matching prerender-cache reload.
+- Added a themed About window using the existing Mr. Cat splash resource, literal entirely-vibecoded disclosure,
+  application/build revision details, and links to the public project.
+- Added a Core update-check contract and Infrastructure GitHub adapter. Manual checks separately compare the exact
+  packaged Windows ZIP, repository version, and reachable current-to-main revision; requests are sequential,
+  bounded, timed out, cancellation-aware, five-minute cached, anonymous, and non-installing.
+- Audited dependencies, tracked/history/working-diff secrets, analyzers, process/path/network/SQL boundaries, XAML,
+  and generated-package rules. Hardened project URL allow-listing, remote XML parsing and partial-response handling,
+  update cancellation/rate protection, invalid custom-font/browser launch errors, and SQLite migration visibility.
+- Added a tag-only Windows release workflow using immutable-SHA-pinned official checkout/.NET actions, hydrated LFS,
+  the repository's existing publisher and package gates, minimum Release permission, and GitHub CLI publication of
+  the complete ZIP/checksum. The tag remains intentionally unpushed until the manual checklist succeeds.
+- Verification: clean Release builds after every code batch; reflection smoke proves C/B/A history ordering plus
+  atomic Undo 2/Redo 2; live GitHub smoke detects repository v0.1.26 and packaged v0.1.18 from a known-old build;
+  vulnerability, analyzer, Gitleaks history/diff, XAML resource, whitespace, CLI version, and in-place publish checks.
+
 ## 2026-08-14 — v0.1.30 prerender, cross-track editing, and text reliability pass
 
 - Relabeled the Project Preview toolbar as a bordered PRERENDER group with FRAME/RANGE/ALL LQ/HQ actions.

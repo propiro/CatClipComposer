@@ -199,6 +199,12 @@ public sealed class MainViewModel : ObservableObject
 
     public bool CanRedo => _projectHistory.CanRedo;
 
+    internal IReadOnlyList<ProjectHistoryNavigationEntry> UndoHistoryChoices =>
+        _projectHistory.GetUndoChoices();
+
+    internal IReadOnlyList<ProjectHistoryNavigationEntry> RedoHistoryChoices =>
+        _projectHistory.GetRedoChoices();
+
     public double TargetDurationMinutes => _project.TargetDurationMinutes;
 
     public string BackgroundColor => _project.BackgroundColor;
@@ -722,16 +728,23 @@ public sealed class MainViewModel : ObservableObject
                                            !track.IsLocked && string.IsNullOrWhiteSpace(track.Color));
     }
 
-    public async Task<bool> UndoAsync(CancellationToken cancellationToken = default) =>
-        await RestoreHistoryAsync(undo: true, cancellationToken);
+    public async Task<bool> UndoAsync(
+        int steps = 1,
+        CancellationToken cancellationToken = default) =>
+        await RestoreHistoryAsync(undo: true, steps, cancellationToken);
 
-    public async Task<bool> RedoAsync(CancellationToken cancellationToken = default) =>
-        await RestoreHistoryAsync(undo: false, cancellationToken);
+    public async Task<bool> RedoAsync(
+        int steps = 1,
+        CancellationToken cancellationToken = default) =>
+        await RestoreHistoryAsync(undo: false, steps, cancellationToken);
 
-    private async Task<bool> RestoreHistoryAsync(bool undo, CancellationToken cancellationToken)
+    private async Task<bool> RestoreHistoryAsync(
+        bool undo,
+        int steps,
+        CancellationToken cancellationToken)
     {
         CancelOverlayTransformEdit();
-        var restored = undo ? _projectHistory.Undo() : _projectHistory.Redo();
+        var restored = undo ? _projectHistory.Undo(steps) : _projectHistory.Redo(steps);
         if (restored is null)
         {
             return false;
@@ -742,10 +755,11 @@ public sealed class MainViewModel : ObservableObject
         IsDirty = !_projectHistory.IsAtSavePoint;
         NotifyHistoryStateChanged();
         await SaveRecoveryNowAsync(cancellationToken);
-        RecordAction($"{(undo ? "Undo" : "Redo")}: {_projectHistory.LastActionDescription}");
-        StatusText = undo
-            ? $"Undid {_projectHistory.LastActionDescription}"
-            : $"Redid {_projectHistory.LastActionDescription}";
+        var stepDescription = steps == 1
+            ? _projectHistory.LastActionDescription
+            : $"{steps} actions through {_projectHistory.LastActionDescription}";
+        RecordAction($"{(undo ? "Undo" : "Redo")}: {stepDescription}");
+        StatusText = $"{(undo ? "Undid" : "Redid")} {stepDescription}";
         return true;
     }
 

@@ -35,7 +35,7 @@ Each dependency is described separately so version, purpose, license, and distri
 - **SQLite via SQLitePCLRaw 2.1.12:** Embedded public-domain catalog database. Accepted.
 - **SQLitePCLRaw 2.1.12:** Apache-2.0 native interop/bundle, pinned past vulnerable SQLite versions.
 - **System.Text.Json from .NET 8:** Structured CLI output and project serialization. Accepted MIT library.
-- **CatClipComposer.Plugins.BuiltIn assembly 0.1.30:** First-party dynamic module assembly containing
+- **CatClipComposer.Plugins.BuiltIn assembly 0.1.31:** First-party dynamic module assembly containing
   background blur, video blur, and PNG source support. Individual module contract versions are 1.0.0 or
   1.1.0. It adds no NuGet or third-party runtime dependency and ships under `plugins`.
 - **FFmpeg/FFprobe n8.1.2-34-g9b6c8969e0-20260806:** Probe, preview, filters, and encoding. The pinned
@@ -53,6 +53,13 @@ Each dependency is described separately so version, purpose, license, and distri
   no `--enable-gpl` component.
 - **libx264:** Optional GPL H.264 encoder identifier retained for explicit custom-tool use. It is absent from
   the mandatory bundle and is never required or selected by default.
+- **.NET `HttpClient` / public GitHub REST and raw-content endpoints:** Optional manual About-window checks for
+  source and packaged binary versions. This adds no package, account, credential, telemetry, installer, or runtime
+  requirement; normal editing/rendering remains fully local. Anonymous public API limits apply.
+- **actions/checkout 7.0.1:** Official GitHub Actions source/LFS checkout used only by the tag-release workflow,
+  pinned to commit `3d3c42e5aac5ba805825da76410c181273ba90b1`. MIT; it is not shipped in the application.
+- **actions/setup-dotnet 6.0.0:** Official GitHub Actions .NET SDK setup used only by the tag-release workflow,
+  pinned to commit `a98b56852c35b8e3190ac28c8c2271da59106c68`. MIT; it is not shipped in the application.
 
 ## Dependency rules
 
@@ -76,7 +83,7 @@ that reports `--enable-gpl` or `--enable-nonfree`.
 
 ## Application versioning
 
-`Directory.Build.props` supplies version 0.1.30 to the WPF, CLI, Core, Infrastructure, and built-in plugin
+`Directory.Build.props` supplies version 0.1.31 to the WPF, CLI, Core, Infrastructure, and built-in plugin
 projects, including
 assembly, file, and informational metadata. User-visible strings resolve from Core assembly metadata so the
 main-window title/status bars and headless output cannot drift from the built components.

@@ -85,11 +85,18 @@ public partial class OptionsWindow : Window
 
     private void OpenFontFolder_Click(object sender, RoutedEventArgs e)
     {
-        var folder = string.IsNullOrWhiteSpace(CustomFontFolderTextBox.Text)
-            ? Path.Combine(AppContext.BaseDirectory, "fonts")
-            : Path.GetFullPath(CustomFontFolderTextBox.Text.Trim());
-        Directory.CreateDirectory(folder);
-        Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        try
+        {
+            var folder = string.IsNullOrWhiteSpace(CustomFontFolderTextBox.Text)
+                ? Path.Combine(AppContext.BaseDirectory, "fonts")
+                : Path.GetFullPath(CustomFontFolderTextBox.Text.Trim());
+            Directory.CreateDirectory(folder);
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "The custom font folder could not be opened.", exception);
+        }
     }
 
     private void BrowseFfmpeg_Click(object sender, RoutedEventArgs e)
@@ -106,8 +113,17 @@ public partial class OptionsWindow : Window
         }
     }
 
-    private void DownloadFfmpeg_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo(CompatibleFfmpegBuildsUrl) { UseShellExecute = true });
+    private void DownloadFfmpeg_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(CompatibleFfmpegBuildsUrl) { UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "The compatible FFmpeg download page could not be opened.", exception);
+        }
+    }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {

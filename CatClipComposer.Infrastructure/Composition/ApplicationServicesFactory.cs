@@ -4,6 +4,7 @@ using CatClipComposer.Infrastructure.Configuration;
 using CatClipComposer.Infrastructure.Rendering;
 using CatClipComposer.Infrastructure.Projects;
 using CatClipComposer.Infrastructure.Plugins;
+using CatClipComposer.Infrastructure.Updates;
 
 namespace CatClipComposer.Infrastructure.Composition;
 
@@ -38,6 +39,7 @@ public static class ApplicationServicesFactory
         IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
         ICompositionExporter compositionExporter = new CompositionExportService(videoRenderer, catalog);
         IPluginCatalog plugins = PluginCatalog.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
+        IApplicationUpdateChecker updateChecker = new GitHubApplicationUpdateChecker();
 
         return new ApplicationServices(
             paths,
@@ -47,6 +49,7 @@ public static class ApplicationServicesFactory
             scanner,
             videoRenderer,
             compositionExporter,
-            plugins);
+            plugins,
+            updateChecker);
     }
 }

@@ -39,18 +39,24 @@ generated executables to the source branch. Each public release contains:
 The ZIP contains the complete `CatClipComposer` folder. GitHub's automatically generated source archives are
 source checkouts, not end-user application packages.
 
-After the version change and all verification are committed and pushed, create an annotated tag that exactly
-matches `Directory.Build.props`:
+After the version change, automated verification, commit/push, and the user's manual acceptance checklist, create
+and push an annotated tag that exactly matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.30 -m "Cat Clip Composer v0.1.30"
-git push origin v0.1.30
+git tag -a v0.1.31 -m "Cat Clip Composer v0.1.31"
+git push origin v0.1.31
 ```
 
-Replace `0.1.30` with the central version. Do not reuse or move a published version tag; increment the
-application version for another release. Create a GitHub Release from that tag and attach the portable ZIP
-and its lowercase SHA-256 checksum file. The Release description gives the four extraction/launch steps and
-identifies the bundled FFmpeg license/source records.
+Replace `0.1.31` with the central version. Do not reuse or move a published version tag; increment the
+application version for another release. `.github/workflows/release.yml` then runs on `windows-latest`, hydrates
+Git LFS, validates the tag/version and exact FFmpeg payload, calls the same portable publisher used locally,
+checks the CLI/marker, creates the complete ZIP plus lowercase SHA-256 file, and publishes both through the
+preinstalled GitHub CLI using the workflow's short-lived `GITHUB_TOKEN`. The two official actions are pinned to
+immutable commit SHAs and persisted checkout credentials are disabled.
+
+Do not push the tag merely to test packaging: a matching tag intentionally creates the public downloadable
+Release. If the workflow fails, fix the cause, increment the version, and use a new tag rather than moving a
+published release tag.
 
 The application is not code-signed yet, so Windows can show an unknown-publisher SmartScreen prompt. Release
 notes and the public README disclose this and direct users to verify the SHA-256 asset rather than disabling

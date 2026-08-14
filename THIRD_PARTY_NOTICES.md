@@ -31,6 +31,15 @@ The `Microsoft.Data.Sqlite` package brings in SQLitePCLRaw packages under the Ap
 - Source: <https://github.com/ericsink/SQLitePCL.raw>
 - License: <https://www.apache.org/licenses/LICENSE-2.0>
 
+## GitHub Actions release tooling
+
+The tag-triggered release workflow uses the official `actions/checkout` 7.0.1 and `actions/setup-dotnet` 6.0.0
+actions under the MIT License. Both references are pinned to immutable commit SHAs. They execute only in GitHub's
+build environment and are not included in Cat Clip Composer's application package.
+
+- Checkout source/license: <https://github.com/actions/checkout/tree/v7.0.1>
+- .NET setup source/license: <https://github.com/actions/setup-dotnet/tree/v6.0.0>
+
 ## FFmpeg and FFprobe
 
 Cat Clip Composer bundles BtbN's Windows x64 shared FFmpeg/FFprobe runtime

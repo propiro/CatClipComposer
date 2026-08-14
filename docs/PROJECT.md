@@ -162,6 +162,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **History browsing — Done.** A modeless toggle surface combines newest-first project actions, exports, and
   log/crash files; prior outputs and source locations open in File Explorer. Clip inspection adds technical,
   catalog-date, saved/recovered-project-reference, and completed-export details.
+- **Selectable undo/redo destinations — Done.** The main arrows move one step; adjacent dropdowns list every
+  retained action and restore the selected earlier/later moment as one recovery/cache refresh operation.
+- **About and update visibility — Done.** A top-right `?` opens build/experiment details and the Mr. Cat image.
+  Its explicit, non-installing GitHub check distinguishes newer repository code from a newer packaged Windows ZIP.
 
 ### Projects and automation
 
@@ -185,7 +189,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.30 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.31 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

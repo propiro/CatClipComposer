@@ -73,7 +73,8 @@ public partial class App : Application
                 services.Scanner,
                 services.VideoRenderer,
                 services.CompositionExporter,
-                services.Plugins);
+                services.Plugins,
+                services.UpdateChecker);
             MainWindow = mainWindow;
             progress.Report(new StartupProgress(
                 24,

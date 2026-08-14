@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.30**.
+Current application and component version: **0.1.31**.
 
 ## Documentation
 
@@ -68,8 +68,12 @@ Current application and component version: **0.1.30**.
 - Toggle a modeless History surface for reverse-chronological actions, completed exports, and log/crash files;
   inspect any clip's location, technical properties, catalog dates, project references, and completed-project use.
 - Create, save, reopen, automatically recover, undo, and redo versioned `.nya` project timelines with a
-  configurable history depth (32 project edits by default). Unsaved
+  configurable history depth (32 project edits by default). Each undo/redo arrow performs one step; its adjacent
+  dropdown can jump atomically to any currently retained earlier/later history moment. Unsaved
   projects show an asterisk and closing offers literal Save, Don't save, and Cancel choices.
+- Open About from the top-right `?` button to see build/experiment details and the Mr. Cat splash image. Its
+  manual update checker separately reports newer public repository code and newer downloadable Windows Release
+  ZIPs; it never downloads or installs anything, sends no credentials, and only opens allow-listed project pages.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace. Panel docking, window geometry,
   splitter sizes, preview split/join state, active preview tab, focused panel, and expanded panel persist.

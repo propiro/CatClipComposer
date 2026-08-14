@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private static readonly int[] PreviewQualityLevels = [10, 25, 50, 75, 90, 100];
     private readonly MainViewModel _viewModel;
     private readonly IMediaCatalog _catalog;
+    private readonly IApplicationUpdateChecker _updateChecker;
     private readonly WorkspaceLayoutController _workspaceLayout;
     private Point _catalogDragStart;
     private Point _timelineDragStart;
@@ -93,12 +94,14 @@ public partial class MainWindow : Window
         IMediaScanner scanner,
         IVideoRenderer videoRenderer,
         ICompositionExporter compositionExporter,
-        IPluginCatalog plugins)
+        IPluginCatalog plugins,
+        IApplicationUpdateChecker updateChecker)
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         ApplyPersistedWindowGeometry(settings);
         _catalog = catalog;
+        _updateChecker = updateChecker;
         _viewModel = new MainViewModel(
             settings,
             settingsStore,
@@ -466,6 +469,12 @@ public partial class MainWindow : Window
         };
         _historyWindow.Closed += (_, _) => _historyWindow = null;
         _historyWindow.Show();
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new AboutWindow(_updateChecker) { Owner = this };
+        dialog.ShowDialog();
     }
 
     private async void Scan_Click(object sender, RoutedEventArgs e)
@@ -3568,9 +3577,55 @@ public partial class MainWindow : Window
     private async void Redo_Click(object sender, RoutedEventArgs e) =>
         await PerformRedoAsync();
 
-    private async Task PerformUndoAsync()
+    private void UndoHistoryDropDown_Click(object sender, RoutedEventArgs e) =>
+        OpenHistoryNavigationMenu(sender, _viewModel.UndoHistoryChoices, undo: true);
+
+    private void RedoHistoryDropDown_Click(object sender, RoutedEventArgs e) =>
+        OpenHistoryNavigationMenu(sender, _viewModel.RedoHistoryChoices, undo: false);
+
+    private void OpenHistoryNavigationMenu(
+        object sender,
+        IReadOnlyList<ProjectHistoryNavigationEntry> choices,
+        bool undo)
     {
-        if (CancelActiveOverlayTransformEdit())
+        if (sender is not Button button || choices.Count == 0)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = button,
+            Placement = PlacementMode.Bottom
+        };
+        foreach (var choice in choices)
+        {
+            var item = new MenuItem
+            {
+                Header = $"{(undo ? "Undo" : "Redo")} {choice.StepCount}: {choice.Description}",
+                ToolTip = $"Restore the project by {(undo ? "undoing" : "redoing")} " +
+                          $"{choice.StepCount} action{(choice.StepCount == 1 ? string.Empty : "s")}."
+            };
+            item.Click += async (_, _) =>
+            {
+                if (undo)
+                {
+                    await PerformUndoAsync(choice.StepCount, navigateToHistoryMoment: true);
+                }
+                else
+                {
+                    await PerformRedoAsync(choice.StepCount);
+                }
+            };
+            menu.Items.Add(item);
+        }
+
+        menu.IsOpen = true;
+    }
+
+    private async Task PerformUndoAsync(int steps = 1, bool navigateToHistoryMoment = false)
+    {
+        if (CancelActiveOverlayTransformEdit() && !navigateToHistoryMoment)
         {
             ProjectPreviewStatusText.Text = "Overlay transform cancelled.";
             return;
@@ -3578,7 +3633,7 @@ public partial class MainWindow : Window
 
         try
         {
-            if (await _viewModel.UndoAsync())
+            if (await _viewModel.UndoAsync(steps))
             {
                 ResetProjectPreviewCache();
                 await RestoreCachedProjectPreviewAsync();
@@ -3590,12 +3645,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task PerformRedoAsync()
+    private async Task PerformRedoAsync(int steps = 1)
     {
         CancelActiveOverlayTransformEdit();
         try
         {
-            if (await _viewModel.RedoAsync())
+            if (await _viewModel.RedoAsync(steps))
             {
                 ResetProjectPreviewCache();
                 await RestoreCachedProjectPreviewAsync();

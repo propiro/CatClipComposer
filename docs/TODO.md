@@ -426,6 +426,29 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   toggles a modeless surface containing reverse-chronological action entries, completed exports, and discoverable
   log/crash files; all project-content mutations captured by recovery are described and undoable.
 
+### `UX-HISTORY-003` — Navigate directly through retained undo/redo moments
+
+- Priority/status: P0 / Done
+- Acceptance: Main undo/redo arrows retain one-step Ctrl+Z/Ctrl+Y behavior; an adjacent dropdown lists ordered
+  reachable actions. Selecting entry N restores exactly N snapshots, writes recovery and reloads matching preview
+  cache once, preserves dirty/save-point semantics, and records one descriptive history navigation action.
+
+### `UX-ABOUT-001` — Add About, Mr. Cat details, and safe update visibility
+
+- Priority/status: P1 / Done
+- Acceptance: A top-right `?` opens an About window with current version/revision, literal entirely-vibecoded
+  disclosure, project details, and the existing Mr. Cat resource. A manual check separately identifies newer
+  repository code and an exact Windows Release ZIP; it has timeout/cancellation/response bounds/cache, never
+  installs files or uses credentials, and opens only allow-listed project pages.
+
+### `DEPLOY-004` — Publish validated Windows downloads from version tags
+
+- Priority/status: P0 / Done
+- Acceptance: A pushed tag matching the central version runs a Windows workflow with hydrated LFS and immutable-
+  SHA-pinned official actions, calls the repository publisher, verifies CLI/marker/package gates, creates the full
+  portable ZIP and lowercase SHA-256, and publishes a GitHub Release via minimum `contents: write` permission.
+  No tag is pushed until the local/manual acceptance checklist passes.
+
 ### `BROWSER-008` — Inspect clip technical and usage information
 
 - Priority/status: P1 / Done

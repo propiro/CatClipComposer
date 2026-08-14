@@ -103,7 +103,7 @@ internal static class SqliteCatalogSchema
             cancellationToken);
     }
 
-    public static async Task EnsureColumnAsync(
+    private static async Task EnsureColumnAsync(
         SqliteConnection connection,
         string table,
         string column,

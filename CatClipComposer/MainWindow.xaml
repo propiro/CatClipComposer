@@ -54,10 +54,22 @@
                     <Button Click="NewProject_Click" Content="New" />
                     <Button Margin="4,0,0,0" Click="OpenProject_Click" Content="Open" />
                     <Button Margin="4,0,0,0" Click="SaveProject_Click" Content="Save" />
-                    <Button Margin="8,0,0,0" Padding="8,3" Click="Undo_Click" Content="↶"
-                            IsEnabled="{Binding CanUndo}" ToolTip="Undo project change (Ctrl+Z)" />
-                    <Button Margin="3,0,0,0" Padding="8,3" Click="Redo_Click" Content="↷"
-                            IsEnabled="{Binding CanRedo}" ToolTip="Redo project change (Ctrl+Y)" />
+                    <StackPanel Margin="8,0,0,0" Orientation="Horizontal">
+                        <Button Padding="8,3" Click="Undo_Click" Content="↶"
+                                IsEnabled="{Binding CanUndo}" ToolTip="Undo one project change (Ctrl+Z)" />
+                        <Button Width="22" Margin="1,0,0,0" Padding="2,3"
+                                Click="UndoHistoryDropDown_Click" Content="▼"
+                                IsEnabled="{Binding CanUndo}"
+                                ToolTip="Choose an earlier project history moment" />
+                    </StackPanel>
+                    <StackPanel Margin="3,0,0,0" Orientation="Horizontal">
+                        <Button Padding="8,3" Click="Redo_Click" Content="↷"
+                                IsEnabled="{Binding CanRedo}" ToolTip="Redo one project change (Ctrl+Y)" />
+                        <Button Width="22" Margin="1,0,0,0" Padding="2,3"
+                                Click="RedoHistoryDropDown_Click" Content="▼"
+                                IsEnabled="{Binding CanRedo}"
+                                ToolTip="Choose a later project history moment" />
+                    </StackPanel>
                     <Button Margin="4,0,0,0" Click="OutputSettings_Click" Content="Project settings" />
                     <TextBlock Margin="10,0,0,0"
                                VerticalAlignment="Center"
@@ -75,6 +87,8 @@
                             Click="CancelScan_Click"
                             Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Content="Cancel" />
+                    <Button Width="30" Margin="4,0,0,0" Click="About_Click" Content="?"
+                            ToolTip="About Cat Clip Composer and check for updates" />
                 </StackPanel>
             </Grid>
         </Border>

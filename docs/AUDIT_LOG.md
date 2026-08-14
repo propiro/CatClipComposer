@@ -1,5 +1,43 @@
 # Audit log
 
+## AUDIT-2026-08-14-006 — History navigation, optional updater, and full code/release audit
+
+Scope: direct multi-step undo/redo selection, About/Mr. Cat/update UI, application/Core/Infrastructure/CLI source,
+tracked and historical content, package dependencies, desktop process launches, filesystem/SQL/network boundaries,
+XAML resources, documentation, versioning, and portable publication.
+
+Findings and remediation:
+
+- Undo snapshots had descriptions but no ordered navigation API. `ProjectUndoHistory` now derives C/B/A-style
+  destination lists directly from its current/undo/redo stacks and applies N steps before deserializing once.
+  `MainViewModel` performs one projection, recovery write, history record, and cache refresh for that selected point;
+  normal arrows and keyboard shortcuts remain one step.
+- A direct WPF network implementation would have mixed UI and remote policy. The new Core contract keeps a focused
+  GitHub adapter in Infrastructure. It requires the exact named Release ZIP for a binary result and uses repository
+  version plus commit comparison for code, so source-only changes are not mislabeled as an installable update.
+- Remote checks initially needed stronger failure boundaries. They now serialize and cache requests for five minutes,
+  enforce a 15-second timeout and byte caps, propagate user cancellation, reject remote XML DTDs, validate versions
+  and Git revisions, tolerate/report partial endpoint failure, use no credentials, and never download/execute content.
+- Browser launches could otherwise become an update-channel trust boundary. About accepts only HTTPS, default-port,
+  no-userinfo URLs under `github.com/propiro/CatClipComposer`; shell failures are shown instead of escaping WPF event
+  handlers. The pre-existing custom-font and compatible-FFmpeg launch actions now also report invalid paths or shell
+  failures rather than terminating the UI.
+- SQLite schema interpolation accepts only compile-time callers; its migration helper was unnecessarily assembly-
+  visible and is now private. Plugin DLLs remain explicitly documented trusted in-process extensions, not a sandbox.
+- No credentials, passwords, tokens, private keys, private addresses, or user-specific paths were found in Git history
+  or the current diff. Gitleaks' broad directory scan found only its own ignored test-tool README examples; Git mode
+  and the tracked working diff were clean. NuGet reported no known vulnerable direct/transitive package.
+- The repository lacked an automated binary-release path. The new tag-only Windows workflow uses minimum
+  `contents: write`, disables persisted checkout credentials, hydrates required LFS objects, pins both official
+  actions to verified immutable tag SHAs, reuses all local publisher/FFmpeg/version gates, and supplies only the
+  short-lived workflow token to the final preinstalled `gh release create --verify-tag` step.
+
+Verification: zero-warning/error Release builds after each code change; .NET analyzer verification; static XAML
+resource audit; `git diff --check`; Gitleaks history and working-diff scans; dependency vulnerability audit; live
+public GitHub old/current-version smoke; reflection history ordering and atomic Undo 2/Redo 2 smoke; CLI version and
+portable in-place version/marker checks. No dependency or redistributed binary changed, so the existing license
+inventory remains valid. Public GitHub upload remains gated on the user's manual acceptance checklist.
+
 ## AUDIT-2026-08-14-005 — Prerender freshness, cross-track history, and text-render audit
 
 Scope: prerender queue/status UX, coverage correctness after edits/undo, effect paste/transfer, configurable undo

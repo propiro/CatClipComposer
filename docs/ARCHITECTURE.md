@@ -9,7 +9,7 @@ CatClipComposer.Core
     Domain models, formatting utilities, and service contracts
 
 CatClipComposer.Infrastructure
-    INI and project stores, SQLite, filesystem paths, FFprobe, FFmpeg, and service composition
+    INI/project stores, SQLite, filesystem paths, FFprobe/FFmpeg, GitHub update adapter, and service composition
 
 CatClipComposer
     WPF application, compact dock workspace, presentation models, and desktop-specific interaction
@@ -185,6 +185,20 @@ The executable modules may reference Core and Infrastructure for composition. Co
 9. Startup reconciles recovery with its named saved project by semantic JSON comparison that excludes schema,
    normal-file path, and modification timestamp. Equivalent legacy recovery and pristine untitled recovery are
    clean; any content difference retains the recovery and dirty marker.
+
+### Undo navigation and optional update checks
+
+1. `ProjectUndoHistory` owns snapshot order and exposes descriptions for every reachable undo/redo destination.
+   A normal arrow restores one snapshot; choosing dropdown entry N moves N snapshots in memory, projects only the
+   final state through `MainViewModel`, writes recovery once, and reloads matching prerender chunks once.
+2. `IApplicationUpdateChecker` keeps GitHub/network details out of WPF. Its Infrastructure adapter performs a
+   manual, anonymous, sequential check of the public latest Release, repository version file, and—when the build
+   embeds a reachable commit—the current-to-main comparison.
+3. Responses have byte limits and a 15-second timeout, checks are serialized/cached for five minutes, cancellation
+   is propagated, remote XML prohibits DTDs, and partial endpoint failures remain visible without hiding successful
+   results. No updater downloads, executes, or replaces application files.
+4. Browser launch accepts only HTTPS `github.com/propiro/CatClipComposer` paths. A binary update requires the
+   expected `CatClipComposer-v&lt;version&gt;-win-x64.zip` Release asset; repository code is reported separately.
 
 ## Responsibility audit
 
