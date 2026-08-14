@@ -67,7 +67,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 10;
+    public const int CurrentSchemaVersion = 11;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -166,6 +166,14 @@ public sealed class ProjectTimelineItem
     public string FontFamily { get; set; } = "Segoe UI";
 
     public int FontSize { get; set; } = 42;
+
+    public bool TextStrokeEnabled { get; set; } = true;
+
+    public string TextStrokeColor { get; set; } = "#000000";
+
+    public double TextStrokeWidth { get; set; } = 3;
+
+    public double TextStrokeSmoothness { get; set; }
 
     public OverlayPosition Position { get; set; } = OverlayPosition.Center;
 

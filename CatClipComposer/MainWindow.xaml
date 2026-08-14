@@ -198,6 +198,7 @@
                                     <MenuItem Click="EditSelectedTags_Click" Header="Edit tags for selected clips…" />
                                     <MenuItem Click="MarkSelectedCatalogItemsSeen_Click" Header="Mark selected clips as seen" />
                                     <Separator />
+                                    <MenuItem Click="ClipMetadata_Click" Header="Inspect clip information..." />
                                     <MenuItem Click="OpenSource_Click" Header="Show selected file" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
@@ -511,7 +512,13 @@
                                         <Button x:Name="ProjectPreviewMuteButton" Margin="4,0,0,0" Click="ProjectPreviewMute_Click"
                                                 FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
                                     </WrapPanel>
-                                    <WrapPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <Border Grid.Column="1" Padding="6,3" HorizontalAlignment="Center"
+                                            BorderBrush="{StaticResource StrongBorderBrush}" BorderThickness="1">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                       FontSize="9" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource AccentBrush}" Text="PRERENDER" />
+                                            <WrapPanel>
                                         <StackPanel Margin="0,0,8,0" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Margin="0,0,4,0" VerticalAlignment="Center" FontSize="9"
                                                        Foreground="{StaticResource MutedTextBrush}" Text="FRAME" />
@@ -522,7 +529,7 @@
                                         </StackPanel>
                                         <StackPanel Margin="0,0,8,0" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Margin="0,0,4,0" VerticalAlignment="Center" FontSize="9"
-                                                       Foreground="{StaticResource MutedTextBrush}" Text="PREVIEW" />
+                                                       Foreground="{StaticResource MutedTextBrush}" Text="RANGE" />
                                             <Button Padding="7,5" Click="PrerenderPreviewLowQuality_Click" Content="LQ"
                                                     Style="{StaticResource PrimaryButtonStyle}"
                                                     ToolTip="Prerender the selected range at the configured preview resolution, or the current frame when no range is selected" />
@@ -537,7 +544,9 @@
                                             <Button Margin="2,0,0,0" Padding="7,5" Click="PrerenderAllHighQuality_Click" Content="HQ"
                                                     ToolTip="Prerender the complete project at full project resolution" />
                                         </StackPanel>
-                                    </WrapPanel>
+                                            </WrapPanel>
+                                        </DockPanel>
+                                    </Border>
                                     <TextBlock x:Name="ProjectPreviewStatusText" Grid.Column="2" Margin="8,0,0,0"
                                                VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"
                                                FontSize="10" Foreground="{StaticResource MutedTextBrush}"
@@ -748,8 +757,8 @@
                                                                 <MenuItem CommandParameter="{Binding}" Click="ColorCode_Click" Header="Set item color…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
                                                                 <Separator />
-                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemCopyEffect_Click" Header="Copy effect" />
-                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemPasteEffect_Click" Header="Paste effect at playhead" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemCopyEffect_Click" Header="Copy effect" InputGestureText="Ctrl+C" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemPasteEffect_Click" Header="Paste effect at playhead" InputGestureText="Ctrl+V" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleTransformLock_Click"
                                                                           Header="{Binding TransformLockActionText}"
                                                                           Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -1058,8 +1067,8 @@
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemColor_Click" Header="Set item color…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
                                                                                 <Separator />
-                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemCopyEffect_Click" Header="Copy effect" />
-                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemPasteEffect_Click" Header="Paste effect at playhead" />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemCopyEffect_Click" Header="Copy effect" InputGestureText="Ctrl+C" />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemPasteEffect_Click" Header="Paste effect at playhead" InputGestureText="Ctrl+V" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleTransformLock_Click"
                                                                                           Header="{Binding TransformLockActionText}"
                                                                                           Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -1202,9 +1211,10 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ProgressBar Height="2"
-                         Grid.ColumnSpan="2"
+                         Grid.ColumnSpan="3"
                          VerticalAlignment="Top"
                          Maximum="100"
                          Value="{Binding ScanProgress, Mode=OneWay}"
@@ -1214,6 +1224,12 @@
                        Foreground="{StaticResource MutedTextBrush}"
                        Text="{Binding StatusText}" />
             <TextBlock Grid.Column="1"
+                       x:Name="PrerenderQueueStatusText"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center"
+                       FontSize="11"
+                       Foreground="{StaticResource AccentBrush}" />
+            <TextBlock Grid.Column="2"
                        Margin="8,0,0,0"
                        VerticalAlignment="Center"
                        FontSize="11"

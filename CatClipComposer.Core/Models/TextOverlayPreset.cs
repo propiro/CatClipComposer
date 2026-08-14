@@ -14,6 +14,14 @@ public sealed class TextOverlayPreset
 
     public int FontSize { get; set; } = 42;
 
+    public bool StrokeEnabled { get; set; } = true;
+
+    public string StrokeColor { get; set; } = "#000000";
+
+    public double StrokeWidth { get; set; } = 3;
+
+    public double StrokeSmoothness { get; set; }
+
     public OverlayPosition Position { get; set; } = OverlayPosition.Center;
 
     public bool HasCustomTransform { get; set; }

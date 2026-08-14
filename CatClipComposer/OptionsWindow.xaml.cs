@@ -31,6 +31,7 @@ public partial class OptionsWindow : Window
         SmallThumbnailSizeTextBox.Text = _workingSettings.SmallThumbnailSize.ToString(CultureInfo.CurrentCulture);
         LargeThumbnailSizeTextBox.Text = _workingSettings.LargeThumbnailSize.ToString(CultureInfo.CurrentCulture);
         ExtraLargeThumbnailSizeTextBox.Text = _workingSettings.ExtraLargeThumbnailSize.ToString(CultureInfo.CurrentCulture);
+        UndoHistoryCapacityTextBox.Text = _workingSettings.UndoHistoryCapacity.ToString(CultureInfo.CurrentCulture);
         FfmpegPathTextBox.Text = _workingSettings.FfmpegPath;
         CustomFontFolderTextBox.Text = _workingSettings.CustomFontFolder;
         IncludeSubfoldersCheckBox.IsChecked = _workingSettings.IncludeSubfolders;
@@ -122,11 +123,13 @@ public partial class OptionsWindow : Window
             largeThumbnailSize < smallThumbnailSize + 20 ||
             !int.TryParse(ExtraLargeThumbnailSizeTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
                 out var extraLargeThumbnailSize) || extraLargeThumbnailSize is < 240 or > 640 ||
-            extraLargeThumbnailSize < largeThumbnailSize + 40)
+            extraLargeThumbnailSize < largeThumbnailSize + 40 ||
+            !int.TryParse(UndoHistoryCapacityTextBox.Text, NumberStyles.Integer, CultureInfo.CurrentCulture,
+                out var undoHistoryCapacity) || undoHistoryCapacity is < 1 or > 256)
         {
             MessageBox.Show(this,
                 "Choose the output, project, and metadata folders; use 1–24 contact-sheet slides; and choose " +
-                "thumbnail widths in range, with Large at least 20 px wider than Small and Extra large at least 40 px wider than Large.",
+                "thumbnail widths in range, with Large at least 20 px wider than Small and Extra large at least 40 px wider than Large, and 1-256 undo steps.",
                 "Invalid preferences", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -139,6 +142,7 @@ public partial class OptionsWindow : Window
         _workingSettings.SmallThumbnailSize = smallThumbnailSize;
         _workingSettings.LargeThumbnailSize = largeThumbnailSize;
         _workingSettings.ExtraLargeThumbnailSize = extraLargeThumbnailSize;
+        _workingSettings.UndoHistoryCapacity = undoHistoryCapacity;
         _workingSettings.FfmpegPath = string.IsNullOrWhiteSpace(FfmpegPathTextBox.Text)
             ? "ffmpeg.exe"
             : FfmpegPathTextBox.Text.Trim();

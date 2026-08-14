@@ -332,6 +332,15 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             fontSize,
             Brushes.White,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        var strokeColor = Colors.Black;
+        try
+        {
+            strokeColor = (Color)ColorConverter.ConvertFromString(item.TextStrokeColor);
+        }
+        catch (Exception exception) when (exception is FormatException or NotSupportedException)
+        {
+        }
+
         var text = new TextBlock
         {
             Text = string.IsNullOrEmpty(item.Text) ? "Text" : item.Text,
@@ -341,13 +350,15 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Center,
-            Effect = new DropShadowEffect
+            Effect = item.TextStrokeEnabled && item.TextStrokeWidth > 0
+                ? new DropShadowEffect
             {
-                BlurRadius = 3,
-                ShadowDepth = 1,
-                Color = Colors.Black,
-                Opacity = 0.9
+                BlurRadius = Math.Max(1, (item.TextStrokeWidth + item.TextStrokeSmoothness) * outputScale * 2),
+                ShadowDepth = 0,
+                Color = strokeColor,
+                Opacity = 1
             }
+                : null
         };
         return (
             Math.Max(28, formatted.WidthIncludingTrailingWhitespace + 12),

@@ -2,6 +2,27 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.30 prerender, cross-track editing, and text reliability pass
+
+- Relabeled the Project Preview toolbar as a bordered PRERENDER group with FRAME/RANGE/ALL LQ/HQ actions.
+  Serialized concurrent prerender requests, exposed the queue count in the bottom status bar, and reported exact
+  frame/range/all scope plus parsing, FFmpeg startup, and live frame-progress stages.
+- Indexed rendered coverage by semantic project fingerprint. A moved/edited overlap becomes yellow immediately;
+  an exact undo or manual revert restores only matching green intervals and reloads matching cached chunks.
+- Removed the model-layer prohibition on compatible cross-track non-source moves. Timeline ghosts follow valid
+  target lanes, WPF Escape cancels drag/drop, one undo restores membership/timing, and Ctrl+C/Ctrl+V plus empty-
+  lane paste actions make the effect clipboard discoverable across Timeline and Project Layers.
+- Made the undo stack configurable from 1–256 entries (32 default), added named reverse-chronological action
+  records, and turned History into a modeless toggle with Actions, Exports, and Logs/Crashes. Clip inspection now
+  includes technical, catalog-date, project-reference, disk-location, tag, and completed-export data.
+- Advanced projects to schema 11 with text stroke enable/color/width/smoothness and matching portable presets.
+  Effect-editor frame renders bypass only the working text candidate's fades. Diagnosed the reported hidden top
+  text against the supplied project: trailing blank lines/free-standing combining marks made FFmpeg silently drop
+  the block. Normalized render text now retains valid lines, and a real project slice renders the top track again.
+- Verification: clean Release build, static XAML resource audit, `git diff --check`, CLI config/version smokes,
+  exact-project real FFmpeg text/fade/stroke renders, and in-place portable publish validation. No dependency
+  changed, so no new vulnerability audit was required.
+
 ## 2026-08-14 — v0.1.29 effect clipboard and catalog-state pass
 
 - Preserved lane chronology while assigning insertion-order z-index, so a later-added block wins selection in

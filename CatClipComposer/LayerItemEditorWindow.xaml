@@ -157,6 +157,33 @@
                                 <controls:NumericEditorControl x:Name="FontSizeEditor" Minimum="8" Maximum="120" Step="1"
                                                                ToolTip="Set the text size used by the renderer." />
                             </StackPanel>
+                            <StackPanel x:Name="TextStrokeFields" Margin="0,0,0,10">
+                                <CheckBox x:Name="TextStrokeEnabledCheckBox" Margin="0,0,0,6"
+                                          Content="Stroke / outline text" ToolTip="Draw a configurable outline around text." />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Margin="0,0,0,4" Text="Stroke color" />
+                                        <TextBox x:Name="TextStrokeColorTextBox" ToolTip="Hex color such as #000000." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,4" Text="Width" />
+                                        <controls:NumericEditorControl x:Name="TextStrokeWidthEditor" Minimum="0" Maximum="20" Step="0.5"
+                                                                       ToolTip="Outline thickness in project pixels." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Margin="0,0,0,4" Text="Smoothness" />
+                                        <controls:NumericEditorControl x:Name="TextStrokeSmoothnessEditor" Minimum="0" Maximum="10" Step="0.5"
+                                                                       ToolTip="Softens the outer stroke edge; 0 keeps it crisp." />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
                             <StackPanel x:Name="OverlayOpacityField" Margin="0,0,0,10">
                                 <TextBlock Margin="0,0,0,4" Text="Opacity (%)" />
                                 <controls:NumericEditorControl x:Name="OverlayOpacityEditor" Minimum="0" Maximum="100" Step="5"

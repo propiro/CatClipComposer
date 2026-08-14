@@ -13,6 +13,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -25,7 +26,13 @@
                    ToolTip="{Binding FullPath}"
                    Text="{Binding FullPath}" />
 
-        <Grid Grid.Row="2" Margin="0,0,0,12">
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <TextBlock FontWeight="SemiBold" Text="{Binding TechnicalSummary}" />
+            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource MutedTextBrush}"
+                       TextWrapping="Wrap" Text="{Binding CatalogSummary}" />
+        </StackPanel>
+
+        <Grid Grid.Row="3" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="90" />
                 <ColumnDefinition Width="*" />
@@ -37,7 +44,7 @@
                      Text="{Binding Media.Tags, Mode=OneTime}" />
         </Grid>
 
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1">
@@ -79,7 +86,7 @@
             </Grid>
         </Border>
 
-        <StackPanel Grid.Row="4" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+        <StackPanel Grid.Row="5" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button MinWidth="80" IsCancel="True" Content="Cancel" />
             <Button MinWidth="90"
                     Margin="6,0,0,0"

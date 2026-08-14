@@ -89,7 +89,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
   Shift/Ctrl drag paints a frame-snapped range, Mark start/end creates one from the playhead, and either edge
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
-  double-clicks. Frame, active-range Preview, and All each expose explicit LQ/HQ actions; Preview defaults to
+  double-clicks. The bordered Prerender group gives Frame, active Range, and All explicit LQ/HQ actions; Range defaults to
   the current frame when no range exists. A six-stop 10–100% temporary-resolution control uses the same
   composition/effect graph on a smaller canvas without changing export settings, while optional selected-image
   scaling uses a higher-quality scaler. Project preview maps local playback back onto project time and uses
@@ -97,7 +97,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   project/source/app fingerprint are restored between sessions; timeline clicks switch between their coverage
   without range-selection changes unloading them. A thin ruler line shows current cached intervals in green and
   only changed overlaps in yellow. Rapid chunk switches are coalesced and retried once if Windows reports a
-  transient source failure. Playback stops and resets at the active chunk boundary.
+  transient source failure. Exact semantic undo/reverts restore matching green coverage. A serialized prerender
+  queue remains visible in the bottom status bar together with scope/frame totals and parsing/engine/render stages.
+  Playback stops and resets at the active chunk boundary.
   Project Settings is a compact rollout at the bottom-left of Project Preview rather
   than consuming Project Layers Data space.
 - **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
@@ -115,8 +117,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   duration using the same controls. With no selected Video range, new native overlays begin at the playhead.
   Live stale proxies retain that exact opacity; moved
   content leaves a crossed notice over its old prerendered location until the frame is refreshed.
-  Text appearance/transform settings can be saved as portable presets and selected from generated text/font
-  thumbnails without inheriting an old timeline interval.
+  Text appearance/transform settings, including optional stroke color/width/smoothness, can be saved as portable
+  presets and selected from generated text/font thumbnails without inheriting an old timeline interval. Effect
+  frame previews intentionally bypass only the candidate text's fade so appearance remains judgeable.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
   names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
@@ -130,7 +133,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   snapping aligns starts or ends to source-clip boundaries. Resize movement uses one absolute pointer delta,
   so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
-  A later-added overlapping block remains on top for selection, full effect blocks copy/paste at the playhead,
+  A later-added overlapping block remains on top for selection, full effect blocks copy/paste at the playhead or
+  clicked empty compatible lane, and effect/overlay/audio/progress blocks drag across compatible timelines,
   time arrows accept Ctrl/Shift step modifiers, and the preview/timeline wheel gestures zoom or pan in context.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
   Native overlay and plugin-effect dialogs group content/module, timing, transform, and appearance/adjustment
@@ -155,13 +159,16 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   persist per project.
 - **Safe final compilation — Done.** Rendering uses a temporary output and supports cancellation.
 - **Successful-export usage history — Done.** Completed jobs record ordered source clips and final output.
-- **History browsing — Done.** Prior outputs and source locations open in File Explorer.
+- **History browsing — Done.** A modeless toggle surface combines newest-first project actions, exports, and
+  log/crash files; prior outputs and source locations open in File Explorer. Clip inspection adds technical,
+  catalog-date, saved/recovered-project-reference, and completed-export details.
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-10 `.nya` JSON uses stable track/item IDs, optional
-  track/item colors, text/image/GIF/video overlay fades/transforms, background color, and plugin metadata.
-- **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore bounded project
+- **Named editable projects — Done.** Versioned schema-11 `.nya` JSON uses stable track/item IDs, optional
+  track/item colors, text stroke/image/GIF/video overlay fades/transforms, background color, and plugin metadata.
+- **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore a configurable
+  1–256 project-edit stack (32 by default). Exact undo/revert fingerprints also restore green prerender coverage;
   snapshots, the project/title shows an asterisk away from the last save point, and closing offers Save,
   Don't save, or Cancel without losing the window on a failed/cancelled save.
 - **Crash recovery — Done.** Every timeline mutation writes an atomic recovery file under metadata storage.
@@ -178,7 +185,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.29 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.30 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

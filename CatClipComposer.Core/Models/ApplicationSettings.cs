@@ -80,6 +80,8 @@ public sealed class ApplicationSettings
 
     public bool PreserveSelectedPreviewObjectQuality { get; set; } = true;
 
+    public int UndoHistoryCapacity { get; set; } = 32;
+
     public string FfmpegPath { get; set; } = "ffmpeg.exe";
 
     public string CustomFontFolder { get; set; } = Path.Combine(AppContext.BaseDirectory, "fonts");
@@ -156,6 +158,7 @@ public sealed class ApplicationSettings
         ExtraLargeThumbnailSize = ExtraLargeThumbnailSize,
         PreviewQualityPercent = PreviewQualityPercent,
         PreserveSelectedPreviewObjectQuality = PreserveSelectedPreviewObjectQuality,
+        UndoHistoryCapacity = UndoHistoryCapacity,
         FfmpegPath = FfmpegPath,
         CustomFontFolder = CustomFontFolder,
         IncludeSubfolders = IncludeSubfolders,
@@ -175,6 +178,10 @@ public sealed class ApplicationSettings
             FontPath = preset.FontPath,
             FontFamily = preset.FontFamily,
             FontSize = preset.FontSize,
+            StrokeEnabled = preset.StrokeEnabled,
+            StrokeColor = preset.StrokeColor,
+            StrokeWidth = preset.StrokeWidth,
+            StrokeSmoothness = preset.StrokeSmoothness,
             Position = preset.Position,
             HasCustomTransform = preset.HasCustomTransform,
             X = preset.X,

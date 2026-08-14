@@ -57,6 +57,9 @@ ExtraLargeThumbnailSize=420
 QualityPercent=50
 PreserveSelectedObjectQuality=true
 
+[Editing]
+UndoHistoryCapacity=32
+
 [Output]
 Folder=C:\Videos\Compositions
 ProjectFolder=C:\Videos\CatClipComposer Projects
@@ -108,6 +111,10 @@ so safely. Whole-frame effects still run on the smaller preview canvas. A previo
 still be displayed after either preference changes; its recorded percentage is shown, and the next prerender
 uses the new choice. `config` exposes both values in text and JSON output.
 
+`Editing.UndoHistoryCapacity` controls the in-memory project-edit snapshot stack. It defaults to `32` and is
+clamped to `1`–`256`. Lowering it trims the oldest undo/action entries immediately; it does not change project
+files or the persistent crash-recovery snapshot.
+
 `Startup.FirstStartupCompleted` defaults to false. After the editor initializes successfully, the application
 atomically saves it as true. False or missing values select the five-second first-launch splash minimum; true
 selects the approximately three-second returning-launch minimum. Failed initialization does not advance it.
@@ -119,7 +126,7 @@ colors and sizes return to safe defaults.
 
 `TextOverlayPresets.PresetN` stores up to 100 named text-overlay parameter sets in numeric order. Values are
 application-generated Base64-encoded JSON so multiline text and paths cannot break INI parsing. Presets contain
-text, font identity, transform, opacity, and fades, but deliberately exclude timeline start/end. The editor
+text, font identity, stroke enable/color/width/smoothness, transform, opacity, and fades, but deliberately exclude timeline start/end. The editor
 regenerates each text/font thumbnail at runtime; no thumbnail cache or binary image is embedded in the INI.
 
 `RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. The splash

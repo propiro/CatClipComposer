@@ -226,8 +226,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-PREVIEW-006` — Add contextual frame/range/all prerender actions
 
 - Priority/status: P0 / Done
-- Acceptance: PREVIEW renders the active timeline range or, without one, a short slice at the current frame and
-  pauses on it; FRAME, PREVIEW, and ALL each expose explicit LQ/HQ controls, and none records export history.
+- Acceptance: RANGE renders the active timeline range or, without one, a short slice at the current frame and
+  pauses on it; the bordered PRERENDER group gives FRAME, RANGE, and ALL explicit LQ/HQ controls, and none
+  records export history.
 
 ### `UX-OVERLAY-001` — Directly manipulate positioned overlays in Project Preview
 
@@ -305,7 +306,7 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-PREVIEW-010` — Retain chunked prerenders and bound range playback
 
 - Priority/status: P0 / Done
-- Acceptance: Frame, selected-range Preview, and All each expose LQ/HQ actions; small image overlays keep their
+- Acceptance: Frame, selected Range, and All each expose LQ/HQ actions; small image overlays keep their
   HQ-relative size on a reduced canvas; multiple matching fingerprint/range MP4s remain seekable across range
   selection and sessions; timeline-content changes clear active coverage; playback never runs beyond the active
   chunk and both natural/timer completion consistently reset the playhead and transport icon.
@@ -389,11 +390,48 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   input. Context menus and Ctrl+C/Ctrl+V copy a complete non-source effect to a compatible track at the playhead.
   Project Preview wheel zooms and timeline wheel pans; time arrows use Ctrl=0.5 s and Shift=1 s.
 
+### `TIMELINE-012` — Transfer effects between compatible timelines
+
+- Priority/status: P0 / Done
+- Acceptance: Ctrl+C/Ctrl+V is visible and works from both Timeline and Project Layers; empty compatible lanes
+  paste at the clicked time. Dragging a non-source block horizontally favors its current lane, while entering a
+  compatible lane moves the landing ghost there; incompatible lanes reject it, Escape cancels WPF drag/drop,
+  and one undo restores both source/destination membership and timing.
+
 ### `UX-TEXT-001` — Save recognizable text overlay presets
 
 - Priority/status: P1 / Done
 - Acceptance: Text, font, transform, opacity, and fades persist as bounded portable INI presets without timing.
   The text editor regenerates and displays a text/font thumbnail for each preset and can apply or update it.
+
+### `UX-TEXT-002` — Add text strokes and reliable editor/project rendering
+
+- Priority/status: P0 / Done
+- Acceptance: Text items and presets persist optional outline color, 0–20 px width, and 0–10 smoothness; the
+  FFmpeg graph composites a crisp fill/stroke over an alpha-softened stroke edge. Effect-editor frame previews
+  bypass only the candidate text's fades, while project/export renders keep fades. Multiline text with trailing
+  blank lines or free-standing combining marks cannot silently suppress otherwise renderable lines.
+
+### `PROJECT-PREVIEW-012` — Expose prerender queue/stages and exact cache freshness
+
+- Priority/status: P0 / Done
+- Acceptance: The bottom status bar names parsing, FFmpeg startup, render progress, frame/scope totals, and a
+  persistent queued-job count. Coverage turns yellow for the edited overlap; exact semantic fingerprints map
+  remembered ranges back to green after a true revert/undo, while non-matching edits stay stale.
+
+### `UX-HISTORY-002` — Configure undo depth and combine user-visible histories
+
+- Priority/status: P1 / Done
+- Acceptance: Portable Preferences/INI configure 1–256 undo snapshots with a default of 32. The History button
+  toggles a modeless surface containing reverse-chronological action entries, completed exports, and discoverable
+  log/crash files; all project-content mutations captured by recovery are described and undoable.
+
+### `BROWSER-008` — Inspect clip technical and usage information
+
+- Priority/status: P1 / Done
+- Acceptance: A Content Browser context action opens the clicked clip's disk location, duration, dimensions,
+  file size/audio/extension, discovery/scan dates, saved/recovered-project reference count, tags, and completed
+  export usage without changing the selection first.
 
 ### `UX-SHELL-001` — Correct compact menus and proportional scrollbars
 

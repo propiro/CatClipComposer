@@ -104,6 +104,11 @@ internal static class ApplicationSettingsIniMapper
             "Preview",
             "PreserveSelectedObjectQuality",
             settings.PreserveSelectedPreviewObjectQuality);
+        settings.UndoHistoryCapacity = ReadInt(
+            ini,
+            "Editing",
+            "UndoHistoryCapacity",
+            settings.UndoHistoryCapacity);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
@@ -212,6 +217,10 @@ internal static class ApplicationSettingsIniMapper
             $"PreserveSelectedObjectQuality={settings.PreserveSelectedPreviewObjectQuality.ToString().ToLowerInvariant()}");
 
         builder.AppendLine();
+        builder.AppendLine("[Editing]");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"UndoHistoryCapacity={settings.UndoHistoryCapacity}");
+
+        builder.AppendLine();
         builder.AppendLine("[Output]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ProjectFolder={settings.ProjectFolder}");
@@ -281,6 +290,7 @@ internal static class ApplicationSettingsIniMapper
         settings.ExtraLargeThumbnailSize = Math.Clamp(settings.ExtraLargeThumbnailSize, 240, 640);
         settings.ExtraLargeThumbnailSize = Math.Max(settings.ExtraLargeThumbnailSize, settings.LargeThumbnailSize + 40);
         settings.PreviewQualityPercent = NormalizePreviewQuality(settings.PreviewQualityPercent);
+        settings.UndoHistoryCapacity = Math.Clamp(settings.UndoHistoryCapacity, 1, 256);
         settings.RecentProjectPaths = settings.RecentProjectPaths
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => path.Trim())
@@ -419,6 +429,11 @@ internal static class ApplicationSettingsIniMapper
         preset.FontPath = preset.FontPath.Trim();
         preset.FontFamily = string.IsNullOrWhiteSpace(preset.FontFamily) ? "Segoe UI" : preset.FontFamily.Trim();
         preset.FontSize = Math.Clamp(preset.FontSize, 8, 240);
+        preset.StrokeColor = IsHexColor(preset.StrokeColor) ? preset.StrokeColor.ToUpperInvariant() : "#000000";
+        preset.StrokeWidth = double.IsFinite(preset.StrokeWidth) ? Math.Clamp(preset.StrokeWidth, 0, 20) : 3;
+        preset.StrokeSmoothness = double.IsFinite(preset.StrokeSmoothness)
+            ? Math.Clamp(preset.StrokeSmoothness, 0, 10)
+            : 0;
         preset.Position = Enum.IsDefined(preset.Position) ? preset.Position : OverlayPosition.Center;
         preset.X = OverlayTransformValues.NormalizeCoordinate(preset.X);
         preset.Y = OverlayTransformValues.NormalizeCoordinate(preset.Y);

@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.29**.
+Current application and component version: **0.1.30**.
 
 ## Documentation
 
@@ -30,14 +30,14 @@ Current application and component version: **0.1.29**.
 - Store clip metadata and export history in a durable SQLite database.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in a multi-select recycled browser without opening every video.
-  Its header cycles between a thumbnail list, small grid, and large grid; both grid sizes are configurable in
+  Its header cycles between a thumbnail list, small grid, large grid, and extra-large grid; card sizes are configurable in
   Preferences, and single or mass tag edits are available from the context menu. Sort by name, newest file
   date, duration, or custom tag. Green, yellow, and blue thumbnail corners identify clips used in the current
   project, referenced by another saved/recovered project, or newly imported and not yet previewed.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
-  resizable left/right viewports. Frame, selected-range Preview, and All each expose explicit LQ/HQ actions;
-  Preview falls back to the current frame when no range exists. Multiple valid prerender chunks remain
+  resizable left/right viewports. A bordered Prerender group gives Frame, Range, and All explicit LQ/HQ actions;
+  Range falls back to the current frame when no range exists. Multiple valid prerender chunks remain
   seekable from the timeline and are restored between sessions. A
   Preview Settings rollout offers six temporary-resolution stops from 10% through 100% plus higher-quality
   scaling for the selected image overlay. Temporary previews use Windows-compatible H.264, and no preview
@@ -46,8 +46,9 @@ Current application and component version: **0.1.29**.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, disable/enable, and remove multiple PNG/JPG, text, music, and individually styled progress
   effects from the Content Browser's grouped Effects tab; choose installed Windows or visibly marked
-  portable-folder fonts. Copy/paste complete effect blocks at the playhead, and save text overlays as portable
-  INI presets whose text/font thumbnails make styles easy to recognize.
+  portable-folder fonts. Copy/paste complete effect blocks at the playhead or an empty compatible lane, and
+  drag non-source blocks between compatible timelines. Text overlays support configurable outline color,
+  width, and smoothness; their portable INI presets include recognizable text/font thumbnails.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
   on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
   synchronized with the timeline and Project Layers Data panel, while exact X/Y, scale, rotation, placement
@@ -64,8 +65,10 @@ Current application and component version: **0.1.29**.
 - Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
 - Safely render to a temporary file before replacing the selected destination.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
-- Browse export history and per-clip completed-project use, including project name/path, date, and final output.
-- Create, save, reopen, automatically recover, undo, and redo versioned `.nya` project timelines. Unsaved
+- Toggle a modeless History surface for reverse-chronological actions, completed exports, and log/crash files;
+  inspect any clip's location, technical properties, catalog dates, project references, and completed-project use.
+- Create, save, reopen, automatically recover, undo, and redo versioned `.nya` project timelines with a
+  configurable history depth (32 project edits by default). Unsaved
   projects show an asterisk and closing offers literal Save, Don't save, and Cancel choices.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.
 - Work in a compact, high-contrast monochrome four-panel editor workspace. Panel docking, window geometry,

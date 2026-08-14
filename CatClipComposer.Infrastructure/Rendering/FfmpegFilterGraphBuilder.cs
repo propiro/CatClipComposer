@@ -409,20 +409,26 @@ internal static class FfmpegFilterGraphBuilder
             ? $"font='{EscapeFilterValue(string.IsNullOrWhiteSpace(overlay.FontFamily) ? "Segoe UI" : overlay.FontFamily)}':"
             : $"fontfile='{EscapeFilterValue(overlay.FontPath)}':";
         var opacity = Math.Clamp(overlay.Opacity, 0, 1);
-        var borderOpacity = opacity * 0.72;
         var previewScale = Math.Clamp(request.PreviewScale, 0.1, 1);
         var previewFontSize = Math.Clamp((int)Math.Round(overlay.FontSize * previewScale), 1, 2400);
-        var borderWidth = Math.Max(1, (int)Math.Round(3 * previewScale));
+        var strokeEnabled = overlay.TextStrokeEnabled && overlay.TextStrokeWidth > 0;
+        var borderWidth = strokeEnabled
+            ? Math.Max(1, (int)Math.Round(Math.Clamp(overlay.TextStrokeWidth, 0, 20) * previewScale))
+            : 0;
+        var strokeColor = NormalizeColor(overlay.TextStrokeColor);
+        var strokeSmoothness = strokeEnabled
+            ? Math.Clamp(overlay.TextStrokeSmoothness, 0, 10) * previewScale
+            : 0;
         var hasFade = overlay.FadeInSeconds > 0 || overlay.FadeOutSeconds > 0;
-        if (!overlay.HasCustomTransform && !hasFade)
+        if (!overlay.HasCustomTransform && !hasFade && strokeSmoothness <= 0)
         {
             var (presetX, presetY) = GetTextOverlayCoordinates(overlay.Position, request.PreviewScale);
             graph.Append(CultureInfo.InvariantCulture,
                 $"[{currentLabel}]drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
             graph.Append(CultureInfo.InvariantCulture,
-                $"fontcolor=white@{FormatNumber(opacity)}:fontsize={previewFontSize}:");
+                $"text_shaping=0:fontcolor=white@{FormatNumber(opacity)}:fontsize={previewFontSize}:");
             graph.Append(CultureInfo.InvariantCulture,
-                $"borderw={borderWidth}:bordercolor=black@{FormatNumber(borderOpacity)}:x={presetX}:y={presetY}" +
+                $"borderw={borderWidth}:bordercolor={strokeColor}@{FormatNumber(opacity)}:x={presetX}:y={presetY}" +
                 $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
             return $"stage{stage}";
         }
@@ -436,25 +442,72 @@ internal static class FfmpegFilterGraphBuilder
         var (drawX, drawY) = overlay.HasCustomTransform
             ? ("(w-text_w)/2", "(h-text_h)/2")
             : GetTextOverlayCoordinates(overlay.Position, request.PreviewScale);
+        var (x, y) = overlay.HasCustomTransform
+            ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
+            : ("0", "0");
+
+        var underlayLabel = currentLabel;
+        if (strokeSmoothness > 0)
+        {
+            var softLabel = $"layertextsoft{stage}";
+            AppendTextLayerSource(
+                graph, request, overlay, overlayTextPath, fontOption, width, height, duration, start,
+                scaledFontSize, drawX, drawY, borderWidth, strokeColor, opacity,
+                softLabel, strokeSmoothness, strokeOnly: true);
+            underlayLabel = $"textsoftstage{stage}";
+            graph.Append(
+                $"[{currentLabel}][{softLabel}]overlay=x={x}:y={y}:eof_action=pass:repeatlast=0" +
+                $"{CreateEnable(overlay.Start, overlay.Duration)}[{underlayLabel}];");
+        }
+
+        var textLabel = $"layertext{stage}";
+        AppendTextLayerSource(
+            graph, request, overlay, overlayTextPath, fontOption, width, height, duration, start,
+            scaledFontSize, drawX, drawY, borderWidth, strokeColor, opacity,
+            textLabel, smoothness: 0, strokeOnly: false);
+        graph.Append(
+            $"[{underlayLabel}][{textLabel}]overlay=x={x}:y={y}:eof_action=pass:repeatlast=0" +
+            $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
+        return $"stage{stage}";
+    }
+
+    private static void AppendTextLayerSource(
+        StringBuilder graph,
+        RenderRequest request,
+        RenderOverlay overlay,
+        string overlayTextPath,
+        string fontOption,
+        int width,
+        int height,
+        string duration,
+        string start,
+        int fontSize,
+        string drawX,
+        string drawY,
+        int borderWidth,
+        string strokeColor,
+        double opacity,
+        string outputLabel,
+        double smoothness,
+        bool strokeOnly)
+    {
+        var fill = strokeOnly ? $"{strokeColor}@0" : $"white@{FormatNumber(opacity)}";
         graph.Append(
             $"color=c=black@0.0:s={width}x{height}:r={FormatNumber(request.FramesPerSecond)}:d={duration}," +
             $"format=yuva420p,drawtext=textfile='{EscapeFilterValue(overlayTextPath)}':{fontOption}");
         graph.Append(CultureInfo.InvariantCulture,
-            $"fontcolor=white@{FormatNumber(opacity)}:fontsize={scaledFontSize}:");
-        graph.Append(CultureInfo.InvariantCulture,
-            $"borderw={borderWidth}:bordercolor=black@{FormatNumber(borderOpacity)}:x={drawX}:y={drawY}");
+            $"text_shaping=0:fontcolor={fill}:fontsize={fontSize}:borderw={borderWidth}:" +
+            $"bordercolor={strokeColor}@{FormatNumber(opacity)}:x={drawX}:y={drawY}");
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
-        graph.Append(CultureInfo.InvariantCulture,
-            $",setpts=PTS+{start}/TB");
+        graph.Append(CultureInfo.InvariantCulture, $",setpts=PTS+{start}/TB");
         AppendOverlayAlphaFades(graph, overlay);
-        graph.Append(CultureInfo.InvariantCulture, $"[layertext{stage}];");
-        var (x, y) = overlay.HasCustomTransform
-            ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
-            : ("0", "0");
-        graph.Append(
-            $"[{currentLabel}][layertext{stage}]overlay=x={x}:y={y}:eof_action=pass:repeatlast=0" +
-            $"{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
-        return $"stage{stage}";
+        if (smoothness > 0)
+        {
+            graph.Append(CultureInfo.InvariantCulture,
+                $",gblur=sigma={FormatNumber(smoothness)}:planes=8");
+        }
+
+        graph.Append(CultureInfo.InvariantCulture, $"[{outputLabel}];");
     }
 
     private static void AppendRotation(StringBuilder graph, double degrees, bool enabled)

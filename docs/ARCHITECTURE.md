@@ -81,13 +81,19 @@ The executable modules may reference Core and Infrastructure for composition. Co
     applies those values at final-output resolution; schema-5 and older items retain their preset placement
     until a user edits or directly manipulates the overlay.
 15. Text/image/GIF/video fade values become alpha fades on each transparent overlay stream at its absolute project
-    interval. They do not fade the composed video or reuse audio/source fade semantics.
-16. Frame, active-range Preview, and All each expose LQ/HQ actions over the same render path. Preview falls back
+    interval. They do not fade the composed video or reuse audio/source fade semantics. Text stroke uses a crisp
+    drawtext border and, when smoothness is nonzero, a separate alpha-blurred stroke-only layer beneath it.
+    Renderer text files normalize Unicode and omit unresolved combining marks so one unsupported glyph cannot
+    suppress an otherwise valid multiline overlay; trailing line breaks are removed.
+16. Frame, active Range, and All each expose LQ/HQ actions over the same render path. Range falls back
     to a short slice at the playhead when no range exists; a frame result is loaded and paused instead of playing.
 17. A successful prerender atomically records a content/source/app fingerprint and global-time coverage beside
     its uniquely named MP4. Startup/Open restore all current-fingerprint chunks. During an editing session the
     catalog retains older chunks, splits overlapping coverage to a yellow stale state, and keeps non-overlapping
-    green coverage seekable; a replacement render overwrites only its interval. Range selection never evicts
+    green coverage seekable; a replacement render overwrites only its interval. Presentation remembers coverage
+    by semantic fingerprint so an exact undo/manual revert can restore green without accepting changed content.
+    The WPF shell serializes requested renders and reports the queued count while the view model owns parsing,
+    engine-start, frame-progress, and scope status. Range selection never evicts
     cached media. The disk cache is bounded to the newest 80 project chunks.
 18. LQ previews use the same mapped timeline and ordered filter graph on the scaled canvas. Source fitting,
     overlay geometry, text, margins, progress height, and blur radius scale together. Selected image overlays
@@ -169,8 +175,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    rescans the catalog with per-file scan progress, then reports project-file/recovery loading so media IDs and
    paths are resolved before timeline/preview synchronization.
 6. A successful render carries project identity into history; editing and autosave alone never update catalog usage.
-7. `ProjectUndoHistory` holds up to 100 serialized in-memory snapshots. Every logical project mutation captures
-   after synchronization, undo/redo reapplies through the normal project projection, and the exact saved
+7. `ProjectUndoHistory` holds a configurable 1–256 serialized in-memory snapshots (32 by default). Every logical
+   project mutation captures after synchronization with a user-visible description, undo/redo reapplies through
+   the normal project projection, and the exact saved
    snapshot determines the dirty marker even when navigating backward and forward.
 8. Closing first resolves unsaved project state through Save / Don't save / Cancel, then atomically persists
    window geometry, workspace splitter dimensions, preview layout/tab, focus, and expansion to the INI. After

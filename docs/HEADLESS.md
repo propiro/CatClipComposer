@@ -38,7 +38,8 @@ All commands except help/version initialize the selected SQLite catalog. Human-r
 Shows the resolved INI path, whether the file exists, the resolved data/database paths, loaded plugin
 modules/diagnostics, and all effective settings, including content-browser view/sort mode, thumbnail sizes,
 text-preset count, panel docks,
-window/workspace dimensions, preview layout/tab, LQ preview resolution/selected-overlay quality mode,
+window/workspace dimensions, preview layout/tab, LQ preview resolution/selected-overlay quality mode, undo
+history capacity,
 focused/expanded panels, and first-startup completion state.
 A missing INI is valid and displays normalized defaults.
 

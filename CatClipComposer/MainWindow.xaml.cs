@@ -54,6 +54,8 @@ public partial class MainWindow : Window
     private int _projectPreviewLoadRetryCount;
     private bool _projectPreviewSourceSwitchPending;
     private readonly ProjectPreviewChunkCatalog _projectPreviewChunks = new();
+    private readonly SemaphoreSlim _projectPreviewRenderQueue = new(1, 1);
+    private int _queuedProjectPrerenders;
     private ProjectPreviewChunk? _activeProjectPreviewChunk;
     private TimeSpan? _projectPreviewPendingSeek;
     private TimeSpan _projectPreviewPlaybackStart;
@@ -77,6 +79,7 @@ public partial class MainWindow : Window
     private ProjectTimelineItem? _copiedEffect;
     private Guid? _copiedEffectTrackId;
     private double _projectPreviewZoom = 1;
+    private HistoryWindow? _historyWindow;
 
     private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds, TimeSpan GrabOffset);
     private sealed record TrackDragData(Guid TrackId);
@@ -447,8 +450,22 @@ public partial class MainWindow : Window
 
     private void History_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new HistoryWindow(_catalog) { Owner = this };
-        dialog.ShowDialog();
+        if (_historyWindow?.IsVisible == true)
+        {
+            _historyWindow.Close();
+            return;
+        }
+
+        _historyWindow = new HistoryWindow(
+            _catalog,
+            _viewModel.ActionHistory,
+            _viewModel.Settings.MetadataFolder)
+        {
+            Owner = this,
+            ShowInTaskbar = false
+        };
+        _historyWindow.Closed += (_, _) => _historyWindow = null;
+        _historyWindow.Show();
     }
 
     private async void Scan_Click(object sender, RoutedEventArgs e)
@@ -910,21 +927,42 @@ public partial class MainWindow : Window
         bool isFrame = false,
         bool highQuality = false)
     {
-        if (_viewModel.IsBusy)
+        var operationDescription = DescribePrerender(rangeStart, rangeEnd, isFrame);
+        var queuedPosition = Interlocked.Increment(ref _queuedProjectPrerenders);
+        if (_projectPreviewRenderQueue.CurrentCount == 0)
         {
-            return;
+            var queuedMessage =
+                $"Queued {operationDescription} ({queuedPosition} waiting behind the active prerender).";
+            ProjectPreviewStatusText.Text = queuedMessage;
+            PrerenderQueueStatusText.Text = $"PRERENDER QUEUE: {queuedPosition}";
+            _viewModel.ReportStatus(queuedMessage);
         }
 
+        await _projectPreviewRenderQueue.WaitAsync();
+        var remainingQueue = Interlocked.Decrement(ref _queuedProjectPrerenders);
+        PrerenderQueueStatusText.Text = remainingQueue > 0
+            ? $"PRERENDER QUEUE: {remainingQueue}"
+            : string.Empty;
         try
         {
+            if (_viewModel.IsBusy)
+            {
+                throw new InvalidOperationException("Another non-preview operation is currently running.");
+            }
+
             ProjectPreviewStatusText.Text = isFrame
-                ? "Prerendering selected frame…"
-                : "Prerendering layered project preview…";
+                ? $"Prerendering {operationDescription}…"
+                : $"Prerendering layered project {operationDescription}…";
+            _viewModel.ReportStatus($"Prerender: parsing elements for {operationDescription}…");
             PreviewTabs.SelectedItem = ProjectPreviewTab;
             ProjectPreviewPlayer.Pause();
             _projectPreviewTimer.Stop();
             SetProjectPlaybackState(false);
-            var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd, highQuality);
+            var result = await _viewModel.RenderProjectPreviewAsync(
+                rangeStart,
+                rangeEnd,
+                highQuality,
+                operationDescription);
             var previewOffset = rangeStart ?? TimeSpan.Zero;
             var qualityLabel = highQuality ? "HQ" : $"LQ {_viewModel.Settings.PreviewQualityPercent}%";
             var status = isFrame
@@ -951,6 +989,32 @@ public partial class MainWindow : Window
             ProjectPreviewStatusText.Text = "Preview could not be rendered.";
             DesktopDialogs.ShowError(this, "The project preview could not be rendered.", exception);
         }
+        finally
+        {
+            _projectPreviewRenderQueue.Release();
+        }
+    }
+
+    private string DescribePrerender(TimeSpan? rangeStart, TimeSpan? rangeEnd, bool isFrame)
+    {
+        var fps = Math.Clamp(_viewModel.OutputSettings.FramesPerSecond, 1, 240);
+        if (isFrame)
+        {
+            var start = rangeStart ?? _viewModel.Timeline.Playhead;
+            var frame = Math.Max(1, (long)Math.Floor(start.TotalSeconds * fps) + 1);
+            return $"frame {frame:N0} at {FormatPreviewTime(start)}";
+        }
+
+        if (!rangeStart.HasValue || !rangeEnd.HasValue)
+        {
+            var frames = Math.Max(1, (long)Math.Ceiling(_viewModel.Timeline.Duration.TotalSeconds * fps));
+            return $"all {_viewModel.Timeline.Duration.TotalSeconds:0.###} s ({frames:N0} frames)";
+        }
+
+        var firstFrame = Math.Max(1, (long)Math.Floor(rangeStart.Value.TotalSeconds * fps) + 1);
+        var lastFrame = Math.Max(firstFrame, (long)Math.Ceiling(rangeEnd.Value.TotalSeconds * fps));
+        return $"range {FormatPreviewTime(rangeStart.Value)}–{FormatPreviewTime(rangeEnd.Value)} " +
+               $"(frames {firstFrame:N0}–{lastFrame:N0})";
     }
 
     private void RegisterAndActivateProjectPreview(
@@ -2369,6 +2433,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        _viewModel.SelectedProjectLayer = row;
         var targetTrack = row.Track;
 
         var rawStart = TimeSpan.FromSeconds(Math.Max(
@@ -2380,6 +2445,16 @@ public partial class MainWindow : Window
             maximumStart > TimeSpan.Zero && rawStart > maximumStart ? maximumStart : rawStart,
             targetTrack.Id,
             snapToClipRanges: SnapToClipRangesCheckBox.IsChecked == true);
+        if (_copiedEffect is not null && IsCompatibleTrack(targetTrack.Kind, _copiedEffect.Kind))
+        {
+            var paste = CreateContextMenuItem(
+                $"Paste copied {_copiedEffect.Name} here",
+                (_, _) => PasteEffect(targetTrack.Id, start));
+            paste.InputGestureText = "Ctrl+V";
+            menu.Items.Add(paste);
+            menu.Items.Add(new Separator());
+        }
+
         if (targetTrack.Kind == ProjectTrackKind.Overlay)
         {
             AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.MovingOverlay, "Add GIF / video overlay...");
@@ -3048,7 +3123,7 @@ public partial class MainWindow : Window
         ProjectPreviewStatusText.Text = $"Copied {row.Item.Name}. Paste places a duplicate at the playhead.";
     }
 
-    private void PasteEffect(Guid? requestedTrackId)
+    private void PasteEffect(Guid? requestedTrackId, TimeSpan? requestedStart = null)
     {
         if (_copiedEffect is null)
         {
@@ -3075,10 +3150,11 @@ public partial class MainWindow : Window
 
         var pasted = CloneTimelineItem(_copiedEffect);
         pasted.Id = Guid.NewGuid();
-        pasted.StartTicks = Math.Max(0, _viewModel.Timeline.Playhead.Ticks);
+        var pasteStart = requestedStart ?? _viewModel.Timeline.Playhead;
+        pasted.StartTicks = Math.Max(0, pasteStart.Ticks);
         pasted.Name = $"{_copiedEffect.Name} copy";
         _viewModel.AddLayerItem(targetTrack.Id, pasted);
-        ProjectPreviewStatusText.Text = $"Pasted {pasted.Name} at {_viewModel.Timeline.Playhead.TotalSeconds:0.###} s.";
+        ProjectPreviewStatusText.Text = $"Pasted {pasted.Name} at {pasteStart.TotalSeconds:0.###} s.";
         QueueProjectPreviewOverlayRefresh();
     }
 
@@ -3433,6 +3509,25 @@ public partial class MainWindow : Window
     {
         var focusedElement = Keyboard.FocusedElement as DependencyObject;
         var editingControl = IsEditingControl(focusedElement);
+        var focusedPanel = ResolveFocusedPanel(focusedElement) ?? _focusedPanel;
+        if (!editingControl && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
+            focusedPanel is WorkspacePanelKind.Layers or WorkspacePanelKind.Timeline)
+        {
+            if (e.Key == Key.C && _viewModel.SelectedProjectLayer?.Item is { } selectedEffect)
+            {
+                CopyEffect(selectedEffect.Id);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.V)
+            {
+                PasteEffect(_viewModel.SelectedProjectLayer?.Track.Id);
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (!editingControl && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
             (e.Key == Key.Z || e.Key == Key.Y))
         {
@@ -3454,7 +3549,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var panel = ResolveFocusedPanel(focusedElement) ?? _focusedPanel;
+        var panel = focusedPanel;
         if (editingControl && !IsSpaceShortcutButton(focusedElement))
         {
             return;
@@ -3483,7 +3578,11 @@ public partial class MainWindow : Window
 
         try
         {
-            await _viewModel.UndoAsync();
+            if (await _viewModel.UndoAsync())
+            {
+                ResetProjectPreviewCache();
+                await RestoreCachedProjectPreviewAsync();
+            }
         }
         catch (Exception exception)
         {
@@ -3496,7 +3595,11 @@ public partial class MainWindow : Window
         CancelActiveOverlayTransformEdit();
         try
         {
-            await _viewModel.RedoAsync();
+            if (await _viewModel.RedoAsync())
+            {
+                ResetProjectPreviewCache();
+                await RestoreCachedProjectPreviewAsync();
+            }
         }
         catch (Exception exception)
         {

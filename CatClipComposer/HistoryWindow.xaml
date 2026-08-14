@@ -1,7 +1,7 @@
 <Window x:Class="CatClipComposer.HistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Export history"
+        Title="Cat Clip Composer history"
         Width="900"
         Height="600"
         MinWidth="720"
@@ -16,14 +16,16 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock FontSize="22" FontWeight="SemiBold" Text="Export history" />
+            <TextBlock FontSize="22" FontWeight="SemiBold" Text="History" />
             <TextBlock x:Name="StatusTextBlock"
                        Margin="0,5,0,0"
                        Foreground="{StaticResource MutedTextBrush}"
                        Text="Loading…" />
         </StackPanel>
 
-        <Grid Grid.Row="1">
+        <TabControl Grid.Row="1">
+            <TabItem Header="EXPORTS">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="360" />
                 <ColumnDefinition Width="16" />
@@ -103,6 +105,37 @@
                 </Grid>
             </Border>
         </Grid>
+            </TabItem>
+            <TabItem Header="ACTIONS">
+                <ListBox ItemsSource="{Binding ActionHistory}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="9,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="{Binding OccurredText}" />
+                                <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Description}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </TabItem>
+            <TabItem Header="LOGS / CRASHES">
+                <ListBox x:Name="LogListBox" ItemsSource="{Binding LogFiles}" MouseDoubleClick="LogListBox_MouseDoubleClick">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="9,6">
+                                <TextBlock FontWeight="SemiBold" Text="{Binding FileName}" />
+                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedTextBrush}"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}" Text="{Binding Detail}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </TabItem>
+        </TabControl>
 
         <DockPanel Grid.Row="2" Margin="0,16,0,0" LastChildFill="False">
             <Button DockPanel.Dock="Right" MinWidth="90" IsCancel="True" Content="Close" />

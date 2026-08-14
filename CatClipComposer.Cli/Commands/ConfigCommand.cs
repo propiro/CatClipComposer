@@ -45,6 +45,7 @@ internal static class ConfigCommand
                     qualityPercent = settings.PreviewQualityPercent,
                     preserveSelectedObjectQuality = settings.PreserveSelectedPreviewObjectQuality
                 },
+                settings.UndoHistoryCapacity,
                 recentProjectPaths = settings.RecentProjectPaths,
                 progressDefaults = new
                 {
@@ -126,6 +127,7 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync(
             $"Preview rendering: {settings.PreviewQualityPercent}% resolution; " +
             $"selected-overlay quality={settings.PreserveSelectedPreviewObjectQuality}");
+        await context.Output.WriteLineAsync($"Undo history capacity: {settings.UndoHistoryCapacity} project edits");
         await context.Output.WriteLineAsync($"First startup completed: {settings.FirstStartupCompleted}");
         await context.Output.WriteLineAsync($"Recent projects: {settings.RecentProjectPaths.Count}");
         await context.Output.WriteLineAsync(

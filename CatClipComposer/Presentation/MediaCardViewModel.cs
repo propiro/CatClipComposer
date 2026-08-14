@@ -50,6 +50,22 @@ public sealed class MediaCardViewModel : ObservableObject
         ? $"{Media.Width} × {Media.Height}"
         : "Unknown size";
 
+    public string FileSizeText => Media.FileSize switch
+    {
+        >= 1_073_741_824 => $"{Media.FileSize / 1_073_741_824d:0.##} GB",
+        >= 1_048_576 => $"{Media.FileSize / 1_048_576d:0.##} MB",
+        >= 1024 => $"{Media.FileSize / 1024d:0.##} KB",
+        _ => $"{Media.FileSize:N0} bytes"
+    };
+
+    public string TechnicalSummary =>
+        $"{DurationText}  |  {DimensionsText}  |  {FileSizeText}  |  " +
+        $"{(Media.HasAudio ? "audio present" : "no audio")}  |  {Media.Extension}";
+
+    public string CatalogSummary =>
+        $"Discovered {Media.DiscoveredUtc.ToLocalTime():g}  |  last scanned {Media.LastScannedUtc.ToLocalTime():g}  |  " +
+        $"{ProjectReferenceCount} saved/recovered project reference(s)  |  {UsageText}";
+
     public string UsageText => Media.UseCount switch
     {
         0 => "Not used yet",

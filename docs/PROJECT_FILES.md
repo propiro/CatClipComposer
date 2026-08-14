@@ -24,12 +24,14 @@ The Content Browser's grouped Effects tab adds text, image, GIF/video, audio, pr
 Clip effects control fit/fill/stretch, fades, and volume. Any block can remain on the timeline while disabled;
 the shared Core mapper excludes disabled blocks from both GUI and headless renders.
 
-The desktop editor keeps up to 100 in-memory undo snapshots. Ctrl+Z/Ctrl+Y and the toolbar arrows move through
+The desktop editor keeps 32 in-memory undo snapshots by default; Preferences/`Editing.UndoHistoryCapacity`
+can set 1–256. Ctrl+Z/Ctrl+Y and the toolbar arrows move through
 those logical project changes; recovery autosave follows the restored state. The title and project label show
 an asterisk whenever the current snapshot differs from the last normal save. Undo history is session-only and
 is not embedded into `.nya` or recovery files.
 
-Schema version 10 adds timed GIF/video Overlay items. They persist the same normalized transform, transform lock,
+Schema version 11 adds optional text-stroke enabled/color/width/smoothness fields and preserves them in text
+presets. Schema version 10 adds timed GIF/video Overlay items. They persist the same normalized transform, transform lock,
 opacity, and alpha-fade fields as image overlays; their visual media loops to cover the declared item duration,
 while source audio is not mixed from an Overlay track. Schema version 9 adds explicit 0–100% text/image overlay opacity. Existing projects load at 100%, matching their
 intended visual setting while removing the renderer's former hidden 90% PNG attenuation. Schema version 8 adds
@@ -45,7 +47,7 @@ Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older JSON projects
-remain readable; saving them writes schema 10. The normal Open dialog prefers `.nya`.
+remain readable; saving them writes schema 11. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 

@@ -31,6 +31,9 @@ ExtraLargeThumbnailSize=420
 QualityPercent=50
 PreserveSelectedObjectQuality=true
 
+[Editing]
+UndoHistoryCapacity=32
+
 [Output]
 Folder=
 ProjectFolder=

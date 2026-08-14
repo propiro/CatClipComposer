@@ -88,6 +88,10 @@ public partial class LayerItemEditorWindow : Window
             Math.Min(5, projectDuration.TotalSeconds)));
         TimeRangeEditor.Configure(TimeSpan.Zero, defaultDuration, projectDuration, _snapSeconds);
         FontSizeEditor.SetValue(42);
+        TextStrokeEnabledCheckBox.IsChecked = true;
+        TextStrokeColorTextBox.Text = "#000000";
+        TextStrokeWidthEditor.SetValue(3);
+        TextStrokeSmoothnessEditor.SetValue(0);
         VolumeEditor.SetValue(0.35);
         FadeInEditor.Minimum = 0;
         FadeInEditor.IsTimeValue = true;
@@ -179,6 +183,10 @@ public partial class LayerItemEditorWindow : Window
         OverlayFadeOutEditor.SetValue(item.FadeOutSeconds);
         OverlayOpacityEditor.SetValue(item.OverlayOpacity * 100);
         FontSizeEditor.SetValue(item.FontSize);
+        TextStrokeEnabledCheckBox.IsChecked = item.TextStrokeEnabled;
+        TextStrokeColorTextBox.Text = item.TextStrokeColor;
+        TextStrokeWidthEditor.SetValue(item.TextStrokeWidth);
+        TextStrokeSmoothnessEditor.SetValue(item.TextStrokeSmoothness);
         PositionComboBox.SelectedItem = item.Position;
         var (overlayX, overlayY) = item.HasCustomOverlayTransform
             ? (item.OverlayX, item.OverlayY)
@@ -240,6 +248,7 @@ public partial class LayerItemEditorWindow : Window
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
+        TextStrokeFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         TextPresetFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         OverlayOpacityField.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
         TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
@@ -273,6 +282,10 @@ public partial class LayerItemEditorWindow : Window
         _loadingTransformFields = true;
         OverlayTextBox.Text = preset.Text;
         FontSizeEditor.SetValue(preset.FontSize);
+        TextStrokeEnabledCheckBox.IsChecked = preset.StrokeEnabled;
+        TextStrokeColorTextBox.Text = preset.StrokeColor;
+        TextStrokeWidthEditor.SetValue(preset.StrokeWidth);
+        TextStrokeSmoothnessEditor.SetValue(preset.StrokeSmoothness);
         PositionComboBox.SelectedItem = preset.Position;
         if (FontComboBox.ItemsSource is IEnumerable<FontChoice> fonts)
         {
@@ -345,6 +358,9 @@ public partial class LayerItemEditorWindow : Window
                 OverlayTransformValues.MaximumScale * 100, out var scale) ||
             !TryParse(OverlayRotationEditor.Text, -360000, 360000, out var rotation) ||
             !TryParse(OverlayOpacityEditor.Text, 0, 100, out var opacity) ||
+            !TryNormalizeColor(TextStrokeColorTextBox.Text, out var strokeColor) ||
+            !TryParse(TextStrokeWidthEditor.Text, 0, 20, out var strokeWidth) ||
+            !TryParse(TextStrokeSmoothnessEditor.Text, 0, 10, out var strokeSmoothness) ||
             !TryParse(OverlayFadeInEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeIn) ||
             !TryParse(OverlayFadeOutEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeOut))
         {
@@ -373,6 +389,10 @@ public partial class LayerItemEditorWindow : Window
             FontPath = font.FilePath,
             FontFamily = font.FamilyName,
             FontSize = fontSize,
+            StrokeEnabled = TextStrokeEnabledCheckBox.IsChecked == true,
+            StrokeColor = strokeColor,
+            StrokeWidth = strokeWidth,
+            StrokeSmoothness = strokeSmoothness,
             Position = PositionComboBox.SelectedItem is OverlayPosition position ? position : OverlayPosition.Center,
             HasCustomTransform = _transformEdited || _existingCustomTransform,
             X = x / 100,
@@ -421,7 +441,19 @@ public partial class LayerItemEditorWindow : Window
                 TextAlignment = TextAlignment.Center
             };
             drawing.PushClip(new RectangleGeometry(new Rect(6, 6, width - 12, height - 12)));
-            drawing.DrawText(formatted, new Point(8, Math.Max(6, (height - formatted.Height) / 2)));
+            var origin = new Point(8, Math.Max(6, (height - formatted.Height) / 2));
+            var geometry = formatted.BuildGeometry(origin);
+            Pen? stroke = null;
+            if (preset.StrokeEnabled && preset.StrokeWidth > 0)
+            {
+                var color = (Color)ColorConverter.ConvertFromString(preset.StrokeColor);
+                stroke = new Pen(new SolidColorBrush(color), Math.Clamp(preset.StrokeWidth * 0.45, 0.5, 9))
+                {
+                    LineJoin = PenLineJoin.Round
+                };
+            }
+
+            drawing.DrawGeometry(Brushes.White, stroke, geometry);
             drawing.Pop();
         }
 
@@ -439,6 +471,10 @@ public partial class LayerItemEditorWindow : Window
         FontPath = preset.FontPath,
         FontFamily = preset.FontFamily,
         FontSize = preset.FontSize,
+        StrokeEnabled = preset.StrokeEnabled,
+        StrokeColor = preset.StrokeColor,
+        StrokeWidth = preset.StrokeWidth,
+        StrokeSmoothness = preset.StrokeSmoothness,
         Position = preset.Position,
         HasCustomTransform = preset.HasCustomTransform,
         X = preset.X,
@@ -591,10 +627,19 @@ public partial class LayerItemEditorWindow : Window
             360000,
             out var overlayRotation);
         var overlayOpacityValid = TryParse(OverlayOpacityEditor.Text, 0, 100, out var overlayOpacityPercent);
+        var strokeColorValid = TryNormalizeColor(TextStrokeColorTextBox.Text, out var textStrokeColor);
+        var strokeWidthValid = TryParse(TextStrokeWidthEditor.Text, 0, 20, out var textStrokeWidth);
+        var strokeSmoothnessValid = TryParse(
+            TextStrokeSmoothnessEditor.Text,
+            0,
+            10,
+            out var textStrokeSmoothness);
 
         if (!TimeRangeEditor.TryGetRange(out var startTime, out var durationTime) ||
             (_kind == LayerEditorKind.Text &&
-             (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
+             (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid ||
+              FontComboBox.SelectedItem is not FontChoice || !strokeColorValid ||
+              !strokeWidthValid || !strokeSmoothnessValid)) ||
             (_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
             (_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay &&
              (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid || !overlayOpacityValid ||
@@ -604,7 +649,7 @@ public partial class LayerItemEditorWindow : Window
                                                  fadeIn > durationTime.TotalSeconds || fadeOut > durationTime.TotalSeconds)) ||
             (_kind == LayerEditorKind.Progress && (!progressHeightValid || !progressColorValid)))
         {
-            error = "Check the required source/text, start, positive duration, font size 8–240, overlay transform/opacity/fades, audio values, and progress color/height.";
+            error = "Check the required source/text, start, positive duration, font size 8–240, text stroke, overlay transform/opacity/fades, audio values, and progress color/height.";
             return false;
         }
 
@@ -654,6 +699,10 @@ public partial class LayerItemEditorWindow : Window
             FontPath = _kind == LayerEditorKind.Text ? font?.FilePath ?? string.Empty : string.Empty,
             FontFamily = _kind == LayerEditorKind.Text ? font?.FamilyName ?? "Segoe UI" : "Segoe UI",
             FontSize = _kind == LayerEditorKind.Text ? fontSize : 42,
+            TextStrokeEnabled = _kind == LayerEditorKind.Text && TextStrokeEnabledCheckBox.IsChecked == true,
+            TextStrokeColor = _kind == LayerEditorKind.Text ? textStrokeColor : "#000000",
+            TextStrokeWidth = _kind == LayerEditorKind.Text ? textStrokeWidth : 3,
+            TextStrokeSmoothness = _kind == LayerEditorKind.Text ? textStrokeSmoothness : 0,
             Position = position,
             HasCustomOverlayTransform = useCustomTransform,
             OverlayX = OverlayTransformValues.NormalizeCoordinate(overlayXPercent / 100),

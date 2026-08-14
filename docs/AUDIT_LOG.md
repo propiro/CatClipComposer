@@ -1,5 +1,37 @@
 # Audit log
 
+## AUDIT-2026-08-14-005 — Prerender freshness, cross-track history, and text-render audit
+
+Scope: prerender queue/status UX, coverage correctness after edits/undo, effect paste/transfer, configurable undo
+and visible histories, clip inspection, text editor preview/stroke, and the reported hidden upper text track.
+
+Findings and remediation:
+
+- The UI drew a landing ghost over other lanes, but `MainViewModel` required source and destination track IDs to
+  match. Compatibility is now evaluated per native/plugin item; only non-source blocks can transfer, relative
+  timing is preserved, and the same snapshot owns removal/addition so undo is atomic.
+- Coverage tracked only current/stale intervals, not the project state that produced green data. Rendered ranges
+  are now remembered by semantic content/source/app fingerprint. Edits still split overlaps yellow, while an
+  exact undo/revert alone can reapply known green coverage; MainWindow also reloads matching disk chunks after
+  undo/redo instead of leaving the restored state detached from its cache.
+- Preview handlers rejected work while busy and progress text did not distinguish scopes or phases. One WPF
+  semaphore now serializes captured requests, a dedicated status-bar field retains queue depth, and scoped frame
+  counts survive parsing, engine startup, and FFmpeg progress messages.
+- Undo depth was a fixed 100 with no action names. Portable settings now clamp 1–256/default 32, snapshots retain
+  descriptions, the newest-first action journal shares the toggleable History surface with exports/logs, and
+  Preferences plus CLI configuration expose the active bound.
+- A real frame from the supplied schema-10 project reproduced the missing top text despite correct visual track
+  order. FFmpeg successfully resolved the Spaceport font but silently suppressed the whole multiline drawtext
+  block when its text ended in blank lines and contained free-standing combining marks. NFC normalization,
+  removal of still-unattached marks, and trailing-line trimming restored the valid lines above all lower tracks.
+  Schema 11 also adds a crisp configurable drawtext border with a separate alpha-blurred stroke-only underlay;
+  editor-only candidate previews zero text fades without changing project/export semantics.
+
+Verification: Release solution build succeeds with zero warnings/errors; static XAML resources and whitespace
+checks pass; CLI reports version/settings; the exact saved project produced real 960×540 FFmpeg slices proving
+top text visibility with its 3-second fades and proving colored smooth stroke output. No dependency, credential,
+network endpoint, or license surface changed.
+
 ## AUDIT-2026-08-14-004 — Effect interaction, preset, and catalog-state audit
 
 Scope: overlapping effect selection, effect copy/paste, text preset persistence/thumbnail ownership, wheel and

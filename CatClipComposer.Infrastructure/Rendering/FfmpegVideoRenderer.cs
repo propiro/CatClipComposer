@@ -204,7 +204,7 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
                 var path = Path.Combine(outputDirectory, $".overlay-{operationId}-{index}.txt");
                 await File.WriteAllTextAsync(
                     path,
-                    overlay.Text,
+                    NormalizeDrawTextContent(overlay.Text),
                     new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
                     cancellationToken);
                 paths[index] = path;
@@ -221,5 +221,39 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
 
             throw;
         }
+    }
+
+    private static string NormalizeDrawTextContent(string text)
+    {
+        // FreeType/drawtext can suppress the complete text block when a selected font cannot shape
+        // a free-standing combining mark (common in text emoticons). NFC preserves ordinary accented
+        // letters as composed characters. Only marks without a preceding base character are omitted,
+        // so combining scripts and deliberately accented text remain intact.
+        var normalized = text.Normalize(NormalizationForm.FormC);
+        var result = new StringBuilder(normalized.Length);
+        var hasBaseCharacter = false;
+        foreach (var rune in normalized.EnumerateRunes())
+        {
+            var category = Rune.GetUnicodeCategory(rune);
+            var isCombiningMark = category is UnicodeCategory.NonSpacingMark or
+                UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+            if (!isCombiningMark || hasBaseCharacter)
+            {
+                result.Append(rune.ToString());
+            }
+
+            if (!isCombiningMark)
+            {
+                hasBaseCharacter = category is not (
+                    UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or
+                    UnicodeCategory.ParagraphSeparator or UnicodeCategory.SpaceSeparator or
+                    UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation or
+                    UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation or
+                    UnicodeCategory.InitialQuotePunctuation or UnicodeCategory.FinalQuotePunctuation or
+                    UnicodeCategory.OtherPunctuation);
+            }
+        }
+
+        return result.ToString().TrimEnd('\r', '\n');
     }
 }
