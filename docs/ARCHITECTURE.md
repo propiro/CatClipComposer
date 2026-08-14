@@ -79,18 +79,23 @@ The executable modules may reference Core and Infrastructure for composition. Co
     until a user edits or directly manipulates the overlay.
 15. Text/image fade values become alpha fades on each transparent overlay stream at its absolute project
     interval. They do not fade the composed video or reuse audio/source fade semantics.
-16. The primary Project Preview action sends either the active range or a short slice at the playhead; explicit
-    Frame LQ, Frame HQ, and All actions share the same render path. A frame result is loaded and paused instead
-    of playing.
+16. Frame, active-range Preview, and All each expose LQ/HQ actions over the same render path. Preview falls back
+    to a short slice at the playhead when no range exists; a frame result is loaded and paused instead of playing.
 17. A successful prerender atomically records a content/source/app fingerprint and global-time coverage beside
-    its uniquely named MP4. Startup and normal Open attach only a matching existing entry; older videos are
-    disposable and removed best-effort after Windows MediaElement releases them.
+    its uniquely named MP4. Matching files form a reusable chunk catalog: startup/Open restore all valid chunks,
+    timeline navigation activates the newest chunk covering the requested project time, and a composition change
+    replaces obsolete fingerprint groups. Range-selection changes only pause/seek and never evict cached media.
 18. LQ previews use the same mapped timeline and ordered filter graph on the scaled canvas. Source fitting,
     overlay geometry, text, margins, progress height, and blur radius scale together. Selected image overlays
     may use Lanczos instead of the default bilinear preview scaler; whole-frame effects still execute at the
     temporary canvas size. Cache metadata records resolution, preservation mode, and the object that received
     the optional higher-quality scaler. Preference/selection-only changes do not invalidate still-useful video;
-    the UI identifies its recorded percentage and applies new choices on the next prerender.
+    the UI identifies its recorded percentage and applies new choices on the next prerender. Image-overlay
+    preview scaling applies the resolution factor after resolving the source/cap width, so sub-480-pixel PNGs
+    retain the same relative geometry as HQ output.
+19. Project-preview transport uses the active chunk's declared project-time interval rather than trusting a
+    platform-reported media duration. The timer and MediaEnded path both pause, reset to the chunk start, and
+    update the play/pause state, preventing playback from escaping a selected range.
 
 ### Timeline and parameter editing
 

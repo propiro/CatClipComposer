@@ -1,7 +1,0 @@
-Cat Clip Composer 0.1.26
-
-- Restores full-length scrollbars and compacts context-menu detail gutters.
-- Keeps live overlay proxies at their configured opacity and marks stale moved content.
-- Reorganizes effect editors and adds background-aware native overlay frame previews.
-- Adds cached LQ preview resolution presets plus explicit Frame LQ and Frame HQ actions.
-- Improves dark tooltips and baseline hover help across interactive controls.

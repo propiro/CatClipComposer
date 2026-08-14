@@ -21,4 +21,6 @@ internal sealed class ProjectPreviewCacheEntry
     public TimeSpan RangeStart => TimeSpan.FromTicks(RangeStartTicks);
 
     public TimeSpan Duration => TimeSpan.FromTicks(DurationTicks);
+
+    public TimeSpan RangeEnd => RangeStart + Duration;
 }

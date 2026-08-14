@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.26**.
+Current application and component version: **0.1.27**.
 
 ## Documentation
 
@@ -34,8 +34,9 @@ Current application and component version: **0.1.26**.
   Preferences, and single or mass tag edits are available from the context menu.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
-  resizable left/right viewports. Prerender Preview renders the selected timeline range when one exists and
-  otherwise renders only the current frame; adjacent Frame LQ, Frame HQ, and All actions are explicit. A
+  resizable left/right viewports. Frame, selected-range Preview, and All each expose explicit LQ/HQ actions;
+  Preview falls back to the current frame when no range exists. Multiple valid prerender chunks remain
+  seekable from the timeline and are restored between sessions. A
   Preview Settings rollout offers six temporary-resolution stops from 10% through 100% plus higher-quality
   scaling for the selected image overlay. Temporary previews use Windows-compatible H.264, and no preview
   action records an export or changes final export settings.

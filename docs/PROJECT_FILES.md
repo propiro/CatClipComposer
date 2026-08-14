@@ -90,17 +90,19 @@ treated as the normal save destination.
 
 ## Prerender cache
 
-The most recent successful Frame, selected-range, or All project prerender is retained under:
+Successful Frame, selected-range, and All project prerender chunks are retained under:
 
 ```text
 <MetadataFolder>\project-previews
 ```
 
-An atomic JSON entry records its file, project-time coverage, and fingerprint. The fingerprint includes semantic
-project content, Cat Clip Composer version, and referenced source/font file size and modification time. Startup
-and normal project Open restore only an exact match; project edits, app updates, changed/missing source files, or
-missing preview video reject it. These MP4/JSON files are disposable feedback caches, not part of `.nya`, and a
-new successful prerender replaces the current metadata reference and removes older project previews best-effort.
+An atomic JSON entry records the newest file and its project-time coverage/fingerprint, while uniquely named MP4s
+retain the other chunks for that same fingerprint. The fingerprint includes semantic project content, Cat Clip
+Composer version, and referenced source/font file size and modification time. Startup and normal project Open
+enumerate only exact matches; timeline navigation switches to the newest chunk covering the requested frame.
+Project edits, app updates, changed/missing sources, or missing preview video reject stale reuse, and a later
+successful prerender removes obsolete fingerprint groups best-effort. These MP4/JSON files are disposable
+feedback caches, not part of `.nya`.
 
 ## Export acceptance and history
 

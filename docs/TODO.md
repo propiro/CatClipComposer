@@ -226,9 +226,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `PROJECT-PREVIEW-006` — Add contextual frame/range/all prerender actions
 
 - Priority/status: P0 / Done
-- Acceptance: Prerender Preview renders the active timeline range or, without one, a short slice at the current
-  frame and pauses on it; adjacent Frame LQ, Frame HQ, and All controls force their named scope, and none records
-  export history.
+- Acceptance: PREVIEW renders the active timeline range or, without one, a short slice at the current frame and
+  pauses on it; FRAME, PREVIEW, and ALL each expose explicit LQ/HQ controls, and none records export history.
 
 ### `UX-OVERLAY-001` — Directly manipulate positioned overlays in Project Preview
 
@@ -302,6 +301,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   selected-image scaling uses Lanczos, and final project/export settings remain unchanged. Preview-cache
   metadata includes the resolution, mode, and selected-object identity used for the temporary output, while a
   later selection-only change does not invalidate otherwise reusable video feedback.
+
+### `PROJECT-PREVIEW-010` — Retain chunked prerenders and bound range playback
+
+- Priority/status: P0 / Done
+- Acceptance: Frame, selected-range Preview, and All each expose LQ/HQ actions; small image overlays keep their
+  HQ-relative size on a reduced canvas; multiple matching fingerprint/range MP4s remain seekable across range
+  selection and sessions; timeline-content changes clear active coverage; playback never runs beyond the active
+  chunk and both natural/timer completion consistently reset the playhead and transport icon.
 
 ### `TIMELINE-010` — Prioritize source boundaries when clip snapping is enabled
 

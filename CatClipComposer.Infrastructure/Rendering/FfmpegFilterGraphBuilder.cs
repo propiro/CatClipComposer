@@ -341,14 +341,14 @@ internal static class FfmpegFilterGraphBuilder
             ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
             : 1;
         var previewScale = Math.Clamp(request.PreviewScale, 0.1, 1);
-        var baseWidth = Math.Max(2, (int)Math.Round(480 * previewScale));
+        var scaledWidth = FormatNumber(previewScale * scale);
         var scaler = request.PreserveSelectedObjectQuality && overlay.ProjectItemId == request.SelectedObjectId
             ? ":flags=lanczos"
             : ":flags=bilinear";
         graph.Append(
             $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlayDuration)}," +
             $"setpts=PTS-STARTPTS+{FormatSeconds(overlayStart)}/TB," +
-            $"scale='min({baseWidth},iw)*{FormatNumber(scale)}':-2{scaler},setsar=1,format=yuva420p," +
+            $"scale='max(2,min(480,iw)*{scaledWidth})':-2{scaler},setsar=1,format=yuva420p," +
             $"colorchannelmixer=aa={FormatNumber(Math.Clamp(overlay.Opacity, 0, 1))}");
         AppendOverlayAlphaFades(graph, overlay);
         AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);

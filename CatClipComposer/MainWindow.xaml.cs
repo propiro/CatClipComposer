@@ -49,6 +49,11 @@ public partial class MainWindow : Window
     private bool _projectPreviewSeekDragging;
     private bool _projectPreviewPlaying;
     private bool _projectPreviewAutoplayPending;
+    private readonly ProjectPreviewChunkCatalog _projectPreviewChunks = new();
+    private ProjectPreviewChunk? _activeProjectPreviewChunk;
+    private TimeSpan? _projectPreviewPendingSeek;
+    private TimeSpan _projectPreviewPlaybackStart;
+    private TimeSpan _projectPreviewPlaybackEnd;
     private bool _projectOverlayRefreshQueued;
     private Guid? _overlayTransformEditItemId;
     private TimeSpan _projectPreviewTimelineOffset;
@@ -115,6 +120,7 @@ public partial class MainWindow : Window
         UpdateExpandedPanelButton();
         _previewTimer.Tick += PreviewTimer_Tick;
         _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
+        _viewModel.Timeline.Changed += (_, _) => ResetProjectPreviewCache();
         _viewModel.ProjectLayers.CollectionChanged += (_, _) => QueueProjectPreviewOverlayRefresh();
         _viewModel.Timeline.PropertyChanged += (_, eventArgs) =>
         {
@@ -212,7 +218,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.NewProjectAsync();
-            InvalidateProjectPreviewForRangeChange();
+            ResetProjectPreviewCache();
             ProjectPreviewStatusText.Text = "No project prerender is available yet.";
         }
         catch (Exception exception)
@@ -274,7 +280,7 @@ public partial class MainWindow : Window
         try
         {
             await _viewModel.OpenProjectAsync(projectPath);
-            InvalidateProjectPreviewForRangeChange();
+            ResetProjectPreviewCache();
             await RestoreCachedProjectPreviewAsync();
         }
         catch (Exception exception)
@@ -285,19 +291,28 @@ public partial class MainWindow : Window
 
     private async Task RestoreCachedProjectPreviewAsync()
     {
-        var cachedPreview = await _viewModel.TryLoadProjectPreviewCacheAsync();
-        if (cachedPreview is null)
+        var cachedPreviews = await _viewModel.LoadProjectPreviewCacheEntriesAsync();
+        if (cachedPreviews.Count == 0)
         {
             return;
         }
 
-        AttachProjectPreview(
-            cachedPreview.OutputPath,
-            cachedPreview.RangeStart,
-            cachedPreview.Duration,
+        _projectPreviewChunks.Replace(cachedPreviews.Select(entry => new ProjectPreviewChunk(
+            entry.OutputPath,
+            entry.RangeStart,
+            entry.Duration,
+            entry.RenderedUtc,
+            entry.PreviewQualityPercent)));
+        _viewModel.MarkProjectPreviewRangesRendered(
+            cachedPreviews.Select(entry => (entry.RangeStart, entry.RangeEnd)));
+        var cachedPreview = _projectPreviewChunks.Find(_viewModel.Timeline.Playhead) ??
+                            _projectPreviewChunks.MostRecent!;
+        ActivateProjectPreviewChunk(
+            cachedPreview,
+            cachedPreview.Start,
             autoplay: false,
-            $"Restored {cachedPreview.PreviewQualityPercent}% cached prerender from " +
-            $"{cachedPreview.RenderedUtc.ToLocalTime():g}");
+            $"Restored {_projectPreviewChunks.Count} cached prerender chunk(s); active " +
+            $"{cachedPreview.QualityPercent}% from {cachedPreview.RenderedUtc.ToLocalTime():g}");
     }
 
     private async void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -791,27 +806,37 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
     }
 
-    private async void ProjectPreview_Click(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.Timeline.HasRangeSelection)
-        {
-            await RenderAndPlayProjectPreviewAsync(
-                _viewModel.Timeline.RangeStart,
-                _viewModel.Timeline.RangeEnd);
-            return;
-        }
-
-        await PrerenderSelectedFrameAsync();
-    }
-
     private async void PrerenderFrameLowQuality_Click(object sender, RoutedEventArgs e) =>
         await PrerenderSelectedFrameAsync(highQuality: false);
 
     private async void PrerenderFrameHighQuality_Click(object sender, RoutedEventArgs e) =>
         await PrerenderSelectedFrameAsync(highQuality: true);
 
-    private async void PrerenderAll_Click(object sender, RoutedEventArgs e) =>
-        await RenderAndPlayProjectPreviewAsync(null, null);
+    private async void PrerenderPreviewLowQuality_Click(object sender, RoutedEventArgs e) =>
+        await PrerenderCurrentSelectionAsync(highQuality: false);
+
+    private async void PrerenderPreviewHighQuality_Click(object sender, RoutedEventArgs e) =>
+        await PrerenderCurrentSelectionAsync(highQuality: true);
+
+    private async void PrerenderAllLowQuality_Click(object sender, RoutedEventArgs e) =>
+        await RenderAndPlayProjectPreviewAsync(null, null, highQuality: false);
+
+    private async void PrerenderAllHighQuality_Click(object sender, RoutedEventArgs e) =>
+        await RenderAndPlayProjectPreviewAsync(null, null, highQuality: true);
+
+    private async Task PrerenderCurrentSelectionAsync(bool highQuality)
+    {
+        if (_viewModel.Timeline.HasRangeSelection)
+        {
+            await RenderAndPlayProjectPreviewAsync(
+                _viewModel.Timeline.RangeStart,
+                _viewModel.Timeline.RangeEnd,
+                highQuality: highQuality);
+            return;
+        }
+
+        await PrerenderSelectedFrameAsync(highQuality);
+    }
 
     private async Task PrerenderSelectedFrameAsync(bool highQuality = false)
     {
@@ -863,26 +888,27 @@ public partial class MainWindow : Window
                 ? "Prerendering selected frame…"
                 : "Prerendering layered project preview…";
             PreviewTabs.SelectedItem = ProjectPreviewTab;
-            ProjectPreviewPlayer.Stop();
+            ProjectPreviewPlayer.Pause();
             _projectPreviewTimer.Stop();
             SetProjectPlaybackState(false);
-            ProjectPreviewPlayer.Source = null;
             var result = await _viewModel.RenderProjectPreviewAsync(rangeStart, rangeEnd, highQuality);
             var previewOffset = rangeStart ?? TimeSpan.Zero;
+            var qualityLabel = highQuality ? "HQ" : $"LQ {_viewModel.Settings.PreviewQualityPercent}%";
             var status = isFrame
-                ? $"Frame {(highQuality ? "HQ" : $"LQ {_viewModel.Settings.PreviewQualityPercent}%")} prerendered at {FormatPreviewTime(previewOffset)}"
+                ? $"Frame {qualityLabel} prerendered at {FormatPreviewTime(previewOffset)}"
                 : !rangeStart.HasValue
-                    ? "Full project prerender ready"
+                    ? $"Full project {qualityLabel} prerender ready"
                     : _viewModel.Timeline.HasRangeSelection &&
                       rangeStart == _viewModel.Timeline.RangeStart && rangeEnd == _viewModel.Timeline.RangeEnd
-                        ? $"Selected range prerendered: {_viewModel.Timeline.RangeText}"
-                        : $"Preview prerendered from {FormatPreviewTime(rangeStart.Value)}";
-            AttachProjectPreview(
+                        ? $"Selected range {qualityLabel} prerendered: {_viewModel.Timeline.RangeText}"
+                        : $"Preview {qualityLabel} prerendered from {FormatPreviewTime(rangeStart.Value)}";
+            RegisterAndActivateProjectPreview(
                 result.OutputPath,
                 previewOffset,
                 result.Duration,
                 autoplay,
-                status);
+                status,
+                highQuality ? 100 : _viewModel.Settings.PreviewQualityPercent);
         }
         catch (OperationCanceledException)
         {
@@ -894,29 +920,69 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AttachProjectPreview(
+    private void RegisterAndActivateProjectPreview(
         string outputPath,
         TimeSpan rangeStart,
         TimeSpan duration,
         bool autoplay,
+        string status,
+        int qualityPercent)
+    {
+        var chunk = new ProjectPreviewChunk(
+            outputPath,
+            rangeStart,
+            duration,
+            DateTime.UtcNow,
+            qualityPercent);
+        _projectPreviewChunks.Add(chunk);
+        ActivateProjectPreviewChunk(chunk, rangeStart, autoplay, status);
+    }
+
+    private void ActivateProjectPreviewChunk(
+        ProjectPreviewChunk chunk,
+        TimeSpan position,
+        bool autoplay,
         string status)
     {
-        _projectPreviewTimelineOffset = rangeStart;
-        _projectPreviewTimelineEnd = rangeStart + duration;
-        _viewModel.MarkProjectPreviewRendered(rangeStart, _projectPreviewTimelineEnd);
-        _viewModel.Timeline.SetPlayhead(rangeStart);
+        var sameSource = ProjectPreviewPlayer.Source is not null &&
+                         ProjectPreviewPlayer.Source.LocalPath.Equals(
+                             Path.GetFullPath(chunk.OutputPath),
+                             StringComparison.OrdinalIgnoreCase);
+        _activeProjectPreviewChunk = chunk;
+        _projectPreviewTimelineOffset = chunk.Start;
+        _projectPreviewTimelineEnd = chunk.End;
+        _projectPreviewPlaybackStart = chunk.Start;
+        _projectPreviewPlaybackEnd = chunk.End;
+        _viewModel.MarkProjectPreviewRendered(chunk.Start, chunk.End);
+        _projectPreviewPendingSeek = position;
         _projectPreviewAutoplayPending = autoplay;
-        ProjectPreviewPlayer.Source = new Uri(outputPath, UriKind.Absolute);
         ProjectPreviewOverlayCanvas.MarkPreviewRendered();
         ProjectPreviewPlayer.IsMuted = true;
         UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
         ProjectPreviewStatusText.Text = status;
-        ProjectPreviewPlayer.Play();
-        SetProjectPlaybackState(autoplay);
-        if (autoplay)
+
+        if (sameSource)
         {
-            _projectPreviewTimer.Start();
+            _projectPreviewPendingSeek = null;
+            SeekProjectPreview(position);
+            if (autoplay)
+            {
+                StartProjectPreviewPlayback();
+            }
+            else
+            {
+                ProjectPreviewPlayer.Pause();
+                SetProjectPlaybackState(false);
+            }
+
+            return;
         }
+
+        ProjectPreviewPlayer.Stop();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        ProjectPreviewPlayer.Source = new Uri(chunk.OutputPath, UriKind.Absolute);
+        ProjectPreviewPlayer.Play();
     }
 
     private async void PreviewFromPlayhead_Click(object sender, RoutedEventArgs e)
@@ -951,20 +1017,20 @@ public partial class MainWindow : Window
 
     private void ProjectPreviewPlayer_MediaOpened(object sender, RoutedEventArgs e)
     {
-        var duration = ProjectPreviewPlayer.NaturalDuration.HasTimeSpan
-            ? ProjectPreviewPlayer.NaturalDuration.TimeSpan
-            : TimeSpan.Zero;
+        var duration = _activeProjectPreviewChunk?.Duration ??
+                       (ProjectPreviewPlayer.NaturalDuration.HasTimeSpan
+                           ? ProjectPreviewPlayer.NaturalDuration.TimeSpan
+                           : TimeSpan.Zero);
         ProjectPreviewSeekSlider.Maximum = Math.Max(0.001, duration.TotalSeconds);
         _projectPreviewTimelineEnd = _projectPreviewTimelineOffset + duration;
         ProjectPreviewDurationText.Text = FormatPreviewTime(_projectPreviewTimelineEnd);
-        SeekProjectPreview(_projectPreviewTimelineOffset);
+        SeekProjectPreview(_projectPreviewPendingSeek ?? _projectPreviewTimelineOffset);
+        _projectPreviewPendingSeek = null;
         var shouldAutoplay = _projectPreviewAutoplayPending;
         _projectPreviewAutoplayPending = false;
         if (shouldAutoplay)
         {
-            ProjectPreviewPlayer.Play();
-            _projectPreviewTimer.Start();
-            SetProjectPlaybackState(true);
+            StartProjectPreviewPlayback();
         }
         else
         {
@@ -1088,10 +1154,7 @@ public partial class MainWindow : Window
 
     private void ProjectPreviewPlayer_MediaEnded(object sender, RoutedEventArgs e)
     {
-        _projectPreviewTimer.Stop();
-        SetProjectPlaybackState(false);
-        SeekProjectPreview(_projectPreviewTimelineOffset);
-        ProjectPreviewStatusText.Text = "Preview complete";
+        CompleteProjectPreviewPlayback();
     }
 
     private void ProjectPreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
@@ -1115,18 +1178,65 @@ public partial class MainWindow : Window
             _projectPreviewTimer.Stop();
             SetProjectPlaybackState(false);
         }
-        else if (ProjectPreviewPlayer.Source is not null)
+        else
         {
-            var frame = TimeSpan.FromSeconds(1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond));
-            if (_viewModel.Timeline.Playhead >= _projectPreviewTimelineEnd - frame)
+            var chunk = _activeProjectPreviewChunk?.Contains(_viewModel.Timeline.Playhead) == true
+                ? _activeProjectPreviewChunk
+                : _projectPreviewChunks.Find(_viewModel.Timeline.Playhead);
+            if (chunk is null)
             {
-                SeekProjectPreview(_projectPreviewTimelineOffset);
+                ProjectPreviewStatusText.Text =
+                    $"No prerendered chunk contains {FormatPreviewTime(_viewModel.Timeline.Playhead)}.";
+                return;
             }
 
-            ProjectPreviewPlayer.Play();
-            _projectPreviewTimer.Start();
-            SetProjectPlaybackState(true);
+            if (_activeProjectPreviewChunk != chunk || ProjectPreviewPlayer.Source is null)
+            {
+                ActivateProjectPreviewChunk(
+                    chunk,
+                    _viewModel.Timeline.Playhead,
+                    autoplay: true,
+                    $"Playing cached {chunk.QualityPercent}% prerender");
+                return;
+            }
+
+            StartProjectPreviewPlayback();
         }
+    }
+
+    private void StartProjectPreviewPlayback()
+    {
+        if (_activeProjectPreviewChunk is null || ProjectPreviewPlayer.Source is null)
+        {
+            return;
+        }
+
+        _projectPreviewPlaybackStart = _activeProjectPreviewChunk.Start;
+        _projectPreviewPlaybackEnd = _activeProjectPreviewChunk.End;
+        var frame = TimeSpan.FromSeconds(1 / Math.Max(1, _viewModel.Timeline.FramesPerSecond));
+        if (_viewModel.Timeline.Playhead < _projectPreviewPlaybackStart ||
+            _viewModel.Timeline.Playhead >= _projectPreviewPlaybackEnd - frame)
+        {
+            SeekProjectPreview(_projectPreviewPlaybackStart);
+        }
+
+        ProjectPreviewPlayer.Play();
+        _projectPreviewTimer.Start();
+        SetProjectPlaybackState(true);
+    }
+
+    private void CompleteProjectPreviewPlayback()
+    {
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        if (_activeProjectPreviewChunk is null)
+        {
+            return;
+        }
+
+        SeekProjectPreview(_projectPreviewPlaybackStart);
+        ProjectPreviewStatusText.Text = "Preview complete";
     }
 
     private void ProjectPreviewMute_Click(object sender, RoutedEventArgs e)
@@ -1145,7 +1255,7 @@ public partial class MainWindow : Window
         _projectPreviewTimer.Stop();
         SetProjectPlaybackState(false);
         _viewModel.Timeline.StepFrame(direction);
-        SeekProjectPreview(_viewModel.Timeline.Playhead);
+        PauseAndSeekProjectPreview(_viewModel.Timeline.Playhead);
     }
 
     private void ProjectPreviewTimer_Tick(object? sender, EventArgs e)
@@ -1157,6 +1267,12 @@ public partial class MainWindow : Window
 
         var position = ProjectPreviewPlayer.Position;
         var timelinePosition = _projectPreviewTimelineOffset + position;
+        if (_projectPreviewPlaying && timelinePosition >= _projectPreviewPlaybackEnd)
+        {
+            CompleteProjectPreviewPlayback();
+            return;
+        }
+
         ProjectPreviewSeekSlider.Value = Math.Clamp(
             position.TotalSeconds,
             ProjectPreviewSeekSlider.Minimum,
@@ -1190,8 +1306,30 @@ public partial class MainWindow : Window
     private void PauseAndSeekProjectPreview(TimeSpan position)
     {
         _viewModel.Timeline.SetPlayhead(position);
-        if (ProjectPreviewPlayer.Source is null)
+        var chunk = _activeProjectPreviewChunk?.Contains(position) == true
+            ? _activeProjectPreviewChunk
+            : _projectPreviewChunks.Find(position);
+        if (chunk is null)
         {
+            ProjectPreviewPlayer.Stop();
+            ProjectPreviewPlayer.Source = null;
+            _activeProjectPreviewChunk = null;
+            _projectPreviewTimer.Stop();
+            SetProjectPlaybackState(false);
+            ProjectPreviewStatusText.Text =
+                $"Frame {FormatPreviewTime(position)} has not been prerendered yet.";
+            QueueProjectPreviewOverlayRefresh();
+            return;
+        }
+
+        if (_activeProjectPreviewChunk != chunk || ProjectPreviewPlayer.Source is null)
+        {
+            ActivateProjectPreviewChunk(
+                chunk,
+                position,
+                autoplay: false,
+                $"Cached {chunk.QualityPercent}% prerender: " +
+                $"{FormatPreviewTime(chunk.Start)} - {FormatPreviewTime(chunk.End)}");
             return;
         }
 
@@ -1199,16 +1337,7 @@ public partial class MainWindow : Window
         _projectPreviewAutoplayPending = false;
         _projectPreviewTimer.Stop();
         SetProjectPlaybackState(false);
-        if (position >= _projectPreviewTimelineOffset && position <= _projectPreviewTimelineEnd)
-        {
-            SeekProjectPreview(position);
-        }
-        else
-        {
-            ProjectPreviewStatusText.Text =
-                $"Frame {FormatPreviewTime(position)} is outside the cached prerender. Prerender Frame or a range to update it.";
-            QueueProjectPreviewOverlayRefresh();
-        }
+        SeekProjectPreview(position);
     }
 
     private void SetProjectPlaybackState(bool playing)
@@ -1962,7 +2091,7 @@ public partial class MainWindow : Window
             : TimeSpan.FromSeconds(Math.Max(0, end.TotalSeconds - increment));
         _viewModel.Timeline.SetRangeSelection(start, end);
         _viewModel.Timeline.SetPlayhead(start);
-        InvalidateProjectPreviewForRangeChange();
+        UpdateProjectPreviewForRangeSelection();
     }
 
     private void MarkRangeEnd_Click(object sender, RoutedEventArgs e)
@@ -1979,7 +2108,7 @@ public partial class MainWindow : Window
             : start + TimeSpan.FromSeconds(increment);
         _viewModel.Timeline.SetRangeSelection(start, end);
         _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeEnd);
-        InvalidateProjectPreviewForRangeChange();
+        UpdateProjectPreviewForRangeSelection();
     }
 
     private void TimelineRuler_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1998,7 +2127,7 @@ public partial class MainWindow : Window
         _viewModel.Timeline.ClearRangeSelection();
         if (hadRangeSelection || _timelineRangeSelecting)
         {
-            InvalidateProjectPreviewForRangeChange();
+            UpdateProjectPreviewForRangeSelection();
         }
         ruler.CaptureMouse();
         SetPlayheadFromRuler(ruler, e, false);
@@ -2026,7 +2155,7 @@ public partial class MainWindow : Window
                 _viewModel.Timeline.SetRangeSelection(
                     moved ? _timelineRangeAnchor : _timelineRangeClickAnchor,
                     position);
-                InvalidateProjectPreviewForRangeChange();
+                UpdateProjectPreviewForRangeSelection();
             }
 
             SetPlayheadFromRuler(ruler, e, false);
@@ -2238,7 +2367,7 @@ public partial class MainWindow : Window
         if (updateRange)
         {
             _viewModel.Timeline.SetRangeSelection(_timelineRangeAnchor, position);
-            InvalidateProjectPreviewForRangeChange();
+            UpdateProjectPreviewForRangeSelection();
         }
 
         PauseAndSeekProjectPreview(position);
@@ -2309,7 +2438,7 @@ public partial class MainWindow : Window
             _viewModel.Timeline.SetPlayhead(_viewModel.Timeline.RangeEnd);
         }
 
-        InvalidateProjectPreviewForRangeChange();
+        UpdateProjectPreviewForRangeSelection();
     }
 
     private void TimelineRangeHandle_DragCompleted(object sender, DragCompletedEventArgs e)
@@ -2317,24 +2446,43 @@ public partial class MainWindow : Window
         ProjectPreviewStatusText.Text = $"Range selected: {_viewModel.Timeline.RangeText}. Render preview to update.";
     }
 
-    private void InvalidateProjectPreviewForRangeChange()
+    private void UpdateProjectPreviewForRangeSelection()
     {
-        ProjectPreviewPlayer.Stop();
+        ProjectPreviewPlayer.Pause();
         _projectPreviewTimer.Stop();
         SetProjectPlaybackState(false);
-        ProjectPreviewPlayer.Source = null;
-        _projectPreviewTimelineOffset = TimeSpan.Zero;
-        _projectPreviewTimelineEnd = TimeSpan.Zero;
-        ProjectPreviewSeekSlider.Value = 0;
         ProjectPreviewPositionText.Text = _viewModel.Timeline.HasRangeSelection
             ? FormatPreviewTime(_viewModel.Timeline.RangeStart)
-            : "0:00";
+            : FormatPreviewTime(_viewModel.Timeline.Playhead);
         ProjectPreviewDurationText.Text = _viewModel.Timeline.HasRangeSelection
             ? FormatPreviewTime(_viewModel.Timeline.RangeEnd)
-            : "0:00";
+            : _activeProjectPreviewChunk is null
+                ? "0:00"
+                : FormatPreviewTime(_activeProjectPreviewChunk.End);
         ProjectPreviewStatusText.Text = _viewModel.Timeline.HasRangeSelection
-            ? $"Range selected: {_viewModel.Timeline.RangeText}. Render preview to update."
-            : "Range cleared. Render preview to update.";
+            ? $"Range selected: {_viewModel.Timeline.RangeText}. Cached prerenders remain available."
+            : $"Range cleared. {_projectPreviewChunks.Count} cached prerender chunk(s) remain available.";
+    }
+
+    private void ResetProjectPreviewCache()
+    {
+        ProjectPreviewPlayer.Stop();
+        ProjectPreviewPlayer.Source = null;
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        _projectPreviewAutoplayPending = false;
+        _projectPreviewPendingSeek = null;
+        _activeProjectPreviewChunk = null;
+        _projectPreviewChunks.Clear();
+        _projectPreviewTimelineOffset = TimeSpan.Zero;
+        _projectPreviewTimelineEnd = TimeSpan.Zero;
+        _projectPreviewPlaybackStart = TimeSpan.Zero;
+        _projectPreviewPlaybackEnd = TimeSpan.Zero;
+        ProjectPreviewSeekSlider.Value = 0;
+        ProjectPreviewSeekSlider.Maximum = 1;
+        ProjectPreviewPositionText.Text = "0:00";
+        ProjectPreviewDurationText.Text = "0:00";
+        QueueProjectPreviewOverlayRefresh();
     }
 
     private void FitTimelineHorizontally_Click(object sender, RoutedEventArgs e)

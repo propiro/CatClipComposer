@@ -2,6 +2,22 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.27 chunked prerender and bounded-transport pass
+
+- Corrected reduced-resolution image overlay sizing so the preview factor applies after resolving the source
+  width and 480-pixel cap; small PNG/JPG overlays now occupy the same relative canvas area in LQ and HQ.
+- Replaced the asymmetric prerender toolbar with compact FRAME, PREVIEW, and ALL groups, each offering LQ/HQ;
+  PREVIEW uses the selected range and falls back to the current frame.
+- Retained every matching project-fingerprint prerender as a reusable time chunk, restored matching chunks across
+  sessions, merged their coverage feedback, and switched cached media automatically from ruler/lane/block seeks.
+  Range selection now pauses without unloading; actual timeline-content changes clear the session catalog and
+  discard an in-flight result if its captured fingerprint no longer matches.
+- Bound playback to the active chunk's declared global interval. Timer and natural completion both pause, reset
+  the needle to the chunk start, and synchronize the transport icon instead of allowing hidden continued play.
+- Advanced all component metadata and the extensionless marker to 0.1.27. Verification covered clean Release
+  builds, XAML resources, an in-process chunk selection/replacement smoke, and a real FFmpeg 80-pixel PNG/JPG
+  overlay check proving 80 px at HQ and 20 px at 25% LQ.
+
 ## 2026-08-14 — v0.1.26 preview-quality and editor-feedback pass
 
 - Corrected the remaining scrollbar compression by separating horizontal width from vertical height and gave

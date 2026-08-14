@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.27
+
+- Keeps small PNG overlays at the same relative size in LQ and HQ prerenders.
+- Gives Frame, selected-range Preview, and All independent LQ/HQ actions.
+- Retains multiple valid prerender chunks and switches them from timeline navigation.
+- Stops project playback at the active chunk boundary and keeps the play/pause icon synchronized.

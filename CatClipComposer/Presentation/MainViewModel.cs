@@ -36,8 +36,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly HashSet<Guid> _collapsedTrackIds = [];
     private bool _isDirty;
     private bool _projectPreviewCurrent;
-    private TimeSpan _projectPreviewCoverageStart;
-    private TimeSpan _projectPreviewCoverageEnd;
+    private readonly List<(TimeSpan Start, TimeSpan End)> _projectPreviewCoverage = [];
     private OverlayTransformDraft? _overlayTransformDraft;
 
     public MainViewModel(
@@ -431,8 +430,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
             _projectPreviewCurrent = false;
-            _projectPreviewCoverageStart = TimeSpan.Zero;
-            _projectPreviewCoverageEnd = TimeSpan.Zero;
+            _projectPreviewCoverage.Clear();
             RefreshProjectLayers();
         }
         finally
@@ -821,6 +819,26 @@ public sealed class MainViewModel : ObservableObject
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
+            SynchronizeProjectFromTimeline();
+            if (!fingerprint.Equals(
+                    ProjectContentComparer.CreateContentFingerprint(_project),
+                    StringComparison.Ordinal))
+            {
+                try
+                {
+                    File.Delete(outputPath);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+
+                throw new InvalidOperationException(
+                    "The timeline changed while this prerender was running. The outdated result was discarded.");
+            }
+
             await SaveProjectPreviewCacheEntryAsync(
                 previewFolder,
                 outputPath,
@@ -829,8 +847,9 @@ public sealed class MainViewModel : ObservableObject
                 previewQuality,
                 preserveSelectedObjectQuality,
                 selectedObjectId,
+                fingerprint,
                 _operationCancellation.Token);
-            DeleteSupersededProjectPreviews(previewFolder, outputPath);
+            DeleteObsoleteProjectPreviews(previewFolder, fingerprint);
             ScanProgress = 100;
             StatusText = "Project preview ready";
             return result;
@@ -848,36 +867,61 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    internal async Task<ProjectPreviewCacheEntry?> TryLoadProjectPreviewCacheAsync(
+    internal async Task<IReadOnlyList<ProjectPreviewCacheEntry>> LoadProjectPreviewCacheEntriesAsync(
         CancellationToken cancellationToken = default)
     {
         SynchronizeProjectFromTimeline();
         var previewFolder = Path.Combine(_settings.MetadataFolder, "project-previews");
-        var metadataPath = GetProjectPreviewMetadataPath(previewFolder);
-        if (!File.Exists(metadataPath))
+        if (!Directory.Exists(previewFolder))
         {
-            return null;
+            return [];
         }
 
+        var fingerprint = ProjectContentComparer.CreateContentFingerprint(_project);
+        var filePrefix = $"{_project.Id:N}-{fingerprint[..16]}-";
+        ProjectPreviewCacheEntry? latestMetadata = null;
         try
         {
-            await using var stream = File.OpenRead(metadataPath);
-            var entry = await JsonSerializer.DeserializeAsync<ProjectPreviewCacheEntry>(stream, cancellationToken: cancellationToken);
-            if (entry is null || entry.Duration <= TimeSpan.Zero || !File.Exists(entry.OutputPath) ||
-                !string.Equals(
-                    entry.ProjectFingerprint,
-                    ProjectContentComparer.CreateContentFingerprint(_project),
-                    StringComparison.Ordinal))
+            var metadataPath = GetProjectPreviewMetadataPath(previewFolder);
+            if (File.Exists(metadataPath))
             {
-                return null;
+                await using var stream = File.OpenRead(metadataPath);
+                latestMetadata = await JsonSerializer.DeserializeAsync<ProjectPreviewCacheEntry>(
+                    stream,
+                    cancellationToken: cancellationToken);
             }
-
-            return entry;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
-            return null;
+            latestMetadata = null;
         }
+
+        var entries = new List<ProjectPreviewCacheEntry>();
+        foreach (var outputPath in Directory.EnumerateFiles(previewFolder, $"{filePrefix}*.mp4"))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entry = ParseProjectPreviewCacheEntry(outputPath, filePrefix, fingerprint);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            if (latestMetadata is not null &&
+                outputPath.Equals(latestMetadata.OutputPath, StringComparison.OrdinalIgnoreCase) &&
+                latestMetadata.ProjectFingerprint.Equals(fingerprint, StringComparison.Ordinal))
+            {
+                entry.PreserveSelectedObjectQuality = latestMetadata.PreserveSelectedObjectQuality;
+                entry.SelectedObjectId = latestMetadata.SelectedObjectId;
+                entry.RenderedUtc = latestMetadata.RenderedUtc;
+            }
+
+            entries.Add(entry);
+        }
+
+        return entries
+            .OrderBy(entry => entry.RangeStartTicks)
+            .ThenBy(entry => entry.RenderedUtc)
+            .ToList();
     }
 
     private async Task SaveProjectPreviewCacheEntryAsync(
@@ -888,11 +932,12 @@ public sealed class MainViewModel : ObservableObject
         int previewQualityPercent,
         bool preserveSelectedObjectQuality,
         Guid? selectedObjectId,
+        string projectFingerprint,
         CancellationToken cancellationToken)
     {
         var entry = new ProjectPreviewCacheEntry
         {
-            ProjectFingerprint = ProjectContentComparer.CreateContentFingerprint(_project),
+            ProjectFingerprint = projectFingerprint,
             OutputPath = outputPath,
             RangeStartTicks = rangeStart.Ticks,
             DurationTicks = duration.Ticks,
@@ -931,10 +976,47 @@ public sealed class MainViewModel : ObservableObject
     private string GetProjectPreviewMetadataPath(string previewFolder) =>
         Path.Combine(previewFolder, $"{_project.Id:N}-preview.json");
 
-    private void DeleteSupersededProjectPreviews(string previewFolder, string currentPath)
+    private static ProjectPreviewCacheEntry? ParseProjectPreviewCacheEntry(
+        string outputPath,
+        string filePrefix,
+        string fingerprint)
     {
+        var fileName = Path.GetFileNameWithoutExtension(outputPath);
+        if (!fileName.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var parts = fileName[filePrefix.Length..].Split('-');
+        if (parts.Length != 4 ||
+            !long.TryParse(parts[0], out var rangeStartTicks) ||
+            !long.TryParse(parts[1], out var durationTicks) ||
+            durationTicks <= 0 ||
+            !parts[2].StartsWith('q') ||
+            !int.TryParse(parts[2][1..], out var qualityPercent) ||
+            !long.TryParse(parts[3], out var renderedTicks) ||
+            renderedTicks < DateTime.MinValue.Ticks ||
+            renderedTicks > DateTime.MaxValue.Ticks)
+        {
+            return null;
+        }
+
+        return new ProjectPreviewCacheEntry
+        {
+            ProjectFingerprint = fingerprint,
+            OutputPath = outputPath,
+            RangeStartTicks = rangeStartTicks,
+            DurationTicks = durationTicks,
+            PreviewQualityPercent = Math.Clamp(qualityPercent, 10, 100),
+            RenderedUtc = new DateTime(renderedTicks, DateTimeKind.Utc)
+        };
+    }
+
+    private void DeleteObsoleteProjectPreviews(string previewFolder, string fingerprint)
+    {
+        var currentPrefix = $"{_project.Id:N}-{fingerprint[..16]}-";
         foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{_project.Id:N}-*.mp4")
-                     .Where(path => !path.Equals(currentPath, StringComparison.OrdinalIgnoreCase)))
+                     .Where(path => !Path.GetFileName(path).StartsWith(currentPrefix, StringComparison.OrdinalIgnoreCase)))
         {
             try
             {
@@ -1062,10 +1144,49 @@ public sealed class MainViewModel : ObservableObject
 
     public void MarkProjectPreviewRendered(TimeSpan? rangeStart = null, TimeSpan? rangeEnd = null)
     {
+        MarkProjectPreviewRangesRendered(
+            [(rangeStart ?? TimeSpan.Zero, rangeEnd ?? Timeline.Duration)]);
+    }
+
+    public void MarkProjectPreviewRangesRendered(IEnumerable<(TimeSpan Start, TimeSpan End)> ranges)
+    {
+        if (!_projectPreviewCurrent)
+        {
+            _projectPreviewCoverage.Clear();
+        }
+
         _projectPreviewCurrent = true;
-        _projectPreviewCoverageStart = rangeStart ?? TimeSpan.Zero;
-        _projectPreviewCoverageEnd = rangeEnd ?? Timeline.Duration;
+        foreach (var (start, end) in ranges)
+        {
+            AddProjectPreviewCoverage(start, end);
+        }
+
         RefreshTimelineLanes();
+    }
+
+    private void AddProjectPreviewCoverage(TimeSpan start, TimeSpan end)
+    {
+        if (end <= start)
+        {
+            return;
+        }
+
+        var mergedStart = start;
+        var mergedEnd = end;
+        for (var index = _projectPreviewCoverage.Count - 1; index >= 0; index--)
+        {
+            var coverage = _projectPreviewCoverage[index];
+            if (coverage.End < mergedStart || coverage.Start > mergedEnd)
+            {
+                continue;
+            }
+
+            mergedStart = coverage.Start < mergedStart ? coverage.Start : mergedStart;
+            mergedEnd = coverage.End > mergedEnd ? coverage.End : mergedEnd;
+            _projectPreviewCoverage.RemoveAt(index);
+        }
+
+        _projectPreviewCoverage.Add((mergedStart, mergedEnd));
     }
 
     public void CancelOperation() => _operationCancellation?.Cancel();
@@ -2117,8 +2238,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
             _projectPreviewCurrent = false;
-            _projectPreviewCoverageStart = TimeSpan.Zero;
-            _projectPreviewCoverageEnd = TimeSpan.Zero;
+            _projectPreviewCoverage.Clear();
             RefreshProjectLayers();
         }
         finally
@@ -2230,8 +2350,8 @@ public sealed class MainViewModel : ObservableObject
 
     private bool NeedsProjectPreview(ProjectTimelineItem item) =>
         item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage &&
-        (!_projectPreviewCurrent || item.Start < _projectPreviewCoverageStart ||
-         item.Start + item.Duration > _projectPreviewCoverageEnd);
+        (!_projectPreviewCurrent || !_projectPreviewCoverage.Any(coverage =>
+            item.Start >= coverage.Start && item.Start + item.Duration <= coverage.End));
 
     private async Task SaveRecoverySafelyAsync()
     {

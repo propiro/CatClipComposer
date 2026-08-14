@@ -493,15 +493,31 @@
                                                 FontFamily="Segoe UI Emoji" Content="🔇" ToolTip="Muted — click for sound" />
                                     </WrapPanel>
                                     <WrapPanel Grid.Column="1" HorizontalAlignment="Center">
-                                        <Button Padding="14,5" Click="ProjectPreview_Click"
-                                                Style="{StaticResource PrimaryButtonStyle}" Content="PRERENDER PREVIEW"
-                                                ToolTip="Prerender the selected timeline range, or the selected frame when there is no range" />
-                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrameLowQuality_Click"
-                                                Content="Frame LQ" ToolTip="Prerender the selected frame at the configured preview resolution" />
-                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderFrameHighQuality_Click"
-                                                Content="Frame HQ" ToolTip="Prerender the selected frame at the full project resolution" />
-                                        <Button Margin="4,0,0,0" Padding="9,5" Click="PrerenderAll_Click"
-                                                Content="All" ToolTip="Prerender the complete project" />
+                                        <StackPanel Margin="0,0,8,0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Margin="0,0,4,0" VerticalAlignment="Center" FontSize="9"
+                                                       Foreground="{StaticResource MutedTextBrush}" Text="FRAME" />
+                                            <Button Padding="7,5" Click="PrerenderFrameLowQuality_Click" Content="LQ"
+                                                    ToolTip="Prerender the selected frame at the configured preview resolution" />
+                                            <Button Margin="2,0,0,0" Padding="7,5" Click="PrerenderFrameHighQuality_Click" Content="HQ"
+                                                    ToolTip="Prerender the selected frame at the full project resolution" />
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Margin="0,0,4,0" VerticalAlignment="Center" FontSize="9"
+                                                       Foreground="{StaticResource MutedTextBrush}" Text="PREVIEW" />
+                                            <Button Padding="7,5" Click="PrerenderPreviewLowQuality_Click" Content="LQ"
+                                                    Style="{StaticResource PrimaryButtonStyle}"
+                                                    ToolTip="Prerender the selected range at the configured preview resolution, or the current frame when no range is selected" />
+                                            <Button Margin="2,0,0,0" Padding="7,5" Click="PrerenderPreviewHighQuality_Click" Content="HQ"
+                                                    ToolTip="Prerender the selected range at full project resolution, or the current frame when no range is selected" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Margin="0,0,4,0" VerticalAlignment="Center" FontSize="9"
+                                                       Foreground="{StaticResource MutedTextBrush}" Text="ALL" />
+                                            <Button Padding="7,5" Click="PrerenderAllLowQuality_Click" Content="LQ"
+                                                    ToolTip="Prerender the complete project at the configured preview resolution" />
+                                            <Button Margin="2,0,0,0" Padding="7,5" Click="PrerenderAllHighQuality_Click" Content="HQ"
+                                                    ToolTip="Prerender the complete project at full project resolution" />
+                                        </StackPanel>
                                     </WrapPanel>
                                     <TextBlock x:Name="ProjectPreviewStatusText" Grid.Column="2" Margin="8,0,0,0"
                                                VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis"

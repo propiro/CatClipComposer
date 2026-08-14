@@ -89,13 +89,14 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Frame/range selection and dual previews — Done.** Clicking or dragging the ruler selects an exact frame;
   Shift/Ctrl drag paints a frame-snapped range, Mark start/end creates one from the playhead, and either edge
   remains draggable. Clip Preview handles raw library media, including optional autoplay for Video-block
-  double-clicks. Prerender Preview defaults to that active range or the current frame, while adjacent LQ/HQ
-  Frame and All actions are explicit. A six-stop 10–100% temporary-resolution control uses the same
+  double-clicks. Frame, active-range Preview, and All each expose explicit LQ/HQ actions; Preview defaults to
+  the current frame when no range exists. A six-stop 10–100% temporary-resolution control uses the same
   composition/effect graph on a smaller canvas without changing export settings, while optional selected-image
   scaling uses a higher-quality scaler. Project preview maps local playback back onto project time and uses
-  Windows-compatible H.264 without recording export history. The latest valid prerender is restored between
-  sessions and exact project/source/app fingerprints prevent stale reuse; timeline clicks pause and seek within
-  its available coverage. Project Settings is a compact rollout at the bottom-left of Project Preview rather
+  Windows-compatible H.264 without recording export history. All valid chunks for the current
+  project/source/app fingerprint are restored between sessions; timeline clicks switch between their coverage
+  without range-selection changes unloading them. Playback stops and resets at the active chunk boundary.
+  Project Settings is a compact rollout at the bottom-left of Project Preview rather
   than consuming Project Layers Data space.
 - **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
   marks range boundaries; the selected-range menu renders only that interval. Left-clicking empty lanes,
@@ -166,7 +167,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.26 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.27 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

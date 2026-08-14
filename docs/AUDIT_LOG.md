@@ -1,5 +1,33 @@
 # Audit log
 
+## AUDIT-2026-08-14-002 — Preview geometry, chunk retention, and transport audit
+
+Scope: investigate a PNG overlay growing in LQ frame output, add symmetric LQ/HQ prerender scopes, retain
+multiple rendered timeline intervals, and stop Project Preview playback from escaping a selected range.
+
+Findings and remediation:
+
+- Image overlay scaling used `min(480 * previewScale, sourceWidth)`. Sources narrower than the scaled cap kept
+  their original pixel width while the composition canvas shrank, so their relative size grew inversely with
+  preview quality. The graph now resolves `min(480, sourceWidth)` first and scales that result with the canvas.
+- Every range-selection update called an invalidation method that stopped MediaElement and assigned a null
+  source. The preview file still existed, but selecting or clearing a range evicted it from the viewing surface.
+  Selection now only pauses/updates status; timeline-content changes remain the cache invalidation boundary.
+- Preview metadata referenced only the newest MP4 and successful rendering deleted every older project preview.
+  Current-fingerprint files now form a time-indexed chunk catalog. Exact-range rerenders replace older entries,
+  overlapping navigation selects the newest chunk, and obsolete fingerprint groups are deleted best-effort.
+  A post-render fingerprint check discards work completed after a concurrent timeline edit rather than caching it
+  under the changed project state.
+- MediaOpened replaced the requested global range end with the platform-reported natural duration, while
+  MediaEnded reset UI state without explicitly pausing. Playback now uses declared chunk bounds, checks the end
+  from the 100 ms timer as well as MediaEnded, pauses explicitly, seeks to the chunk start, and updates the icon.
+- The prerender toolbar exposed HQ only for Frame. FRAME, PREVIEW, and ALL now use the same compact text plus
+  LQ/HQ button pattern and route through the same render request path without affecting final export settings.
+
+Verification: the complete Release solution builds without warnings/errors; static XAML resource validation,
+chunk replacement/switch/miss smoke, and real FFmpeg HQ versus 25% LQ overlay geometry checks passed. No package
+or FFmpeg dependency changed.
+
 ## AUDIT-2026-08-14-001 — Preview scale, stale overlay, and shell-control audit
 
 Scope: investigate residual context-menu gutter width, compressed scrollbars, effect-editor ordering, misleading
