@@ -18,7 +18,8 @@ public enum ProjectItemKind
     ImageOverlay,
     Audio,
     ProgressBar,
-    Effect
+    Effect,
+    VideoOverlay
 }
 
 public enum VideoFitMode
@@ -66,7 +67,7 @@ public enum TimelineSnapMode
 
 public sealed class EditorProject
 {
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 

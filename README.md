@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.27**.
+Current application and component version: **0.1.28**.
 
 ## Documentation
 

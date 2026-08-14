@@ -27,7 +27,7 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <TextBox x:Name="SourceTextBox" TextChanged="SourceTextBox_TextChanged"
-                                             ToolTip="Path to the PNG/image or audio file used by this timeline item." />
+                                             ToolTip="Path to the PNG/image, GIF/video, or audio file used by this timeline item." />
                                     <Button Grid.Column="1" Margin="5,0,0,0" Click="Browse_Click" Content="Browse…"
                                             ToolTip="Choose a source file from disk." />
                                 </Grid>
@@ -145,7 +145,7 @@
                             <Border x:Name="ImagePreviewFields" Height="210" Padding="6"
                                     Background="{StaticResource PreviewBrush}"
                                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                                    ToolTip="Source-only image preview. Use Prerender frame with background below to check the real composition.">
+                                    ToolTip="Source-only still/first-frame preview. Use Prerender frame with background below to check the real composition and motion.">
                                 <Grid>
                                     <TextBlock x:Name="ImagePreviewStatusText" HorizontalAlignment="Center"
                                                VerticalAlignment="Center" Foreground="{StaticResource FaintTextBrush}"

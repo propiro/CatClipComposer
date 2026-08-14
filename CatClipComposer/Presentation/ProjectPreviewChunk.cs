@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace CatClipComposer.Presentation;
 
 internal sealed record ProjectPreviewChunk(
@@ -37,14 +35,6 @@ internal sealed class ProjectPreviewChunkCatalog
 
     public void Add(ProjectPreviewChunk chunk)
     {
-        var cacheGroup = GetCacheGroup(chunk.OutputPath);
-        if (cacheGroup is not null)
-        {
-            _chunks.RemoveAll(existing =>
-                GetCacheGroup(existing.OutputPath) is { } existingGroup &&
-                !existingGroup.Equals(cacheGroup, StringComparison.OrdinalIgnoreCase));
-        }
-
         _chunks.RemoveAll(existing =>
             existing.Start == chunk.Start && existing.Duration == chunk.Duration);
         _chunks.Add(chunk);
@@ -56,11 +46,4 @@ internal sealed class ProjectPreviewChunkCatalog
             .OrderByDescending(chunk => chunk.RenderedUtc)
             .FirstOrDefault();
 
-    private static string? GetCacheGroup(string outputPath)
-    {
-        var parts = Path.GetFileNameWithoutExtension(outputPath).Split('-');
-        return parts.Length >= 6 && parts[0].Length == 32 && parts[1].Length == 16
-            ? $"{parts[0]}-{parts[1]}"
-            : null;
-    }
 }

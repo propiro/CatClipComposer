@@ -14,6 +14,7 @@ public enum LayerEditorKind
 {
     Text,
     Image,
+    MovingOverlay,
     Audio,
     Progress
 }
@@ -213,14 +214,14 @@ public partial class LayerItemEditorWindow : Window
     private void ConfigureFields()
     {
         TitleText.Text = $"Add {GetDisplayName(_kind)}";
-        SourceFields.Visibility = Visible(_kind is LayerEditorKind.Image or LayerEditorKind.Audio);
-        ImagePreviewFields.Visibility = Visible(_kind == LayerEditorKind.Image);
+        SourceFields.Visibility = Visible(_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay or LayerEditorKind.Audio);
+        ImagePreviewFields.Visibility = Visible(_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
-        OverlayOpacityField.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
-        TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
-        OverlayFadeFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image);
+        OverlayOpacityField.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
+        TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
+        OverlayFadeFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
         AudioFields.Visibility = Visible(_kind == LayerEditorKind.Audio);
         ProgressFields.Visibility = Visible(_kind == LayerEditorKind.Progress);
         if (_kind == LayerEditorKind.Audio)
@@ -232,6 +233,11 @@ public partial class LayerItemEditorWindow : Window
             SourceLabel.Text = "PNG / image file";
             UpdateImagePreview();
         }
+        else if (_kind == LayerEditorKind.MovingOverlay)
+        {
+            SourceLabel.Text = "GIF / video file";
+            UpdateImagePreview();
+        }
     }
 
     private static Visibility Visible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
@@ -240,10 +246,18 @@ public partial class LayerItemEditorWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = _kind == LayerEditorKind.Audio ? "Choose music/audio" : "Choose PNG/JPEG overlay",
-            Filter = _kind == LayerEditorKind.Audio
-                ? "Audio files (*.mp3;*.wav;*.m4a;*.aac;*.ogg;*.flac)|*.mp3;*.wav;*.m4a;*.aac;*.ogg;*.flac|All files (*.*)|*.*"
-                : "Image files (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp|All files (*.*)|*.*",
+            Title = _kind switch
+            {
+                LayerEditorKind.Audio => "Choose music/audio",
+                LayerEditorKind.MovingOverlay => "Choose GIF/video overlay",
+                _ => "Choose PNG/JPEG overlay"
+            },
+            Filter = _kind switch
+            {
+                LayerEditorKind.Audio => "Audio files (*.mp3;*.wav;*.m4a;*.aac;*.ogg;*.flac)|*.mp3;*.wav;*.m4a;*.aac;*.ogg;*.flac|All files (*.*)|*.*",
+                LayerEditorKind.MovingOverlay => "Moving image/video (*.gif;*.mp4;*.webm;*.mov;*.mkv;*.avi;*.m4v)|*.gif;*.mp4;*.webm;*.mov;*.mkv;*.avi;*.m4v|All files (*.*)|*.*",
+                _ => "Image files (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp|All files (*.*)|*.*"
+            },
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) == true)
@@ -254,7 +268,7 @@ public partial class LayerItemEditorWindow : Window
 
     private void SourceTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        if (_kind == LayerEditorKind.Image)
+        if (_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay)
         {
             UpdateImagePreview();
         }
@@ -262,7 +276,7 @@ public partial class LayerItemEditorWindow : Window
 
     private void OverlayOpacityEditor_Edited(object? sender, EventArgs e)
     {
-        if (_kind == LayerEditorKind.Image &&
+        if (_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay &&
             TryParse(OverlayOpacityEditor.Text, 0, 100, out var opacityPercent))
         {
             ImageOverlayPreview.Opacity = opacityPercent / 100;
@@ -276,7 +290,9 @@ public partial class LayerItemEditorWindow : Window
         var path = SourceTextBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(path))
         {
-            ImagePreviewStatusText.Text = "Choose a PNG or image to preview it here.";
+            ImagePreviewStatusText.Text = _kind == LayerEditorKind.MovingOverlay
+                ? "Choose a GIF or video. GIFs show their first frame here; use frame prerender for video content."
+                : "Choose a PNG or image to preview it here.";
             return;
         }
 
@@ -304,7 +320,9 @@ public partial class LayerItemEditorWindow : Window
         }
         catch (Exception)
         {
-            ImagePreviewStatusText.Text = "This image cannot be previewed.";
+            ImagePreviewStatusText.Text = _kind == LayerEditorKind.MovingOverlay
+                ? "Use Prerender frame with background to preview this moving file."
+                : "This image cannot be previewed.";
         }
     }
 
@@ -367,8 +385,8 @@ public partial class LayerItemEditorWindow : Window
         if (!TimeRangeEditor.TryGetRange(out var startTime, out var durationTime) ||
             (_kind == LayerEditorKind.Text &&
              (string.IsNullOrWhiteSpace(OverlayTextBox.Text) || !fontSizeValid || FontComboBox.SelectedItem is not FontChoice)) ||
-            (_kind is LayerEditorKind.Image or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
-            (_kind is LayerEditorKind.Text or LayerEditorKind.Image &&
+            (_kind is LayerEditorKind.Image or LayerEditorKind.MovingOverlay or LayerEditorKind.Audio && !File.Exists(SourceTextBox.Text)) ||
+            (_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay &&
              (!overlayXValid || !overlayYValid || !overlayScaleValid || !overlayRotationValid || !overlayOpacityValid ||
               !overlayFadeInValid || !overlayFadeOutValid ||
               overlayFadeIn > durationTime.TotalSeconds || overlayFadeOut > durationTime.TotalSeconds)) ||
@@ -396,12 +414,13 @@ public partial class LayerItemEditorWindow : Window
         var position = PositionComboBox.SelectedItem is OverlayPosition selectedPosition
             ? selectedPosition
             : OverlayPosition.Center;
-        var useCustomTransform = _kind is LayerEditorKind.Text or LayerEditorKind.Image &&
+        var useCustomTransform = _kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay &&
                                  (_transformEdited || (!_positionPresetChanged && _existingCustomTransform));
         var itemKind = _kind switch
         {
             LayerEditorKind.Text => ProjectItemKind.TextOverlay,
             LayerEditorKind.Image => ProjectItemKind.ImageOverlay,
+            LayerEditorKind.MovingOverlay => ProjectItemKind.VideoOverlay,
             LayerEditorKind.Audio => ProjectItemKind.Audio,
             _ => ProjectItemKind.ProgressBar
         };
@@ -435,10 +454,10 @@ public partial class LayerItemEditorWindow : Window
             Volume = _kind == LayerEditorKind.Audio ? volume : 1,
             FadeInSeconds = _kind == LayerEditorKind.Audio
                 ? fadeIn
-                : _kind is LayerEditorKind.Text or LayerEditorKind.Image ? overlayFadeIn : 0,
+                : _kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay ? overlayFadeIn : 0,
             FadeOutSeconds = _kind == LayerEditorKind.Audio
                 ? fadeOut
-                : _kind is LayerEditorKind.Text or LayerEditorKind.Image ? overlayFadeOut : 0,
+                : _kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay ? overlayFadeOut : 0,
             ProgressTimeMode = progressMode,
             ProgressBarStyle = ProgressStyleComboBox.SelectedItem is ProgressBarStyle style ? style : ProgressBarStyle.Solid,
             ProgressBarPosition = ProgressPositionComboBox.SelectedItem is ProgressBarPosition barPosition
@@ -564,6 +583,7 @@ public partial class LayerItemEditorWindow : Window
     {
         ProjectItemKind.TextOverlay => LayerEditorKind.Text,
         ProjectItemKind.ImageOverlay => LayerEditorKind.Image,
+        ProjectItemKind.VideoOverlay => LayerEditorKind.MovingOverlay,
         ProjectItemKind.Audio => LayerEditorKind.Audio,
         ProjectItemKind.ProgressBar => LayerEditorKind.Progress,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "This project item is not edited here.")
@@ -572,6 +592,7 @@ public partial class LayerItemEditorWindow : Window
     private static string GetDisplayName(LayerEditorKind kind) => kind switch
     {
         LayerEditorKind.Image => "PNG / image layer",
+        LayerEditorKind.MovingOverlay => "GIF / video layer",
         LayerEditorKind.Audio => "music layer",
         LayerEditorKind.Progress => "progress effect",
         _ => "text layer"

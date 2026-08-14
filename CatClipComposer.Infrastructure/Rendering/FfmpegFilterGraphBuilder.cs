@@ -78,8 +78,6 @@ internal static class FfmpegFilterGraphBuilder
                         graph,
                         request,
                         overlay,
-                        width,
-                        height,
                         overlayInputIndexes[index],
                         currentLabel,
                         stage++);
@@ -367,30 +365,33 @@ internal static class FfmpegFilterGraphBuilder
         StringBuilder graph,
         RenderRequest request,
         RenderOverlay overlay,
-        int width,
-        int height,
         int inputIndex,
         string currentLabel,
         int stage)
     {
-        var seconds = FormatSeconds(overlay.Duration);
-        var start = FormatSeconds(overlay.Start);
+        var scale = overlay.HasCustomTransform
+            ? OverlayTransformValues.NormalizeScale(overlay.TransformScale)
+            : 1;
+        var previewScale = Math.Clamp(request.PreviewScale, 0.1, 1);
+        var scaledWidth = FormatNumber(previewScale * scale);
+        var scaler = request.PreserveSelectedObjectQuality && overlay.ProjectItemId == request.SelectedObjectId
+            ? ":flags=lanczos"
+            : ":flags=bilinear";
+        graph.Append(
+            $"[{inputIndex}:v:0]trim=duration={FormatSeconds(overlay.Duration)}," +
+            $"setpts=PTS-STARTPTS+{FormatSeconds(overlay.Start)}/TB," +
+            $"fps={FormatNumber(request.FramesPerSecond)}," +
+            $"scale='max(2,min(480,iw)*{scaledWidth})':-2{scaler},setsar=1,format=yuva420p," +
+            $"colorchannelmixer=aa={FormatNumber(Math.Clamp(overlay.Opacity, 0, 1))}");
+        AppendOverlayAlphaFades(graph, overlay);
+        AppendRotation(graph, overlay.TransformRotationDegrees, overlay.HasCustomTransform);
+        graph.Append(CultureInfo.InvariantCulture, $"[layervideo{stage}];");
+        var (x, y) = overlay.HasCustomTransform
+            ? GetCustomOverlayCoordinates(overlay.TransformX, overlay.TransformY)
+            : GetImageOverlayCoordinates(overlay.Position, request.PreviewScale);
         graph.Append(CultureInfo.InvariantCulture,
-            $"[{inputIndex}:v:0]trim=duration={seconds},setpts=PTS-STARTPTS+{start}/TB," +
-            $"fps={FormatNumber(request.FramesPerSecond)},format={GetPixelFormat(request.VideoEncoder)},setsar=1,");
-        graph.Append(overlay.FitMode switch
-        {
-            VideoFitMode.Fill =>
-                $"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}",
-            VideoFitMode.Stretch => $"scale={width}:{height}",
-            _ =>
-                $"scale={width}:{height}:force_original_aspect_ratio=decrease," +
-                $"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color={NormalizeColor(request.BackgroundColor)}"
-        });
-        graph.Append(CultureInfo.InvariantCulture, $",setsar=1[layervideo{stage}];");
-        graph.Append(CultureInfo.InvariantCulture,
-            $"[{currentLabel}][layervideo{stage}]overlay=0:0:eof_action=pass:repeatlast=0:" +
-            $"enable='between(t,{start},{FormatSeconds(overlay.Start + overlay.Duration)})'[stage{stage}];");
+            $"[{currentLabel}][layervideo{stage}]overlay=x={x}:y={y}:" +
+            $"eof_action=pass:repeatlast=0{CreateEnable(overlay.Start, overlay.Duration)}[stage{stage}];");
         return $"stage{stage}";
     }
 

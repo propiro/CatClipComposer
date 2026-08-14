@@ -944,6 +944,7 @@
                                                 PreviewMouseLeftButtonDown="TimelineRuler_PreviewMouseLeftButtonDown"
                                                 PreviewMouseMove="TimelineRuler_PreviewMouseMove"
                                                 PreviewMouseLeftButtonUp="TimelineRuler_PreviewMouseLeftButtonUp">
+                                            <Grid>
                                             <ItemsControl Width="{Binding Timeline.TimelineWidth}"
                                                           Height="32" ItemsSource="{Binding Timeline.RulerTicks}">
                                                 <ItemsControl.ItemsPanel>
@@ -967,6 +968,26 @@
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
+                                            <ItemsControl Width="{Binding Timeline.TimelineWidth}" Height="3"
+                                                          VerticalAlignment="Bottom" Panel.ZIndex="4"
+                                                          ItemsSource="{Binding ProjectPreviewCoverageSegments}"
+                                                          ToolTipService.InitialShowDelay="350">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemContainerStyle>
+                                                    <Style TargetType="ContentPresenter">
+                                                        <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                                    </Style>
+                                                </ItemsControl.ItemContainerStyle>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Width="{Binding Width}" Height="3" Background="{Binding Color}"
+                                                                ToolTip="{Binding ToolTip}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            </Grid>
                                         </Border>
 
                                         <ItemsControl ItemsSource="{Binding TimelineLanes}">

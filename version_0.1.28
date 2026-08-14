@@ -1,0 +1,7 @@
+Cat Clip Composer 0.1.28
+
+- Returns cancelled Project Preview overlay transforms to their exact stored state.
+- Shows current prerender intervals in green and changed intervals in yellow.
+- Coalesces and retries rapid cached-preview source switches before reporting playback failure.
+- Adds new image overlays at the playhead when no selected video range supplies timing.
+- Adds timed GIF/video overlays with transform, opacity, fades, locking, and looping motion.

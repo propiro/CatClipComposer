@@ -35,6 +35,10 @@ internal sealed class FfmpegRenderCommandBuilder
                     "-loop", "1",
                     "-framerate", FormatNumber(request.FramesPerSecond));
             }
+            else
+            {
+                AddArguments(startInfo, "-stream_loop", "-1");
+            }
 
             AddArguments(startInfo, "-i", overlay.SourcePath!);
         }

@@ -45,7 +45,8 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
 
     public string EnableActionText => IsEnabled ? "Disable item" : "Enable item";
 
-    public bool IsPositionableOverlay => Item?.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay;
+    public bool IsPositionableOverlay => Item?.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or
+        ProjectItemKind.VideoOverlay;
 
     public string TransformLockActionText => Item?.IsTransformLocked == true
         ? "Unlock overlay transform"
@@ -69,6 +70,7 @@ public sealed class ProjectLayerRowViewModel : ObservableObject
                 $" | {item.FontFamily}{(string.IsNullOrWhiteSpace(item.FontPath) ? string.Empty : " | CUSTOM")}" +
                 DescribeOverlayTransform(item),
             ProjectItemKind.ImageOverlay => DescribeOverlayTransform(item),
+            ProjectItemKind.VideoOverlay => $" | moving media{DescribeOverlayTransform(item)}",
             ProjectItemKind.Audio => $" | volume {item.Volume:0.##}",
             ProjectItemKind.ProgressBar =>
                 $" | {item.ProgressBarStyle} | {item.ProgressColor} | {item.ProgressHeight}px | {item.ProgressBarPosition}",

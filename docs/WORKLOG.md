@@ -2,6 +2,25 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.28 stale-coverage and moving-overlay pass
+
+- Made direct overlay manipulation fully transactional: the draft now retains preset placement as well as
+  normalized transform values, and Cancel/Escape releases any pending pointer interaction before restoring and
+  redrawing the exact saved state.
+- Replaced all-or-nothing preview invalidation with interval coverage. The timeline ruler paints current cached
+  spans green and overlapping changed spans yellow; range-scoped overlay/effect edits retain unaffected chunks,
+  primary-source mutations compare before/after items to stale their enclosing changed span, while output and
+  visual track-order changes conservatively stale all covered time.
+- Coalesced rapid MediaElement source swaps onto the dispatcher and transparently reopens a still-current chunk
+  once before showing a playback error, removing the observed one-off codec modal during fast needle movement.
+- Native layer insertion now uses the playhead when no selected Video range supplies start/end timing. Added
+  schema-10 GIF/video overlays across the Effects catalog, empty-lane menu, editor, transform/lock gizmo,
+  persistence, shared mapper, and FFmpeg graph; moving inputs loop and retain motion through the block while
+  applying still-overlay position, scale, rotation, opacity, fades, track order, and LQ/HQ scaling.
+- Advanced all component metadata and the extensionless marker to 0.1.28. Verification covered clean Release
+  builds, XAML resources, interval split/replacement logic, project schema/CLI inspection, and real two-second
+  MP4 and animated-GIF overlay renders at 320×180/30 fps with differing frame hashes proving retained motion.
+
 ## 2026-08-14 — v0.1.27 chunked prerender and bounded-transport pass
 
 - Corrected reduced-resolution image overlay sizing so the preview factor applies after resolving the source

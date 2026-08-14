@@ -1,6 +1,6 @@
 # Project files and crash recovery
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-14
 
 Cat Clip Composer stores editable work as versioned UTF-8 JSON with the `.nya` extension. Project files
 contain references and editing metadata; they do not copy or embed source videos, images, audio, fonts,
@@ -20,7 +20,7 @@ projects. New projects contain five default tracks in top-to-bottom visual/edito
 The bottommost Video track is the sequential base composition. Video and other visual tracks above it are
 composited from bottom to top and can contain timed visual layers plus source audio. Project Layers Data can
 create/remove, collapse, reorder, and color-code tracks and edit/remove timed items.
-The Content Browser's grouped Effects tab adds text, image, audio, progress, and compatible plugin effects.
+The Content Browser's grouped Effects tab adds text, image, GIF/video, audio, progress, and compatible plugin effects.
 Clip effects control fit/fill/stretch, fades, and volume. Any block can remain on the timeline while disabled;
 the shared Core mapper excludes disabled blocks from both GUI and headless renders.
 
@@ -29,7 +29,9 @@ those logical project changes; recovery autosave follows the restored state. The
 an asterisk whenever the current snapshot differs from the last normal save. Undo history is session-only and
 is not embedded into `.nya` or recovery files.
 
-Schema version 9 adds explicit 0–100% text/image overlay opacity. Existing projects load at 100%, matching their
+Schema version 10 adds timed GIF/video Overlay items. They persist the same normalized transform, transform lock,
+opacity, and alpha-fade fields as image overlays; their visual media loops to cover the declared item duration,
+while source audio is not mixed from an Overlay track. Schema version 9 adds explicit 0–100% text/image overlay opacity. Existing projects load at 100%, matching their
 intended visual setting while removing the renderer's former hidden 90% PNG attenuation. Schema version 8 adds
 the persisted `isTransformLocked` flag for text/image overlays. Schema version 7 adds
 optional per-text/image-overlay fade-in and fade-out seconds. These alpha fades are
@@ -43,7 +45,7 @@ Background timeline, multiple named tracks, and
 versioned plugin IDs/parameter dictionaries. Schema version 2 added the target duration, timeline ruler and
 snap modes, installed/custom font selection, and per-effect progress style, color, size, and position. Each project also carries a GUID, name,
 creation/modification UTC timestamps, output settings, ordered tracks, and stable item GUIDs. Older JSON projects
-remain readable; saving them writes schema 9. The normal Open dialog prefers `.nya`.
+remain readable; saving them writes schema 10. The normal Open dialog prefers `.nya`.
 An older per-clip `BlurBackground` fit value is migrated to Fit plus an equivalent built-in Background blur
 module block at the same time range, preserving the visual intent without retaining the hard-coded renderer.
 

@@ -92,6 +92,25 @@ public static class ProjectRenderMapper
                         FadeOutSeconds: item.FadeOutSeconds,
                         ProjectItemId: item.Id));
                 }
+                else if (track.Kind == ProjectTrackKind.Overlay && item.Kind == ProjectItemKind.VideoOverlay)
+                {
+                    overlays.Add(new RenderOverlay(
+                        RenderOverlayKind.Video,
+                        item.Start,
+                        item.Duration,
+                        SourcePath: item.SourcePath,
+                        Position: item.Position,
+                        TrackOrder: track.Order,
+                        HasCustomTransform: item.HasCustomOverlayTransform,
+                        TransformX: item.OverlayX,
+                        TransformY: item.OverlayY,
+                        TransformScale: item.OverlayScale,
+                        TransformRotationDegrees: item.OverlayRotationDegrees,
+                        Opacity: item.OverlayOpacity,
+                        FadeInSeconds: item.FadeInSeconds,
+                        FadeOutSeconds: item.FadeOutSeconds,
+                        ProjectItemId: item.Id));
+                }
                 else if (track.Kind == ProjectTrackKind.Progress && item.Kind == ProjectItemKind.ProgressBar)
                 {
                     overlays.Add(new RenderOverlay(

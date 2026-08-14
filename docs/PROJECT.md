@@ -1,6 +1,6 @@
 # Project goals and feature status
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-14
 
 ## Product goal
 
@@ -95,7 +95,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   scaling uses a higher-quality scaler. Project preview maps local playback back onto project time and uses
   Windows-compatible H.264 without recording export history. All valid chunks for the current
   project/source/app fingerprint are restored between sessions; timeline clicks switch between their coverage
-  without range-selection changes unloading them. Playback stops and resets at the active chunk boundary.
+  without range-selection changes unloading them. A thin ruler line shows current cached intervals in green and
+  only changed overlaps in yellow. Rapid chunk switches are coalesced and retried once if Windows reports a
+  transient source failure. Playback stops and resets at the active chunk boundary.
   Project Settings is a compact rollout at the bottom-left of Project Preview rather
   than consuming Project Layers Data space.
 - **Contextual timeline preview and effects — Done.** The playhead menu renders from the selected frame and
@@ -103,13 +105,15 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   plus track-header and item menus, lists only compatible plugin effects. Timeline selection mirrors Layers /
   Used Clips, and a yellow media-block edge marks content outside the current rendered-preview coverage.
 - **Splash, mid-video, and outro screens — Done.** Still images can be inserted and reordered anywhere.
-- **PNG/text overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
+- **PNG/text/GIF/video overlays and custom fonts — Done.** Multiple timed elements are editable using installed system
   fonts or visibly marked TTF/OTF files from the portable custom-font folder. Active overlays expose their
   content and move/scale/rotate gizmos over Project Preview; clicking one synchronizes timeline and Layers /
   Used Clips selection; double-clicking it opens the item's preferences. Visible gray transparent per-block lock
   controls prevent project-view transform gestures while retaining selection and form editing. OK/Enter commits
   the draft and Cancel/Escape restores it. The same editor exposes transform, explicit 0–100% opacity, and
-  optional fade-in from and fade-out to transparency. Live stale proxies retain that exact opacity; moved
+  optional fade-in from and fade-out to transparency. GIF/video items loop moving content through their block
+  duration using the same controls. With no selected Video range, new native overlays begin at the playhead.
+  Live stale proxies retain that exact opacity; moved
   content leaves a crossed notice over its old prerendered location until the frame is refreshed.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
@@ -148,8 +152,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 ### Projects and automation
 
-- **Named editable projects — Done.** Versioned schema-9 `.nya` JSON uses stable track/item IDs, optional
-  track/item colors and overlay fades/transforms, background color, and plugin metadata.
+- **Named editable projects — Done.** Versioned schema-10 `.nya` JSON uses stable track/item IDs, optional
+  track/item colors, text/image/GIF/video overlay fades/transforms, background color, and plugin metadata.
 - **Undo/redo and dirty-state protection — Done.** Ctrl+Z/Ctrl+Y and toolbar arrows restore bounded project
   snapshots, the project/title shows an asterisk away from the last save point, and closing offers Save,
   Don't save, or Cancel without losing the window on a failed/cancelled save.
@@ -167,7 +171,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.27 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.28 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

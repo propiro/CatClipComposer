@@ -97,10 +97,10 @@ public sealed class TimelineLaneItemViewModel
         Title = item.Name;
         SourcePath = item.SourcePath;
         Detail = $"{DurationFormatter.Format(item.Start)} – {DurationFormatter.Format(item.Start + item.Duration)}" +
-                 (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay && item.HasCustomOverlayTransform
+                 (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay && item.HasCustomOverlayTransform
                      ? $" | {item.OverlayScale * 100:0.#}% / {item.OverlayRotationDegrees:0.#}°"
                      : string.Empty) +
-                 (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay &&
+                 (item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay &&
                   (item.FadeInSeconds > 0 || item.FadeOutSeconds > 0)
                      ? $" | fade {item.FadeInSeconds:0.##}/{item.FadeOutSeconds:0.##}s"
                      : string.Empty);
@@ -163,7 +163,8 @@ public sealed class TimelineLaneItemViewModel
 
     public bool IsProgress => Kind == ProjectItemKind.ProgressBar;
 
-    public bool IsPositionableOverlay => Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay;
+    public bool IsPositionableOverlay => Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or
+        ProjectItemKind.VideoOverlay;
 
     public bool IsTransformLocked { get; }
 

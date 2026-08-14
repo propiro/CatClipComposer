@@ -1,5 +1,37 @@
 # Audit log
 
+## AUDIT-2026-08-14-003 — Stale coverage, preview switching, and moving-overlay audit
+
+Scope: investigate inexact transform cancellation, preserve visible prerender state across edits, reproduce the
+intermittent Windows playback error during multi-chunk navigation, honor playhead insertion, and add GIF/video
+content with the existing image-overlay interaction contract.
+
+Findings and remediation:
+
+- Transform cancellation restored normalized values but did not retain the placement preset or explicitly end a
+  still-captured interaction. The draft now snapshots the preset and all transform fields; cancellation clears
+  interaction/capture before a single redraw, preventing a late pointer update or alternate preset projection.
+- `MarkProjectDirty` globally invalidated coverage and MainWindow then stopped MediaElement, nulled its source,
+  and deleted the session chunk catalog on every primary-timeline change. Coverage is now an interval model.
+  Rendered spans replace overlapping state as green; scoped edits split only their overlap to yellow; structural
+  primary-source edits derive an enclosing interval from before/after items, while output/visual-order changes
+  stale all covered time. Cached chunks remain seekable in-session and disk retention is bounded to 80.
+- Repeated direct assignments to MediaElement.Source could overlap Windows' asynchronous close/open work. The
+  source loader now uses a generation token and a later dispatcher turn so only the final needle request opens.
+  A failure is ignored when it no longer matches the active source and retried once when it does; only a second
+  current-source failure opens the unavailable dialog.
+- Native item dialogs only inherited an explicit or selected-source range, otherwise defaulting their range
+  control to zero. They now resolve start as explicit, selected range, then playhead, in that order.
+- Core already exposed a renderer-only video overlay path, but it filled the whole canvas and no saved/editor
+  item could create it. Schema 10 adds `VideoOverlay`; the shared mapper and editor use the image overlay's
+  transform/opacity/fade contract. FFmpeg loops each GIF/video input, trims/timestamps it, preserves frames,
+  applies alpha/rotation/scale/position, and deliberately excludes its audio on the visual Overlay track.
+
+Verification: the complete Release solution builds with zero warnings/errors; static XAML resources and a direct
+green/stale interval split/replacement smoke pass; CLI loads schema 10; real MP4 and animated-GIF overlay
+projects each produced 60-frame, two-second 320×180 outputs; frame hashes at separated timestamps differed for
+both outputs. No NuGet or bundled FFmpeg dependency changed.
+
 ## AUDIT-2026-08-14-002 — Preview geometry, chunk retention, and transport audit
 
 Scope: investigate a PNG overlay growing in LQ frame output, add symmetric LQ/HQ prerender scopes, retain

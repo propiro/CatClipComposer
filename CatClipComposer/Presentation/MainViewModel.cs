@@ -35,8 +35,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly HashSet<Guid> _selectedTimelineItemIds = [];
     private readonly HashSet<Guid> _collapsedTrackIds = [];
     private bool _isDirty;
-    private bool _projectPreviewCurrent;
-    private readonly List<(TimeSpan Start, TimeSpan End)> _projectPreviewCoverage = [];
+    private readonly ProjectPreviewCoverageCatalog _projectPreviewCoverage = new();
     private OverlayTransformDraft? _overlayTransformDraft;
 
     public MainViewModel(
@@ -80,6 +79,8 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<TimelineLaneViewModel> TimelineLanes { get; } = [];
 
+    public ObservableCollection<ProjectPreviewCoverageSegmentViewModel> ProjectPreviewCoverageSegments { get; } = [];
+
     public TimelineViewModel Timeline { get; }
 
     public ICollectionView MediaView { get; }
@@ -110,7 +111,7 @@ public sealed class MainViewModel : ObservableObject
             .OrderByDescending(track => track.Order)
             .SelectMany(track => track.Items)
             .Where(item => item.IsEnabled &&
-                           item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay &&
+                           item.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay &&
                            position >= item.Start &&
                            position < item.Start + item.Duration)
             .ToList();
@@ -429,8 +430,8 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
-            _projectPreviewCurrent = false;
             _projectPreviewCoverage.Clear();
+            RefreshProjectPreviewCoverageSegments();
             RefreshProjectLayers();
         }
         finally
@@ -849,7 +850,7 @@ public sealed class MainViewModel : ObservableObject
                 selectedObjectId,
                 fingerprint,
                 _operationCancellation.Token);
-            DeleteObsoleteProjectPreviews(previewFolder, fingerprint);
+            TrimProjectPreviewCache(previewFolder);
             ScanProgress = 100;
             StatusText = "Project preview ready";
             return result;
@@ -1012,19 +1013,21 @@ public sealed class MainViewModel : ObservableObject
         };
     }
 
-    private void DeleteObsoleteProjectPreviews(string previewFolder, string fingerprint)
+    private void TrimProjectPreviewCache(string previewFolder)
     {
-        var currentPrefix = $"{_project.Id:N}-{fingerprint[..16]}-";
+        const int maximumCachedChunksPerProject = 80;
         foreach (var oldPreview in Directory.EnumerateFiles(previewFolder, $"{_project.Id:N}-*.mp4")
-                     .Where(path => !Path.GetFileName(path).StartsWith(currentPrefix, StringComparison.OrdinalIgnoreCase)))
+                     .Select(path => new FileInfo(path))
+                     .OrderByDescending(file => file.LastWriteTimeUtc)
+                     .Skip(maximumCachedChunksPerProject))
         {
             try
             {
-                File.Delete(oldPreview);
+                oldPreview.Delete();
             }
             catch (IOException)
             {
-                // MediaElement can retain the preceding file briefly; it can be removed on a later render.
+                // MediaElement can retain an older chunk briefly; a later render will retry cleanup.
             }
             catch (UnauthorizedAccessException)
             {
@@ -1150,43 +1153,37 @@ public sealed class MainViewModel : ObservableObject
 
     public void MarkProjectPreviewRangesRendered(IEnumerable<(TimeSpan Start, TimeSpan End)> ranges)
     {
-        if (!_projectPreviewCurrent)
-        {
-            _projectPreviewCoverage.Clear();
-        }
-
-        _projectPreviewCurrent = true;
         foreach (var (start, end) in ranges)
         {
-            AddProjectPreviewCoverage(start, end);
+            _projectPreviewCoverage.MarkRendered(start, end);
         }
 
+        RefreshProjectPreviewCoverageSegments();
         RefreshTimelineLanes();
     }
 
-    private void AddProjectPreviewCoverage(TimeSpan start, TimeSpan end)
+    private void InvalidateProjectPreviewRange(TimeSpan start, TimeSpan end)
     {
         if (end <= start)
         {
             return;
         }
 
-        var mergedStart = start;
-        var mergedEnd = end;
-        for (var index = _projectPreviewCoverage.Count - 1; index >= 0; index--)
+        _projectPreviewCoverage.MarkStale(start, end);
+        RefreshProjectPreviewCoverageSegments();
+        RefreshTimelineLanes();
+    }
+
+    private void RefreshProjectPreviewCoverageSegments()
+    {
+        ProjectPreviewCoverageSegments.Clear();
+        foreach (var coverage in _projectPreviewCoverage.Ranges)
         {
-            var coverage = _projectPreviewCoverage[index];
-            if (coverage.End < mergedStart || coverage.Start > mergedEnd)
-            {
-                continue;
-            }
-
-            mergedStart = coverage.Start < mergedStart ? coverage.Start : mergedStart;
-            mergedEnd = coverage.End > mergedEnd ? coverage.End : mergedEnd;
-            _projectPreviewCoverage.RemoveAt(index);
+            ProjectPreviewCoverageSegments.Add(new ProjectPreviewCoverageSegmentViewModel(
+                Math.Max(0, coverage.Start.TotalSeconds * Timeline.PixelsPerSecond),
+                Math.Max(1, (coverage.End - coverage.Start).TotalSeconds * Timeline.PixelsPerSecond),
+                coverage.NeedsRender));
         }
-
-        _projectPreviewCoverage.Add((mergedStart, mergedEnd));
     }
 
     public void CancelOperation() => _operationCancellation?.Cancel();
@@ -1253,7 +1250,7 @@ public sealed class MainViewModel : ObservableObject
             HasAudio = media.Media.HasAudio
         };
         target.Items.Add(item);
-        MarkProjectDirty();
+        MarkProjectDirty(item.Start, item.Start + item.Duration);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -1322,7 +1319,7 @@ public sealed class MainViewModel : ObservableObject
         item.FadeInSeconds = fadeInSeconds;
         item.FadeOutSeconds = fadeOutSeconds;
         item.Volume = volume;
-        MarkProjectDirty();
+        MarkProjectDirty(item.Start, item.Start + item.Duration);
         RefreshProjectLayers(item.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer clip effects updated";
@@ -1338,7 +1335,7 @@ public sealed class MainViewModel : ObservableObject
         item.StartTicks = Math.Max(0, item.StartTicks);
         item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
         track.Items.Add(item);
-        MarkProjectDirty();
+        MarkProjectDirty(item.Start, item.Start + item.Duration);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -1353,7 +1350,7 @@ public sealed class MainViewModel : ObservableObject
         item.StartTicks = Math.Max(0, item.StartTicks);
         item.DurationTicks = Math.Max(TimeSpan.FromMilliseconds(100).Ticks, item.DurationTicks);
         track.Items.Add(item);
-        MarkProjectDirty();
+        MarkProjectDirty(item.Start, item.Start + item.Duration);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -1402,7 +1399,7 @@ public sealed class MainViewModel : ObservableObject
             Order = 0
         };
         _project.Tracks.Add(track);
-        MarkProjectDirty();
+        MarkProjectDirty(previewAffected: false);
         RefreshProjectLayers(trackId: track.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Added timeline: {track.Name}";
@@ -1426,8 +1423,9 @@ public sealed class MainViewModel : ObservableObject
             _project.Tracks[index].Order = index;
         }
 
-        MarkProjectDirty();
-        if (GetPrimaryVideoTrack().Id != previousPrimaryId)
+        var primaryChanged = GetPrimaryVideoTrack().Id != previousPrimaryId;
+        MarkProjectDirty(previewAffected: primaryChanged);
+        if (primaryChanged)
         {
             LoadPrimaryTimeline();
         }
@@ -1502,7 +1500,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         track.Color = color;
-        MarkProjectDirty();
+        MarkProjectDirty(previewAffected: false);
         RefreshProjectLayers(trackId: track.Id);
         _ = SaveRecoverySafelyAsync();
     }
@@ -1518,7 +1516,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         entry.Item.Color = color;
-        MarkProjectDirty();
+        MarkProjectDirty(previewAffected: false);
         RefreshProjectLayers(itemId);
         _ = SaveRecoverySafelyAsync();
     }
@@ -1540,8 +1538,10 @@ public sealed class MainViewModel : ObservableObject
             }
         }
 
+        var affectedStart = row.Item.Start;
+        var affectedEnd = row.Item.Start + row.Item.Duration;
         row.Track.Items.RemoveAll(item => item.Id == row.Item.Id);
-        MarkProjectDirty();
+        MarkProjectDirty(affectedStart, affectedEnd);
         RefreshProjectLayers();
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer item removed";
@@ -1561,9 +1561,13 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        var affectedStart = row.Item.Start < updatedItem.Start ? row.Item.Start : updatedItem.Start;
+        var previousEnd = row.Item.Start + row.Item.Duration;
+        var updatedEnd = updatedItem.Start + updatedItem.Duration;
+        var affectedEnd = previousEnd > updatedEnd ? previousEnd : updatedEnd;
         updatedItem.Id = row.Item.Id;
         row.Track.Items[index] = updatedItem;
-        MarkProjectDirty();
+        MarkProjectDirty(affectedStart, affectedEnd);
         RefreshProjectLayers(updatedItem.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = "Layer item updated";
@@ -1590,7 +1594,7 @@ public sealed class MainViewModel : ObservableObject
         else
         {
             entry.Item.IsEnabled = enabled;
-            MarkProjectDirty();
+            MarkProjectDirty(entry.Item.Start, entry.Item.Start + entry.Item.Duration);
             RefreshProjectLayers(itemId);
             _ = SaveRecoverySafelyAsync();
         }
@@ -1613,7 +1617,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         item.IsTransformLocked = locked;
-        MarkProjectDirty();
+        MarkProjectDirty(previewAffected: false);
         RefreshProjectLayers(item.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = $"{(locked ? "Locked" : "Unlocked")} transform for {item.Name}";
@@ -1636,6 +1640,7 @@ public sealed class MainViewModel : ObservableObject
 
         _overlayTransformDraft = new OverlayTransformDraft(
             item.Id,
+            item.Position,
             item.HasCustomOverlayTransform,
             item.OverlayX,
             item.OverlayY,
@@ -1691,7 +1696,7 @@ public sealed class MainViewModel : ObservableObject
             return true;
         }
 
-        MarkProjectDirty();
+        MarkProjectDirty(item.Start, item.Start + item.Duration);
         RefreshProjectLayers(item.Id);
         _ = SaveRecoverySafelyAsync();
         StatusText = $"Applied preview transform for {item.Name}";
@@ -1714,6 +1719,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         item.HasCustomOverlayTransform = draft.HasCustomTransform;
+        item.Position = draft.Position;
         item.OverlayX = draft.X;
         item.OverlayY = draft.Y;
         item.OverlayScale = draft.Scale;
@@ -1727,7 +1733,8 @@ public sealed class MainViewModel : ObservableObject
         .Where(track => track.Kind == ProjectTrackKind.Overlay)
         .SelectMany(track => track.Items)
         .FirstOrDefault(candidate => candidate.Id == itemId &&
-                                     candidate.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay);
+                                     candidate.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or
+                                         ProjectItemKind.VideoOverlay);
 
     public void ApplyProjectSettings(
         string projectName,
@@ -1770,6 +1777,20 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        var selectedItems = _project.Tracks.SelectMany(track => track.Items)
+            .Where(item => selected.Contains(item.Id))
+            .ToList();
+        if (selectedItems.Count == 0)
+        {
+            return;
+        }
+
+        var affectedStart = selectedItems.Min(item => item.Start);
+        var affectedEnd = selectedItems.Any(item =>
+            item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+            ? TimeSpan.MaxValue
+            : selectedItems.Max(item => item.Start + item.Duration);
+
         var primary = _project.Tracks
             .Where(track => track.Kind == ProjectTrackKind.Video)
             .OrderByDescending(track => track.Order)
@@ -1801,7 +1822,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _selectedTimelineItemIds.Clear();
-        MarkProjectDirty();
+        MarkProjectDirty(affectedStart, affectedEnd);
         RefreshProjectLayers();
         _ = SaveRecoverySafelyAsync();
         StatusText = selected.Count == 1 ? "Timeline item removed" : $"Removed {selected.Count} timeline items";
@@ -2036,6 +2057,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var originalStart = moving[0].Start;
+        var originalEnd = moving.Max(item => item.Start + item.Duration);
         var preview = GetTimelineMovePreview(itemIds, targetTrackId, targetStart, snapToClipRanges);
         if (preview is null)
         {
@@ -2054,7 +2076,11 @@ public sealed class MainViewModel : ObservableObject
             item.StartTicks = (item.Start + offset).Ticks;
         }
 
-        MarkProjectDirty();
+        var movedStart = moving.Min(item => item.Start);
+        var movedEnd = moving.Max(item => item.Start + item.Duration);
+        MarkProjectDirty(
+            originalStart < movedStart ? originalStart : movedStart,
+            originalEnd > movedEnd ? originalEnd : movedEnd);
         RefreshProjectLayers(moving[0].Id);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.UnionWith(itemIds);
@@ -2074,10 +2100,15 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
+        var previousStart = item.Start;
+        var previousEnd = item.Start + item.Duration;
         var minimumDuration = TimeSpan.FromSeconds(Timeline.SnapIncrement);
         item.StartTicks = Math.Max(0, start.Ticks);
         item.DurationTicks = Math.Max(minimumDuration.Ticks, duration.Ticks);
-        MarkProjectDirty();
+        var currentEnd = item.Start + item.Duration;
+        MarkProjectDirty(
+            previousStart < item.Start ? previousStart : item.Start,
+            previousEnd > currentEnd ? previousEnd : currentEnd);
         _selectedTimelineItemIds.Clear();
         _selectedTimelineItemIds.Add(item.Id);
         RefreshProjectLayers(item.Id);
@@ -2155,8 +2186,16 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
+            var previousSourceItems = GetPrimaryVideoTrack().Items
+                .Where(item => item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage)
+                .ToList();
+            var updatedSourceItems = Timeline.CreateProjectItems().ToList();
+            var affectedRange = GetChangedSourceRange(previousSourceItems, updatedSourceItems);
             SynchronizeProjectFromTimeline();
-            MarkProjectDirty();
+            MarkProjectDirty(
+                affectedRange?.Start,
+                affectedRange?.End,
+                previewAffected: affectedRange.HasValue);
             RefreshProjectLayers();
             await SaveRecoveryNowAsync();
         }
@@ -2164,6 +2203,31 @@ public sealed class MainViewModel : ObservableObject
         {
             StatusText = $"Recovery autosave failed: {exception.Message}";
         }
+    }
+
+    private static (TimeSpan Start, TimeSpan End)? GetChangedSourceRange(
+        IReadOnlyList<ProjectTimelineItem> previous,
+        IReadOnlyList<ProjectTimelineItem> updated)
+    {
+        var previousById = previous.ToDictionary(item => item.Id);
+        var updatedById = updated.ToDictionary(item => item.Id);
+        var changedItems = previous.Concat(updated)
+            .Where(item =>
+                !previousById.TryGetValue(item.Id, out var previousItem) ||
+                !updatedById.TryGetValue(item.Id, out var updatedItem) ||
+                !JsonSerializer.Serialize(previousItem).Equals(
+                    JsonSerializer.Serialize(updatedItem),
+                    StringComparison.Ordinal))
+            .DistinctBy(item => (item.Id, item.StartTicks, item.DurationTicks))
+            .ToList();
+        if (changedItems.Count == 0)
+        {
+            return null;
+        }
+
+        return (
+            changedItems.Min(item => item.Start),
+            changedItems.Max(item => item.Start + item.Duration));
     }
 
     private void Timeline_SelectionChanged(object? sender, EventArgs e)
@@ -2201,7 +2265,7 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            MarkProjectDirty();
+            MarkProjectDirty(previewAffected: false);
             await SaveRecoveryNowAsync();
         }
         catch (Exception exception)
@@ -2237,8 +2301,8 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(BackgroundColor));
             OnPropertyChanged(nameof(ProjectCreatedUtc));
             OnPropertyChanged(nameof(ProjectSettingsSummary));
-            _projectPreviewCurrent = false;
             _projectPreviewCoverage.Clear();
+            RefreshProjectPreviewCoverageSegments();
             RefreshProjectLayers();
         }
         finally
@@ -2346,12 +2410,13 @@ public sealed class MainViewModel : ObservableObject
                     track.Id != primaryVideoTrackId));
             TimelineLanes.Add(new TimelineLaneViewModel(track, kindOrdinals[track.Kind], items));
         }
+
+        RefreshProjectPreviewCoverageSegments();
     }
 
     private bool NeedsProjectPreview(ProjectTimelineItem item) =>
         item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage &&
-        (!_projectPreviewCurrent || !_projectPreviewCoverage.Any(coverage =>
-            item.Start >= coverage.Start && item.Start + item.Duration <= coverage.End));
+        !_projectPreviewCoverage.IsCurrent(item.Start, item.Start + item.Duration);
 
     private async Task SaveRecoverySafelyAsync()
     {
@@ -2365,13 +2430,21 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private void MarkProjectDirty()
+    private void MarkProjectDirty(
+        TimeSpan? affectedStart = null,
+        TimeSpan? affectedEnd = null,
+        bool previewAffected = true)
     {
         _project.ModifiedUtc = DateTime.UtcNow;
         _projectHistory.Capture(_project);
         NotifyHistoryStateChanged();
         IsDirty = !_projectHistory.IsAtSavePoint;
-        _projectPreviewCurrent = false;
+        if (previewAffected)
+        {
+            InvalidateProjectPreviewRange(
+                affectedStart ?? TimeSpan.Zero,
+                affectedEnd ?? TimeSpan.MaxValue);
+        }
     }
 
     private void NotifyHistoryStateChanged()
@@ -2461,6 +2534,7 @@ public sealed class MainViewModel : ObservableObject
 
     private sealed record OverlayTransformDraft(
         Guid ItemId,
+        OverlayPosition Position,
         bool HasCustomTransform,
         double X,
         double Y,

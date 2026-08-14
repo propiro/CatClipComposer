@@ -49,6 +49,9 @@ public partial class MainWindow : Window
     private bool _projectPreviewSeekDragging;
     private bool _projectPreviewPlaying;
     private bool _projectPreviewAutoplayPending;
+    private long _projectPreviewLoadGeneration;
+    private int _projectPreviewLoadRetryCount;
+    private bool _projectPreviewSourceSwitchPending;
     private readonly ProjectPreviewChunkCatalog _projectPreviewChunks = new();
     private ProjectPreviewChunk? _activeProjectPreviewChunk;
     private TimeSpan? _projectPreviewPendingSeek;
@@ -120,7 +123,7 @@ public partial class MainWindow : Window
         UpdateExpandedPanelButton();
         _previewTimer.Tick += PreviewTimer_Tick;
         _projectPreviewTimer.Tick += ProjectPreviewTimer_Tick;
-        _viewModel.Timeline.Changed += (_, _) => ResetProjectPreviewCache();
+        _viewModel.Timeline.Changed += (_, _) => HandleProjectTimelineChanged();
         _viewModel.ProjectLayers.CollectionChanged += (_, _) => QueueProjectPreviewOverlayRefresh();
         _viewModel.Timeline.PropertyChanged += (_, eventArgs) =>
         {
@@ -305,6 +308,7 @@ public partial class MainWindow : Window
             entry.PreviewQualityPercent)));
         _viewModel.MarkProjectPreviewRangesRendered(
             cachedPreviews.Select(entry => (entry.RangeStart, entry.RangeEnd)));
+        ProjectPreviewOverlayCanvas.MarkPreviewRendered();
         var cachedPreview = _projectPreviewChunks.Find(_viewModel.Timeline.Playhead) ??
                             _projectPreviewChunks.MostRecent!;
         ActivateProjectPreviewChunk(
@@ -935,6 +939,8 @@ public partial class MainWindow : Window
             DateTime.UtcNow,
             qualityPercent);
         _projectPreviewChunks.Add(chunk);
+        _viewModel.MarkProjectPreviewRendered(chunk.Start, chunk.End);
+        ProjectPreviewOverlayCanvas.MarkPreviewRendered();
         ActivateProjectPreviewChunk(chunk, rangeStart, autoplay, status);
     }
 
@@ -944,7 +950,7 @@ public partial class MainWindow : Window
         bool autoplay,
         string status)
     {
-        var sameSource = ProjectPreviewPlayer.Source is not null &&
+        var sameSource = !_projectPreviewSourceSwitchPending && ProjectPreviewPlayer.Source is not null &&
                          ProjectPreviewPlayer.Source.LocalPath.Equals(
                              Path.GetFullPath(chunk.OutputPath),
                              StringComparison.OrdinalIgnoreCase);
@@ -953,10 +959,8 @@ public partial class MainWindow : Window
         _projectPreviewTimelineEnd = chunk.End;
         _projectPreviewPlaybackStart = chunk.Start;
         _projectPreviewPlaybackEnd = chunk.End;
-        _viewModel.MarkProjectPreviewRendered(chunk.Start, chunk.End);
         _projectPreviewPendingSeek = position;
         _projectPreviewAutoplayPending = autoplay;
-        ProjectPreviewOverlayCanvas.MarkPreviewRendered();
         ProjectPreviewPlayer.IsMuted = true;
         UpdateMuteButton(ProjectPreviewMuteButton, ProjectPreviewPlayer.IsMuted);
         ProjectPreviewStatusText.Text = status;
@@ -978,11 +982,43 @@ public partial class MainWindow : Window
             return;
         }
 
+        _projectPreviewLoadRetryCount = 0;
+        QueueProjectPreviewSourceLoad(chunk);
+    }
+
+    private void QueueProjectPreviewSourceLoad(ProjectPreviewChunk chunk)
+    {
+        var generation = ++_projectPreviewLoadGeneration;
+        _projectPreviewSourceSwitchPending = true;
         ProjectPreviewPlayer.Stop();
+        ProjectPreviewPlayer.Source = null;
         _projectPreviewTimer.Stop();
         SetProjectPlaybackState(false);
-        ProjectPreviewPlayer.Source = new Uri(chunk.OutputPath, UriKind.Absolute);
-        ProjectPreviewPlayer.Play();
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            if (generation != _projectPreviewLoadGeneration || _activeProjectPreviewChunk != chunk)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!File.Exists(chunk.OutputPath))
+                {
+                    throw new FileNotFoundException("The cached prerender file is no longer available.", chunk.OutputPath);
+                }
+
+                ProjectPreviewPlayer.Source = new Uri(Path.GetFullPath(chunk.OutputPath), UriKind.Absolute);
+                // WPF does not open paused media. Start it and let MediaOpened seek, then pause when
+                // autoplay was not requested.
+                ProjectPreviewPlayer.Play();
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or UriFormatException)
+            {
+                _projectPreviewSourceSwitchPending = false;
+                ProjectPreviewStatusText.Text = $"Could not reopen cached preview: {exception.Message}";
+            }
+        }));
     }
 
     private async void PreviewFromPlayhead_Click(object sender, RoutedEventArgs e)
@@ -1017,6 +1053,15 @@ public partial class MainWindow : Window
 
     private void ProjectPreviewPlayer_MediaOpened(object sender, RoutedEventArgs e)
     {
+        if (_activeProjectPreviewChunk is null || ProjectPreviewPlayer.Source is null ||
+            !ProjectPreviewPlayer.Source.LocalPath.Equals(
+                Path.GetFullPath(_activeProjectPreviewChunk.OutputPath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _projectPreviewSourceSwitchPending = false;
         var duration = _activeProjectPreviewChunk?.Duration ??
                        (ProjectPreviewPlayer.NaturalDuration.HasTimeSpan
                            ? ProjectPreviewPlayer.NaturalDuration.TimeSpan
@@ -1159,12 +1204,39 @@ public partial class MainWindow : Window
 
     private void ProjectPreviewPlayer_MediaFailed(object sender, ExceptionRoutedEventArgs e)
     {
+        var resumePlayback = _projectPreviewPlaying;
+        var resumePosition = _viewModel.Timeline.Playhead;
         _projectPreviewTimer.Stop();
         SetProjectPlaybackState(false);
-        ProjectPreviewStatusText.Text = "Windows could not play the rendered preview codec.";
+        var activeChunk = _activeProjectPreviewChunk;
+        if (activeChunk is null || ProjectPreviewPlayer.Source is null ||
+            !ProjectPreviewPlayer.Source.LocalPath.Equals(
+                Path.GetFullPath(activeChunk.OutputPath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (_projectPreviewLoadRetryCount == 0)
+        {
+            _projectPreviewLoadRetryCount = 1;
+            _projectPreviewPendingSeek = activeChunk.Contains(resumePosition)
+                ? resumePosition
+                : activeChunk.Start;
+            _projectPreviewAutoplayPending = resumePlayback;
+            ProjectPreviewStatusText.Text = "Preview transport was interrupted; reopening cached chunk...";
+            QueueProjectPreviewSourceLoad(activeChunk);
+            return;
+        }
+
+        _projectPreviewLoadGeneration++;
+        _projectPreviewSourceSwitchPending = false;
+        ProjectPreviewPlayer.Stop();
+        ProjectPreviewPlayer.Source = null;
+        ProjectPreviewStatusText.Text = "Windows could not play the rendered preview after retrying.";
         MessageBox.Show(
             this,
-            "The preview rendered, but Windows could not play its codec.",
+            "The preview rendered, but Windows could not play it after reopening the cached file.",
             "Project preview unavailable",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -1311,6 +1383,8 @@ public partial class MainWindow : Window
             : _projectPreviewChunks.Find(position);
         if (chunk is null)
         {
+            _projectPreviewLoadGeneration++;
+            _projectPreviewSourceSwitchPending = false;
             ProjectPreviewPlayer.Stop();
             ProjectPreviewPlayer.Source = null;
             _activeProjectPreviewChunk = null;
@@ -1420,6 +1494,7 @@ public partial class MainWindow : Window
         var entries = new List<EffectCatalogEntry>
         {
             new("AUDIO TIMELINES", "Music / audio", "Add a timed audio file with volume and fades.", ProjectTrackKind.Audio, LayerEditorKind.Audio),
+            new("OVERLAY TIMELINES", "GIF / video overlay", "Add timed moving media with image-overlay transform, opacity, and fades.", ProjectTrackKind.Overlay, LayerEditorKind.MovingOverlay),
             new("OVERLAY TIMELINES", "Image / PNG overlay", "Add a positionable, scalable, rotatable image overlay.", ProjectTrackKind.Overlay, LayerEditorKind.Image),
             new("OVERLAY TIMELINES", "Text overlay", "Add positionable styled text over the composition.", ProjectTrackKind.Overlay, LayerEditorKind.Text),
             new("PROGRESS TIMELINES", "Progress", "Add a styled progress bar for the selected clip range.", ProjectTrackKind.Progress, LayerEditorKind.Progress)
@@ -1543,16 +1618,17 @@ public partial class MainWindow : Window
         TimeSpan? initialDuration = null)
     {
         var selectedRange = _viewModel.GetSelectedVideoRange();
+        var resolvedStart = initialStart ?? selectedRange?.Start ?? _viewModel.Timeline.Playhead;
+        var remaining = _viewModel.Timeline.Duration - resolvedStart;
+        var resolvedDuration = initialDuration ?? selectedRange?.Duration ?? TimeSpan.FromSeconds(Math.Min(
+            5,
+            Math.Max(_viewModel.Timeline.SnapIncrement, remaining.TotalSeconds)));
         ProjectTimelineItem? progressTemplate = null;
         if (kind == LayerEditorKind.Progress)
         {
-            var start = initialStart ?? selectedRange?.Start ?? _viewModel.Timeline.Playhead;
-            var duration = initialDuration ?? selectedRange?.Duration ?? TimeSpan.FromSeconds(Math.Min(
-                5,
-                Math.Max(_viewModel.Timeline.SnapIncrement, (_viewModel.Timeline.Duration - start).TotalSeconds)));
             progressTemplate = _viewModel.CreateProgressItem(
-                start,
-                duration,
+                resolvedStart,
+                resolvedDuration,
                 _viewModel.GetSelectedVideoProgressName());
         }
 
@@ -1574,8 +1650,8 @@ public partial class MainWindow : Window
             _viewModel.Settings.CustomFontFolder,
             _viewModel.Timeline.SnapMode,
             _viewModel.Timeline.FramesPerSecond,
-            initialStart ?? selectedRange?.Start,
-            initialDuration ?? selectedRange?.Duration,
+            resolvedStart,
+            resolvedDuration,
             previewFrame,
             previewFrame.HasValue && editorTrack is not null
                 ? (item, progress, cancellationToken) => _viewModel.RenderEffectFramePreviewAsync(
@@ -1947,7 +2023,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true && dialog.ResultItem is not null)
         {
             _viewModel.UpdateSelectedLayerItem(dialog.ResultItem);
-            if (dialog.ResultItem.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay)
+            if (dialog.ResultItem.Kind is ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or
+                ProjectItemKind.VideoOverlay)
             {
                 ProjectPreviewOverlayCanvas.MarkItemStale(dialog.ResultItem.Id);
                 ProjectPreviewStatusText.Text = "Overlay settings changed — prerender the frame to refresh the composition.";
@@ -2272,6 +2349,7 @@ public partial class MainWindow : Window
             snapToClipRanges: SnapToClipRangesCheckBox.IsChecked == true);
         if (targetTrack.Kind == ProjectTrackKind.Overlay)
         {
+            AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.MovingOverlay, "Add GIF / video overlay...");
             AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Image, "Add image / PNG overlay…");
             AddNativeLayerMenuItem(menu, row, targetTrack, start, LayerEditorKind.Text, "Add text overlay…");
         }
@@ -2466,6 +2544,9 @@ public partial class MainWindow : Window
 
     private void ResetProjectPreviewCache()
     {
+        _projectPreviewLoadGeneration++;
+        _projectPreviewSourceSwitchPending = false;
+        _projectPreviewLoadRetryCount = 0;
         ProjectPreviewPlayer.Stop();
         ProjectPreviewPlayer.Source = null;
         _projectPreviewTimer.Stop();
@@ -2482,6 +2563,16 @@ public partial class MainWindow : Window
         ProjectPreviewSeekSlider.Maximum = 1;
         ProjectPreviewPositionText.Text = "0:00";
         ProjectPreviewDurationText.Text = "0:00";
+        QueueProjectPreviewOverlayRefresh();
+    }
+
+    private void HandleProjectTimelineChanged()
+    {
+        ProjectPreviewPlayer.Pause();
+        _projectPreviewTimer.Stop();
+        SetProjectPlaybackState(false);
+        ProjectPreviewStatusText.Text =
+            "Project content changed. Yellow prerender intervals need rendering again; unchanged cached intervals remain available.";
         QueueProjectPreviewOverlayRefresh();
     }
 
@@ -2554,7 +2645,8 @@ public partial class MainWindow : Window
             LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
         }
         else if (item.Kind is ProjectItemKind.Effect or ProjectItemKind.TextOverlay or
-                 ProjectItemKind.ImageOverlay or ProjectItemKind.Audio or ProjectItemKind.ProgressBar)
+                 ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay or ProjectItemKind.Audio or
+                 ProjectItemKind.ProgressBar)
         {
             _viewModel.SelectedProjectLayer = _viewModel.ProjectLayers
                 .FirstOrDefault(row => row.Item?.Id == item.Id);

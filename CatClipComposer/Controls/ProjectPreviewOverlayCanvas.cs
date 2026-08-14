@@ -302,7 +302,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         Rect viewport)
     {
         var outputScale = viewport.Width / _outputWidth;
-        if (item.Kind == ProjectItemKind.ImageOverlay)
+        if (item.Kind is ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay)
         {
             var source = LoadImage(item.SourcePath);
             var pixelWidth = source?.PixelWidth ?? 480;
@@ -312,12 +312,14 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             return (
                 Math.Max(18, fittedWidth * outputScale),
                 Math.Max(18, fittedHeight * outputScale),
-                new Image
-                {
-                    Source = source,
-                    Stretch = Stretch.Fill,
-                    SnapsToDevicePixels = true
-                });
+                source is not null
+                    ? new Image
+                    {
+                        Source = source,
+                        Stretch = Stretch.Fill,
+                        SnapsToDevicePixels = true
+                    }
+                    : CreateMovingOverlayPlaceholder(item));
         }
 
         var fontSize = Math.Max(1, item.FontSize * outputScale);
@@ -352,6 +354,24 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             Math.Max(22, formatted.Height + 10),
             text);
     }
+
+    private static FrameworkElement CreateMovingOverlayPlaceholder(ProjectTimelineItem item) => new Border
+    {
+        Background = new SolidColorBrush(Color.FromArgb(210, 32, 31, 29)),
+        BorderBrush = new SolidColorBrush(Color.FromRgb(155, 148, 136)),
+        BorderThickness = new Thickness(1),
+        Child = new TextBlock
+        {
+            Text = item.Kind == ProjectItemKind.VideoOverlay
+                ? $"GIF / VIDEO\n{System.IO.Path.GetFileName(item.SourcePath)}"
+                : "IMAGE",
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(218, 213, 203)),
+            FontSize = 12
+        }
+    };
 
     private BitmapSource? LoadImage(string path)
     {
@@ -675,6 +695,15 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
 
     public void CompleteEdit(Guid itemId, bool accepted)
     {
+        if (_interaction?.ItemId == itemId)
+        {
+            _interaction = null;
+            if (IsMouseCaptured)
+            {
+                ReleaseMouseCapture();
+            }
+        }
+
         if (_editingItemId == itemId)
         {
             _editingItemId = null;

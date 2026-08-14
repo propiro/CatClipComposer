@@ -310,6 +310,23 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   selection and sessions; timeline-content changes clear active coverage; playback never runs beyond the active
   chunk and both natural/timer completion consistently reset the playhead and transport icon.
 
+### `PROJECT-PREVIEW-011` — Preserve and visualize current/stale prerender intervals
+
+- Priority/status: P0 / Done
+- Acceptance: A thin ruler line paints current cached intervals green; project edits split only overlapping
+  coverage to yellow while retaining unchanged chunks for navigation. Newly rendered intervals replace the
+  corresponding stale span, rapid chunk selection is coalesced, and a current-source playback failure receives
+  one transparent reopen attempt before the application reports a persistent codec/transport error.
+
+### `UX-OVERLAY-006` — Add timed GIF/video overlays and exact transform cancellation
+
+- Priority/status: P0 / Done
+- Acceptance: Add Image/GIF/Video without selected source clips starts at the current playhead; GIF/video is
+  available from the grouped Effects catalog and empty Overlay lanes; moving overlays share image transform,
+  lock, opacity, fade, editor-preview, selection, timeline-resize, save/load, GUI/CLI render behavior, and loop
+  through their declared block duration. Cancel/Escape restores every stored placement field exactly and
+  terminates any outstanding pointer interaction before redrawing.
+
 ### `TIMELINE-010` — Prioritize source boundaries when clip snapping is enabled
 
 - Priority/status: P0 / Done

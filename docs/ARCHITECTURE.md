@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-14
 
 ## Repository modules
 
@@ -74,17 +74,18 @@ The executable modules may reference Core and Infrastructure for composition. Co
     FFmpeg to repeat an unbounded image source, which keeps Background effects and image overlays composable.
 13. `ProjectRenderMapper` retains visual track order on filter effects and overlays. The filter graph interleaves
     those operations from the bottom track upward instead of flattening every filter ahead of every overlay.
-14. Text/image overlay transforms use normalized center coordinates plus uniform scale and rotation. FFmpeg
+14. Text/image/moving overlay transforms use normalized center coordinates plus uniform scale and rotation. FFmpeg
     applies those values at final-output resolution; schema-5 and older items retain their preset placement
     until a user edits or directly manipulates the overlay.
-15. Text/image fade values become alpha fades on each transparent overlay stream at its absolute project
+15. Text/image/GIF/video fade values become alpha fades on each transparent overlay stream at its absolute project
     interval. They do not fade the composed video or reuse audio/source fade semantics.
 16. Frame, active-range Preview, and All each expose LQ/HQ actions over the same render path. Preview falls back
     to a short slice at the playhead when no range exists; a frame result is loaded and paused instead of playing.
 17. A successful prerender atomically records a content/source/app fingerprint and global-time coverage beside
-    its uniquely named MP4. Matching files form a reusable chunk catalog: startup/Open restore all valid chunks,
-    timeline navigation activates the newest chunk covering the requested project time, and a composition change
-    replaces obsolete fingerprint groups. Range-selection changes only pause/seek and never evict cached media.
+    its uniquely named MP4. Startup/Open restore all current-fingerprint chunks. During an editing session the
+    catalog retains older chunks, splits overlapping coverage to a yellow stale state, and keeps non-overlapping
+    green coverage seekable; a replacement render overwrites only its interval. Range selection never evicts
+    cached media. The disk cache is bounded to the newest 80 project chunks.
 18. LQ previews use the same mapped timeline and ordered filter graph on the scaled canvas. Source fitting,
     overlay geometry, text, margins, progress height, and blur radius scale together. Selected image overlays
     may use Lanczos instead of the default bilinear preview scaler; whole-frame effects still execute at the
@@ -96,6 +97,12 @@ The executable modules may reference Core and Infrastructure for composition. Co
 19. Project-preview transport uses the active chunk's declared project-time interval rather than trusting a
     platform-reported media duration. The timer and MediaEnded path both pause, reset to the chunk start, and
     update the play/pause state, preventing playback from escaping a selected range.
+20. MediaElement source switches clear the preceding URI and set only the latest requested chunk on a later
+    dispatcher turn. A failure for the still-current source is reopened once without a modal interruption;
+    only a repeated current-source failure is reported as unavailable.
+21. Moving overlay inputs use FFmpeg input looping, trim to the timeline block, preserve animation frames, and
+    pass through the same alpha, fade, scale, rotation, position, track-order, and preview-quality stages as
+    still overlays. Their audio stream is intentionally not mixed because they are visual Overlay-track items.
 
 ### Timeline and parameter editing
 
@@ -116,10 +123,11 @@ The executable modules may reference Core and Infrastructure for composition. Co
    owns cancellation/debounce and a snapped non-modal preview window. The window paints immediately, reports
    preparation phases over the first quarter, and maps process progress monotonically over the remainder.
 6. `ProjectPreviewOverlayCanvas` maps the project frame into the MediaElement's actual letterboxed viewport,
-   displays active text/image content with selection handles, and owns pointer capture for move, uniform-scale,
+   displays active text/image/moving content with selection handles, and owns pointer capture for move, uniform-scale,
    and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
-   the original transform. Item-ID selection remains shared with the timeline and Project Layers Data panel.
+   every original placement field and releases any pending pointer interaction before redrawing. Item-ID
+   selection remains shared with the timeline and Project Layers Data panel.
    A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing;
    schema 9 opacity flows through the same shared mapper to FFmpeg alpha/color controls. Once a render exists,
    unchanged items contribute only hit-testing/selection chrome over the MediaElement. A stale item paints one
