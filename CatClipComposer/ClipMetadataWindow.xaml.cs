@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
+using CatClipComposer.Controls;
 using CatClipComposer.Desktop;
 using CatClipComposer.Presentation;
 
@@ -12,13 +13,17 @@ public partial class ClipMetadataWindow : Window
     private readonly IMediaCatalog _catalog;
     private readonly long _mediaFileId;
 
-    public ClipMetadataWindow(MediaCardViewModel media, IMediaCatalog catalog)
+    public ClipMetadataWindow(
+        MediaCardViewModel media,
+        IMediaCatalog catalog,
+        IReadOnlyList<string> popularTags)
     {
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         DataContext = media;
         _catalog = catalog;
         _mediaFileId = media.Media.Id;
+        TagQuickButtonBuilder.Populate(PopularTagsPanel, TagsTextBox, popularTags);
         Loaded += ClipMetadataWindow_Loaded;
     }
 

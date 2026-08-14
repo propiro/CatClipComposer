@@ -1,15 +1,20 @@
 using System.Windows;
+using CatClipComposer.Controls;
 
 namespace CatClipComposer;
 
 public partial class BulkTagsWindow : Window
 {
-    public BulkTagsWindow(int clipCount, string initialTags)
+    public BulkTagsWindow(
+        int clipCount,
+        string initialTags,
+        IReadOnlyList<string> popularTags)
     {
         InitializeComponent();
         Desktop.DesktopWindowTheme.Apply(this);
         SummaryText.Text = clipCount == 1 ? "Editing one clip" : $"Editing {clipCount} selected clips";
         TagsTextBox.Text = initialTags;
+        TagQuickButtonBuilder.Populate(PopularTagsPanel, TagsTextBox, popularTags);
         Loaded += (_, _) =>
         {
             TagsTextBox.Focus();

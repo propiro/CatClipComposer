@@ -19,7 +19,9 @@
                 BorderThickness="1">
             <Grid>
                 <Image Source="pack://application:,,,/Assets/mr-cat-bee-splash.png"
-                       Stretch="UniformToFill" />
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Stretch="Uniform" />
                 <Border VerticalAlignment="Bottom" Padding="9,7" Background="#D9141413">
                     <TextBlock HorizontalAlignment="Center" FontSize="11"
                                Foreground="{StaticResource MutedTextBrush}"

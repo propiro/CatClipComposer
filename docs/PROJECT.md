@@ -116,7 +116,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   optional fade-in from and fade-out to transparency. GIF/video items loop moving content through their block
   duration using the same controls. With no selected Video range, new native overlays begin at the playhead.
   Live stale proxies retain that exact opacity; moved
-  content leaves a crossed notice over its old prerendered location until the frame is refreshed.
+  content leaves a crossed notice over its old prerendered location until the frame is refreshed. The active
+  timeline selection is hit-tested first where preview objects overlap. WPF proxies and FFmpeg share normalized
+  LF line breaks and render-safe text content, so multiline object bounds match the prerendered layout.
   Text appearance/transform settings, including optional stroke color/width/smoothness, can be saved as portable
   presets and selected from generated text/font thumbnails without inheriting an old timeline interval. Effect
   frame previews intentionally bypass only the candidate text's fade so appearance remains judgeable.
@@ -144,9 +146,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Effect discovery and block state — Done.** The Content Browser has a grouped Effects tab with native and
   plugin entries repeated under every compatible timeline category. Timeline blocks can be disabled without
   deletion; disabled blocks remain editable but render darkened/grayed and are excluded from output.
-- **Catalog state and sorting — Done.** Durable blue unseen, green current-project, and yellow other-project
+- **Catalog state, tags, and sorting — Done.** Durable blue unseen, green current-project, and yellow other-project
   corners summarize clip state without conflating project references with completed-export history. Browser
-  sorting persists across name, newest source date, duration, and custom-tag modes.
+  sorting persists across name, newest source date, duration, and custom-tag modes. Single/mass tag and metadata
+  editors keep current typed content while quick buttons add the library's ten most-used tags without duplicates.
 - **Track-ordered filter composition — Done.** Video filter effects and overlays interleave bottom-to-top, so
   an overlay below Video blur is filtered and the same overlay above it stays sharp.
 - **Extensible plugin modules — Done.** Versioned media/stage/track contracts, isolated dependency loading,
@@ -164,7 +167,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   catalog-date, saved/recovered-project-reference, and completed-export details.
 - **Selectable undo/redo destinations — Done.** The main arrows move one step; adjacent dropdowns list every
   retained action and restore the selected earlier/later moment as one recovery/cache refresh operation.
-- **About and update visibility — Done.** A top-right `?` opens build/experiment details and the Mr. Cat image.
+- **About and update visibility — Done.** A top-right `?` opens build/experiment details and the complete Mr. Cat image,
+  fitted without cropping across the supported resizable window.
   Its explicit, non-installing GitHub check distinguishes newer repository code from a newer packaged Windows ZIP.
 
 ### Projects and automation
@@ -189,7 +193,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.31 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.32 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

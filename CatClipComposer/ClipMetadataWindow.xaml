@@ -3,13 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Clip metadata"
         Width="660"
-        Height="480"
+        Height="550"
         MinWidth="520"
         MinHeight="360"
         Background="{StaticResource WindowBrush}"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="12" Background="{StaticResource WindowBrush}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -44,7 +45,13 @@
                      Text="{Binding Media.Tags, Mode=OneTime}" />
         </Grid>
 
-        <Border Grid.Row="4"
+        <StackPanel Grid.Row="4" Margin="90,0,0,12">
+            <TextBlock Margin="0,0,0,5" FontSize="10" FontWeight="SemiBold"
+                       Foreground="{StaticResource MutedTextBrush}" Text="10 MOST USED LIBRARY TAGS" />
+            <WrapPanel x:Name="PopularTagsPanel" />
+        </StackPanel>
+
+        <Border Grid.Row="5"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1">
@@ -86,7 +93,7 @@
             </Grid>
         </Border>
 
-        <StackPanel Grid.Row="5" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+        <StackPanel Grid.Row="6" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button MinWidth="80" IsCancel="True" Content="Cancel" />
             <Button MinWidth="90"
                     Margin="6,0,0,0"

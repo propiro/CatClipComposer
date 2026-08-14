@@ -2,6 +2,24 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.32 text geometry, overlap selection, About image, and tag shortcuts
+
+- Diagnosed the supplied multiline Spaceport text exactly: its Windows CRLF pairs were interpreted as two line
+  advances by FFmpeg but one by WPF. Shared Core normalization now converts every line ending to LF, preserves
+  valid composed text, removes only unattached combining marks, trims trailing blank lines, and feeds both the
+  drawtext file and project-view proxy.
+- Made the active timeline-selected overlay the final WPF preview visual, giving that explicit selection priority
+  for click/drag hit testing when objects overlap without changing FFmpeg track compositing order.
+- Changed the resizable About artwork from crop/fill to aspect-preserving fit so the complete Mr. Cat photograph
+  remains visible. Added deterministic ten-most-used library tag buttons to both bulk and metadata tag windows;
+  buttons append without erasing in-progress text or duplicating a tag with different casing.
+- Replaced the personal author email on all six unpushed commits with the account-ID GitHub `noreply` identity and
+  set that identity locally for future commits. Already-public history was left intact rather than force-rewritten.
+- Verification: clean Release builds after each product-code batch; the screenshot text/newline, selected-overlay
+  ordering, tag-frequency, typed-tag preservation, and duplicate suppression smoke passes; all 18 XAML files resolve
+  39 static resources; analyzers, vulnerability, Gitleaks history/diff, version/marker, and in-place portable publish
+  gates pass. No dependency or redistributed third-party binary changed.
+
 ## 2026-08-14 — v0.1.31 history navigation, About/update visibility, and code audit
 
 - Split both toolbar history controls into a one-step arrow and adjacent dropdown. Dynamic action lists expose

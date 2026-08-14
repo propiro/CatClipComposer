@@ -1,5 +1,37 @@
 # Audit log
 
+## AUDIT-2026-08-14-007 — Text geometry, overlap hit testing, About layout, and tag editor audit
+
+Scope: the reported text-object/render mismatch, project-preview overlap selection, resizable About artwork,
+single/mass metadata tagging, affected Core/WPF/FFmpeg boundaries, XAML, versioning, dependencies, and package rules.
+
+Findings and remediation:
+
+- The supplied text contains Windows CRLF pairs. WPF correctly treated each pair as one line break, while FFmpeg
+  drawtext advanced on both CR and LF, doubling multiline gaps and moving centered output outside its gizmo. The
+  existing safe-text cleanup is now a shared Core operation that first normalizes CRLF/CR to LF; WPF measures and
+  displays exactly that same string before Infrastructure writes it to drawtext's UTF-8 file.
+- WPF's normal last-child hit testing always preferred the later preview object even when another overlap had been
+  explicitly selected in the timeline. Redraw now preserves normal order but places the active selection last;
+  this changes only editor interaction/proxy presentation, not project track order or rendered composition.
+- About used `UniformToFill`, intentionally cropping the photograph as its resizable container changed aspect.
+  `Uniform` now keeps the entire image visible with neutral letterboxing where necessary.
+- Tags were prefilled only when selected clips had identical raw values and offered no library vocabulary. A
+  deterministic case-insensitive frequency pass counts each tag at most once per clip. Both relevant dialogs now
+  expose ten quick buttons whose append logic retains literal in-progress input and suppresses duplicates.
+- Review found no new process, network, SQL, native-code, secret, credential, path-trust, dependency, or licensing
+  boundary. Dynamic tag labels are WPF content objects rather than parsed markup. No package dependency changed.
+- Git-object metadata review found that the six not-yet-pushed commits inherited a personal author email. The
+  repository-local identity now uses GitHub's account-ID `noreply` address, and only those unpushed commits were
+  rewritten before publication. Older commits on the already-public branch retain their prior author metadata;
+  removing that pre-existing disclosure would require a separate destructive public-history rewrite.
+
+Verification: zero-warning/error Release builds; focused STA smoke for the screenshot CRLF/emoticon normalization,
+selected-last visual order, tag ranking, typed input retention, and case-insensitive duplicate suppression; all
+39 static XAML resources across 18 files; clean whitespace/warning-analyzer checks; no vulnerable direct/transitive
+NuGet packages; Gitleaks clean across all 62 current commits plus a clean sensitive-pattern working-diff scan; CLI/assembly
+v0.1.32 and single-marker checks; and successful in-place portable publication with the existing INI preserved.
+
 ## AUDIT-2026-08-14-006 — History navigation, optional updater, and full code/release audit
 
 Scope: direct multi-step undo/redo selection, About/Mr. Cat/update UI, application/Core/Infrastructure/CLI source,

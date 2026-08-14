@@ -1674,7 +1674,10 @@ public partial class MainWindow : Window
         }
 
         var distinctTags = selected.Select(media => media.Media.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var dialog = new BulkTagsWindow(selected.Count, distinctTags.Count == 1 ? distinctTags[0] : string.Empty)
+        var dialog = new BulkTagsWindow(
+            selected.Count,
+            distinctTags.Count == 1 ? distinctTags[0] : string.Empty,
+            GetMostUsedLibraryTags())
         {
             Owner = this
         };
@@ -1692,6 +1695,10 @@ public partial class MainWindow : Window
             DesktopDialogs.ShowError(this, "Could not save clip tags.", exception);
         }
     }
+
+    private IReadOnlyList<string> GetMostUsedLibraryTags() =>
+        LibraryTagStatistics.GetMostUsed(
+            _viewModel.MediaFiles.Select(media => media.Media.Tags));
 
     private void AddStillScreen_Click(object sender, RoutedEventArgs e)
     {
@@ -2170,7 +2177,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new ClipMetadataWindow(_viewModel.SelectedMedia, _catalog) { Owner = this };
+        var dialog = new ClipMetadataWindow(
+            _viewModel.SelectedMedia,
+            _catalog,
+            GetMostUsedLibraryTags())
+        {
+            Owner = this
+        };
         if (dialog.ShowDialog() != true)
         {
             return;

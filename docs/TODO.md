@@ -412,6 +412,32 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   bypass only the candidate text's fades, while project/export renders keep fades. Multiline text with trailing
   blank lines or free-standing combining marks cannot silently suppress otherwise renderable lines.
 
+### `UX-TEXT-003` — Match multiline text gizmo and FFmpeg geometry
+
+- Priority/status: P0 / Done
+- Acceptance: Shared text normalization converts CRLF/CR to one LF before both WPF measurement and FFmpeg
+  text-file output, removes only unsafe unattached combining marks, trims trailing blank lines, and keeps the
+  on-canvas proxy bounds aligned with the prerendered multiline text at every preview quality.
+
+### `PROJECT-PREVIEW-013` — Prioritize the timeline-selected overlay in overlap hit testing
+
+- Priority/status: P1 / Done
+- Acceptance: Project Preview draws the currently timeline-selected active overlay last for WPF hit testing,
+  so a click/drag in an overlap continues manipulating that explicit selection while normal topmost selection
+  remains available wherever it is not covered by the selected item.
+
+### `BROWSER-009` — Add most-used tag shortcuts without erasing typed tags
+
+- Priority/status: P1 / Done
+- Acceptance: Single/mass tag and clip-metadata editors derive a deterministic top ten from distinct per-clip
+  library tags. Clicking one appends it case-insensitively without duplicating it or replacing text in progress.
+
+### `UX-ABOUT-002` — Keep the complete Mr. Cat image visible in About
+
+- Priority/status: P1 / Done
+- Acceptance: The About image uses aspect-preserving fit rather than crop/fill, so resizing anywhere within
+  the supported window bounds never clips the photograph.
+
 ### `PROJECT-PREVIEW-012` — Expose prerender queue/stages and exact cache freshness
 
 - Priority/status: P0 / Done

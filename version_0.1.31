@@ -1,8 +1,0 @@
-Cat Clip Composer 0.1.31
-
-- Adds split undo/redo controls with selectable multi-step history destinations.
-- Adds an About window with the Mr. Cat splash image and experiment/build details.
-- Checks public GitHub metadata separately for newer source and downloadable Windows releases.
-- Bounds, times out, caches, and cancellation-protects update requests without downloading files.
-- Hardens trusted-link opening and reports invalid folder/browser launch failures instead of crashing.
-- Completes dependency, analyzer, secret, process/path/network, XAML, build, and package audits.

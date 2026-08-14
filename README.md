@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.31**.
+Current application and component version: **0.1.32**.
 
 ## Documentation
 
@@ -31,7 +31,8 @@ Current application and component version: **0.1.31**.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in a multi-select recycled browser without opening every video.
   Its header cycles between a thumbnail list, small grid, large grid, and extra-large grid; card sizes are configurable in
-  Preferences, and single or mass tag edits are available from the context menu. Sort by name, newest file
+  Preferences, and single or mass tag edits are available from the context menu. Both tag editors preserve
+  entered text while offering quick buttons for the ten most-used library tags. Sort by name, newest file
   date, duration, or custom tag. Green, yellow, and blue thumbnail corners identify clips used in the current
   project, referenced by another saved/recovered project, or newly imported and not yet previewed.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
@@ -51,7 +52,9 @@ Current application and component version: **0.1.31**.
   width, and smoothness; their portable INI presets include recognizable text/font thumbnails.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
   on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
-  synchronized with the timeline and Project Layers Data panel, while exact X/Y, scale, rotation, placement
+  synchronized with the timeline and Project Layers Data panel; the timeline-selected item wins hit testing
+  where objects overlap, and multiline text proxies share renderer-normalized line breaks. Exact X/Y, scale,
+  rotation, placement
   presets, and transparency fade-in/out remain editable in the overlay dialog. A moved live proxy uses the
   exact configured opacity; the old prerendered location receives a crossed **MOVED CONTENT** notice until
   the frame is prerendered again.
@@ -71,7 +74,7 @@ Current application and component version: **0.1.31**.
   configurable history depth (32 project edits by default). Each undo/redo arrow performs one step; its adjacent
   dropdown can jump atomically to any currently retained earlier/later history moment. Unsaved
   projects show an asterisk and closing offers literal Save, Don't save, and Cancel choices.
-- Open About from the top-right `?` button to see build/experiment details and the Mr. Cat splash image. Its
+- Open About from the top-right `?` button to see build/experiment details and the complete, uncropped Mr. Cat splash image. Its
   manual update checker separately reports newer public repository code and newer downloadable Windows Release
   ZIPs; it never downloads or installs anything, sends no credentials, and only opens allow-listed project pages.
 - Run config, scan/list, tag/usage, project, layered render, and history workflows headlessly with text or JSON output and stable exit codes.

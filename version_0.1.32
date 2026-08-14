@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.32
+
+- Makes multiline text gizmos and FFmpeg rendering share the same line breaks and safe text content.
+- Gives the timeline-selected overlay priority when project-preview objects overlap.
+- Keeps the complete Mr. Cat photo visible at every supported About-window size.
+- Adds non-destructive shortcuts for the ten most-used library tags to both tag editors.

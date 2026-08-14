@@ -161,7 +161,9 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             return;
         }
 
-        foreach (var item in _items)
+        // Draw the timeline-selected item last so it wins WPF hit testing wherever overlays overlap.
+        // The timeline remains the explicit way to choose an otherwise obscured object.
+        foreach (var item in _items.OrderBy(item => item.Id == _selectedItemId ? 1 : 0))
         {
             var visual = CreateItemVisual(item, viewport);
             Children.Add(visual.Element);
@@ -322,10 +324,12 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
                     : CreateMovingOverlayPlaceholder(item));
         }
 
+        var renderText = TextOverlayContent.NormalizeForRendering(
+            string.IsNullOrEmpty(item.Text) ? "Text" : item.Text);
         var fontSize = Math.Max(1, item.FontSize * outputScale);
         var fontFamily = new FontFamily(string.IsNullOrWhiteSpace(item.FontFamily) ? "Segoe UI" : item.FontFamily);
         var formatted = new FormattedText(
-            string.IsNullOrEmpty(item.Text) ? "Text" : item.Text,
+            renderText,
             CultureInfo.CurrentUICulture,
             FlowDirection.LeftToRight,
             new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
@@ -343,7 +347,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
 
         var text = new TextBlock
         {
-            Text = string.IsNullOrEmpty(item.Text) ? "Text" : item.Text,
+            Text = renderText,
             FontFamily = fontFamily,
             FontSize = fontSize,
             Foreground = Brushes.White,
@@ -352,12 +356,12 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             VerticalAlignment = VerticalAlignment.Center,
             Effect = item.TextStrokeEnabled && item.TextStrokeWidth > 0
                 ? new DropShadowEffect
-            {
-                BlurRadius = Math.Max(1, (item.TextStrokeWidth + item.TextStrokeSmoothness) * outputScale * 2),
-                ShadowDepth = 0,
-                Color = strokeColor,
-                Opacity = 1
-            }
+                {
+                    BlurRadius = Math.Max(1, (item.TextStrokeWidth + item.TextStrokeSmoothness) * outputScale * 2),
+                    ShadowDepth = 0,
+                    Color = strokeColor,
+                    Opacity = 1
+                }
                 : null
         };
         return (
