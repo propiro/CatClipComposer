@@ -1,5 +1,6 @@
 using System.IO;
 using System.ComponentModel;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -73,6 +74,9 @@ public partial class MainWindow : Window
     private bool _closeSaveInProgress;
     private int _catalogSelectionAnchor = -1;
     private ProjectTimelineItem? _copiedProgressStyle;
+    private ProjectTimelineItem? _copiedEffect;
+    private Guid? _copiedEffectTrackId;
+    private double _projectPreviewZoom = 1;
 
     private sealed record TimelineDragData(IReadOnlyList<Guid> ItemIds, TimeSpan GrabOffset);
     private sealed record TrackDragData(Guid TrackId);
@@ -603,6 +607,7 @@ public partial class MainWindow : Window
 
         CatalogListBox.Focus();
         e.Handled = true;
+        _ = MarkMediaSeenSafelyAsync(clickedMedia);
         if (e.ClickCount == 2)
         {
             AddSelectedCatalogItems();
@@ -652,6 +657,30 @@ public partial class MainWindow : Window
         }
 
         LoadClipPreview(_viewModel.SelectedMedia?.FullPath);
+    }
+
+    private async Task MarkMediaSeenSafelyAsync(MediaCardViewModel media)
+    {
+        try
+        {
+            await _viewModel.MarkMediaSeenAsync([media]);
+        }
+        catch (Exception exception)
+        {
+            ProjectPreviewStatusText.Text = $"Could not mark clip as seen: {exception.Message}";
+        }
+    }
+
+    private async void MarkSelectedCatalogItemsSeen_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await _viewModel.MarkMediaSeenAsync(CatalogListBox.SelectedItems.Cast<MediaCardViewModel>());
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "Could not mark the selected clips as seen.", exception);
+        }
     }
 
     private void LoadClipPreview(string? sourcePath, bool autoplay = false)
@@ -1660,7 +1689,9 @@ public partial class MainWindow : Window
                     previewFrame.Value,
                     progress,
                     cancellationToken)
-                : null)
+                : null,
+            _viewModel.TextOverlayPresets,
+            preset => _viewModel.SaveTextOverlayPresetAsync(preset))
         {
             Owner = this
         };
@@ -2016,7 +2047,9 @@ public partial class MainWindow : Window
                     _viewModel.Timeline.Playhead,
                     progress,
                     cancellationToken)
-                : null)
+                : null,
+            _viewModel.TextOverlayPresets,
+            preset => _viewModel.SaveTextOverlayPresetAsync(preset))
         {
             Owner = this
         };
@@ -2582,6 +2615,34 @@ public partial class MainWindow : Window
         TimelineHorizontalScrollViewer.ScrollToHorizontalOffset(0);
     }
 
+    private void ProjectPreviewVideoSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var factor = Math.Pow(1.15, e.Delta / 120d);
+        _projectPreviewZoom = Math.Clamp(_projectPreviewZoom * factor, 1, 6);
+        if (Math.Abs(_projectPreviewZoom - 1) < 0.001)
+        {
+            _projectPreviewZoom = 1;
+            ProjectPreviewVideoSurface.RenderTransform = Transform.Identity;
+        }
+        else
+        {
+            ProjectPreviewVideoSurface.RenderTransform = new ScaleTransform(
+                _projectPreviewZoom,
+                _projectPreviewZoom);
+        }
+
+        ProjectPreviewStatusText.Text = $"Project Preview zoom: {_projectPreviewZoom * 100:0}% (wheel down returns to Fit).";
+        e.Handled = true;
+    }
+
+    private void TimelineDropSurface_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var pixels = e.Delta / 120d * 120;
+        TimelineHorizontalScrollViewer.ScrollToHorizontalOffset(
+            Math.Max(0, TimelineHorizontalScrollViewer.HorizontalOffset - pixels));
+        e.Handled = true;
+    }
+
     private void FitTimelineVertically_Click(object sender, RoutedEventArgs e) =>
         _viewModel.FitTimelineVertically(Math.Max(100, TimelineDropSurface.ActualHeight));
 
@@ -2640,7 +2701,11 @@ public partial class MainWindow : Window
             !string.IsNullOrWhiteSpace(item.SourcePath) &&
             File.Exists(item.SourcePath))
         {
-            _viewModel.SelectCatalogMedia(item.SourcePath);
+            var catalogMedia = _viewModel.SelectCatalogMedia(item.SourcePath);
+            if (catalogMedia is not null)
+            {
+                _ = MarkMediaSeenSafelyAsync(catalogMedia);
+            }
             PreviewTabs.SelectedItem = ClipPreviewTab;
             LoadClipPreview(item.SourcePath, AutoplayClipsCheckBox.IsChecked == true);
         }
@@ -2919,6 +2984,124 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TimelineItemCopyEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var item = SelectTimelineItem(sender);
+        if (item is not null)
+        {
+            CopyEffect(item.Id);
+        }
+    }
+
+    private void TimelineItemPasteEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var target = SelectTimelineItem(sender);
+        PasteEffect(target?.TrackId);
+    }
+
+    private void LayerItemCopyEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender);
+        if (row?.Item is not null)
+        {
+            CopyEffect(row.Item.Id);
+        }
+    }
+
+    private void LayerItemPasteEffect_Click(object sender, RoutedEventArgs e)
+    {
+        var row = SelectLayerCommandTarget(sender);
+        PasteEffect(row?.Track.Id);
+    }
+
+    private void LayerTrackPasteEffect_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { CommandParameter: ProjectLayerRowViewModel row })
+        {
+            _viewModel.SelectedProjectLayer = row;
+            PasteEffect(row.Track.Id);
+        }
+    }
+
+    private void TimelineTrackPasteEffect_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTimelineTrack(sender);
+        PasteEffect(_viewModel.SelectedProjectLayer?.Track.Id);
+    }
+
+    private void CopyEffect(Guid itemId)
+    {
+        var row = _viewModel.ProjectLayers.FirstOrDefault(candidate => candidate.Item?.Id == itemId);
+        if (row?.Item is null || !IsCopyableEffect(row.Item))
+        {
+            MessageBox.Show(
+                this,
+                "Video source clips are copied from the Content Browser. Select an effect, overlay, audio, progress, or background block.",
+                "Effect cannot be copied",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        _copiedEffect = CloneTimelineItem(row.Item);
+        _copiedEffectTrackId = row.Track.Id;
+        ProjectPreviewStatusText.Text = $"Copied {row.Item.Name}. Paste places a duplicate at the playhead.";
+    }
+
+    private void PasteEffect(Guid? requestedTrackId)
+    {
+        if (_copiedEffect is null)
+        {
+            MessageBox.Show(this, "Copy an effect block first.", "Nothing to paste",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var tracks = _viewModel.ProjectLayers
+            .Where(row => row.IsTrackHeader)
+            .Select(row => row.Track)
+            .ToList();
+        var targetTrack = tracks.FirstOrDefault(track =>
+                              track.Id == requestedTrackId && IsCompatibleTrack(track.Kind, _copiedEffect.Kind))
+                          ?? tracks.FirstOrDefault(track =>
+                              track.Id == _copiedEffectTrackId && IsCompatibleTrack(track.Kind, _copiedEffect.Kind))
+                          ?? tracks.FirstOrDefault(track => IsCompatibleTrack(track.Kind, _copiedEffect.Kind));
+        if (targetTrack is null)
+        {
+            MessageBox.Show(this, "No compatible timeline exists for the copied effect.", "Cannot paste effect",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var pasted = CloneTimelineItem(_copiedEffect);
+        pasted.Id = Guid.NewGuid();
+        pasted.StartTicks = Math.Max(0, _viewModel.Timeline.Playhead.Ticks);
+        pasted.Name = $"{_copiedEffect.Name} copy";
+        _viewModel.AddLayerItem(targetTrack.Id, pasted);
+        ProjectPreviewStatusText.Text = $"Pasted {pasted.Name} at {_viewModel.Timeline.Playhead.TotalSeconds:0.###} s.";
+        QueueProjectPreviewOverlayRefresh();
+    }
+
+    private static bool IsCopyableEffect(ProjectTimelineItem item) =>
+        item.Kind is not (ProjectItemKind.Video or ProjectItemKind.StillImage);
+
+    private bool IsCompatibleTrack(ProjectTrackKind trackKind, ProjectItemKind itemKind) => itemKind switch
+    {
+        ProjectItemKind.TextOverlay or ProjectItemKind.ImageOverlay or ProjectItemKind.VideoOverlay =>
+            trackKind == ProjectTrackKind.Overlay,
+        ProjectItemKind.Audio => trackKind == ProjectTrackKind.Audio,
+        ProjectItemKind.ProgressBar => trackKind == ProjectTrackKind.Progress,
+        ProjectItemKind.Effect => _copiedEffect is not null &&
+            _viewModel.Plugins.OfType<ICatClipVideoEffectPlugin>().Any(plugin =>
+                plugin.Descriptor.Id.Equals(_copiedEffect.PluginId, StringComparison.OrdinalIgnoreCase) &&
+                plugin.Descriptor.CompatibleTracks.Contains(trackKind)),
+        _ => false
+    };
+
+    private static ProjectTimelineItem CloneTimelineItem(ProjectTimelineItem item) =>
+        JsonSerializer.Deserialize<ProjectTimelineItem>(JsonSerializer.Serialize(item)) ??
+        throw new InvalidOperationException("Could not copy the selected effect.");
+
     private void TimelineItemToggleTransformLock_Click(object sender, RoutedEventArgs e)
     {
         var item = SelectTimelineItem(sender);
@@ -3192,7 +3375,18 @@ public partial class MainWindow : Window
 
     private void TimelineListBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Delete)
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.C &&
+            _viewModel.SelectedProjectLayer?.Item is { } selectedItem)
+        {
+            CopyEffect(selectedItem.Id);
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.V)
+        {
+            PasteEffect(_viewModel.SelectedProjectLayer?.Track.Id);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete)
         {
             _viewModel.RemoveSelectedTimelineItems();
             e.Handled = true;

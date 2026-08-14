@@ -2,6 +2,22 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-14 — v0.1.29 effect clipboard and catalog-state pass
+
+- Preserved lane chronology while assigning insertion-order z-index, so a later-added block wins selection in
+  an overlap. Added complete effect/overlay/audio/progress copy and compatible-track paste at the playhead from
+  timeline/Project Layers menus and Ctrl+C/Ctrl+V.
+- Added portable text-overlay presets for text, font, transform, opacity, and fades. The editor regenerates
+  compact text/font thumbnails at runtime and deliberately keeps project timing out of presets.
+- Added Project Preview wheel zoom, timeline wheel panning, and Ctrl/Shift 0.5/1-second time-button modifiers.
+- Migrated the catalog with seen state and per-project media references. Green current-project, yellow
+  other-project, and blue unseen corners update independently from successful-export use history; clips become
+  seen when deliberately previewed or through the context action.
+- Added persisted Content Browser sorting by name, newest file date, duration, or custom tag, including CLI
+  configuration/list visibility. Advanced all component metadata and the extensionless marker to 0.1.29.
+- Verification: clean Release solution build, static XAML resource audit, `git diff --check`, and an isolated
+  fresh SQLite/CLI list smoke. No dependency changed, so no new vulnerability audit was required.
+
 ## 2026-08-14 — v0.1.28 stale-coverage and moving-overlay pass
 
 - Made direct overlay manipulation fully transactional: the draft now retains preset placement as well as

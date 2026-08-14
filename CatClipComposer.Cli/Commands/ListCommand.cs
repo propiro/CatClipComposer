@@ -31,6 +31,8 @@ internal static class ListCommand
                     item.Height,
                     item.HasAudio,
                     item.IsAvailable,
+                    item.IsSeen,
+                    item.ProjectReferenceCount,
                     item.UseCount,
                     item.LastUsedUtc,
                     item.LastOutputPath,
@@ -46,9 +48,11 @@ internal static class ListCommand
         foreach (var item in media)
         {
             var availability = item.IsAvailable ? string.Empty : " [unavailable]";
+            var libraryState = item.IsSeen ? string.Empty : " [new]";
             await context.Output.WriteLineAsync(
                 $"{item.Id,6}  {DurationFormatter.Format(item.Duration),8}  " +
-                $"{item.Width}x{item.Height}  used {item.UseCount,3}  {item.FileName}{availability}");
+                $"{item.Width}x{item.Height}  used {item.UseCount,3}  projects {item.ProjectReferenceCount,3}  " +
+                $"{item.FileName}{availability}{libraryState}");
             await context.Output.WriteLineAsync($"        {item.FullPath}");
             if (!string.IsNullOrWhiteSpace(item.Tags))
             {

@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.28**.
+Current application and component version: **0.1.29**.
 
 ## Documentation
 
@@ -31,7 +31,9 @@ Current application and component version: **0.1.28**.
 - Generate and cache static thumbnails plus a configurable, evenly sampled contact sheet with FFmpeg.
 - Search names, paths, and editable tags in a multi-select recycled browser without opening every video.
   Its header cycles between a thumbnail list, small grid, and large grid; both grid sizes are configurable in
-  Preferences, and single or mass tag edits are available from the context menu.
+  Preferences, and single or mass tag edits are available from the context menu. Sort by name, newest file
+  date, duration, or custom tag. Green, yellow, and blue thumbnail corners identify clips used in the current
+  project, referenced by another saved/recovered project, or newly imported and not yet previewed.
 - Preview a selected library clip—or double-click its Video timeline block—in muted Clip Preview, with a
   permanently visible autoplay checkbox. Clip and Project Preview can remain joined as tabs or split into
   resizable left/right viewports. Frame, selected-range Preview, and All each expose explicit LQ/HQ actions;
@@ -44,7 +46,8 @@ Current application and component version: **0.1.28**.
 - Add a still image anywhere on the timeline. Put it first for a splash screen, between videos for a mid-roll, or last for an outro.
 - Add, edit, time, disable/enable, and remove multiple PNG/JPG, text, music, and individually styled progress
   effects from the Content Browser's grouped Effects tab; choose installed Windows or visibly marked
-  portable-folder fonts.
+  portable-folder fonts. Copy/paste complete effect blocks at the playhead, and save text overlays as portable
+  INI presets whose text/font thumbnails make styles easy to recognize.
 - Select visible text or image overlays directly in Project Preview, then drag, scale, or rotate their
   on-canvas gizmos. OK/Enter commits a transform and Cancel/Escape restores it. Preview selection stays
   synchronized with the timeline and Project Layers Data panel, while exact X/Y, scale, rotation, placement
@@ -74,7 +77,9 @@ Current application and component version: **0.1.28**.
   controls for time zoom and track height are available. Timed-block dragging preserves the original grab
   point and previews the exact landing range; either edge resizes non-primary timed blocks, with optional
   snapping to source-clip boundaries. Drag track names vertically to reorder the render stack; double-click a
-  Video track name to bring Project Preview forward, or double-click a timed effect/overlay to edit it.
+  Video track name to bring Project Preview forward, or double-click a timed effect/overlay to edit it. When
+  blocks overlap on one lane, the later-added block is visually and interactively on top. Mouse-wheel over
+  Project Preview zooms the image; mouse-wheel over the timeline pans backward/forward.
 - Right-click the playhead to preview from that frame or mark either range edge; right-click a selected ruler
   range to preview only that interval. Left-clicking an empty compatible lane opens its add-effect menu;
   track headers and compatible items expose the same filtered effect actions.

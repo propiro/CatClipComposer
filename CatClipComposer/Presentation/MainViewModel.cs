@@ -37,6 +37,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isDirty;
     private readonly ProjectPreviewCoverageCatalog _projectPreviewCoverage = new();
     private OverlayTransformDraft? _overlayTransformDraft;
+    private readonly SemaphoreSlim _catalogReferenceGate = new(1, 1);
 
     public MainViewModel(
         ApplicationSettings settings,
@@ -68,6 +69,7 @@ public sealed class MainViewModel : ObservableObject
         Timeline.SetDisplaySettings(_project.TimelineRulerMode, _project.TimelineSnapMode);
         MediaView = CollectionViewSource.GetDefaultView(MediaFiles);
         MediaView.Filter = FilterMedia;
+        ApplyMediaSort();
         RefreshProjectLayers();
     }
 
@@ -102,6 +104,33 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<ICatClipPlugin> Plugins => _plugins.Plugins;
 
     public IReadOnlyList<string> RecentProjectPaths => _settings.RecentProjectPaths;
+
+    public IReadOnlyList<TextOverlayPreset> TextOverlayPresets => _settings.TextOverlayPresets;
+
+    public IReadOnlyList<ContentBrowserSortChoice> BrowserSortChoices { get; } =
+    [
+        new(ContentBrowserSortMode.Name, "Name"),
+        new(ContentBrowserSortMode.Date, "Date (newest)"),
+        new(ContentBrowserSortMode.Length, "Length"),
+        new(ContentBrowserSortMode.Tag, "Custom (tag)")
+    ];
+
+    public ContentBrowserSortMode BrowserSortMode
+    {
+        get => _settings.BrowserSortMode;
+        set
+        {
+            if (_settings.BrowserSortMode == value)
+            {
+                return;
+            }
+
+            _settings.BrowserSortMode = value;
+            OnPropertyChanged();
+            ApplyMediaSort();
+            _ = SaveBrowserSortModeSafelyAsync();
+        }
+    }
 
     public IReadOnlyCollection<Guid> SelectedTimelineItemIds => _selectedTimelineItemIds;
 
@@ -306,6 +335,54 @@ public sealed class MainViewModel : ObservableObject
         StatusText = $"Content Browser {_settings.BrowserViewMode} view";
     }
 
+    private void ApplyMediaSort()
+    {
+        if (!MediaView.CanSort)
+        {
+            return;
+        }
+
+        using (MediaView.DeferRefresh())
+        {
+            MediaView.SortDescriptions.Clear();
+            switch (_settings.BrowserSortMode)
+            {
+                case ContentBrowserSortMode.Date:
+                    MediaView.SortDescriptions.Add(new SortDescription(
+                        nameof(MediaCardViewModel.LastWriteUtc),
+                        ListSortDirection.Descending));
+                    break;
+                case ContentBrowserSortMode.Length:
+                    MediaView.SortDescriptions.Add(new SortDescription(
+                        nameof(MediaCardViewModel.DurationTicks),
+                        ListSortDirection.Ascending));
+                    break;
+                case ContentBrowserSortMode.Tag:
+                    MediaView.SortDescriptions.Add(new SortDescription(
+                        nameof(MediaCardViewModel.SortTags),
+                        ListSortDirection.Ascending));
+                    break;
+            }
+
+            MediaView.SortDescriptions.Add(new SortDescription(
+                nameof(MediaCardViewModel.FileName),
+                ListSortDirection.Ascending));
+        }
+    }
+
+    private async Task SaveBrowserSortModeSafelyAsync()
+    {
+        try
+        {
+            await _settingsStore.SaveAsync(_settings);
+            StatusText = $"Content Browser sorted by {_settings.BrowserSortMode}";
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"Could not save Content Browser sorting: {exception.Message}";
+        }
+    }
+
     public async Task InitializeAsync(
         IProgress<StartupProgress>? startupProgress = null,
         CancellationToken cancellationToken = default)
@@ -406,6 +483,8 @@ public sealed class MainViewModel : ObservableObject
                 "PROJECT FILE / NEW"));
         }
 
+        await UpdateProjectMediaReferencesAsync(cancellationToken);
+
         startupProgress?.Report(new StartupProgress(
             97,
             "Synchronizing timeline lanes, preview surfaces, and editor commands…",
@@ -475,6 +554,7 @@ public sealed class MainViewModel : ObservableObject
 
         await _projectStore.SaveAsync(_project, fullPath, cancellationToken);
         await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+        await UpdateProjectMediaReferencesAsync(cancellationToken);
         NotifyProjectIdentityChanged();
         OnPropertyChanged(nameof(ProjectFilePath));
         OnPropertyChanged(nameof(OutputSettings));
@@ -505,6 +585,54 @@ public sealed class MainViewModel : ObservableObject
     {
         SynchronizeProjectFromTimeline();
         await _projectStore.SaveRecoveryAsync(_project, cancellationToken);
+        await UpdateProjectMediaReferencesAsync(cancellationToken);
+    }
+
+    private async Task UpdateProjectMediaReferencesAsync(CancellationToken cancellationToken)
+    {
+        var projectId = _project.Id;
+        var mediaFileIds = _project.Tracks
+            .SelectMany(track => track.Items)
+            .Where(item => item.MediaFileId.HasValue)
+            .Select(item => item.MediaFileId!.Value)
+            .Distinct()
+            .ToArray();
+        await _catalogReferenceGate.WaitAsync(cancellationToken);
+        try
+        {
+            await _catalog.ReplaceProjectMediaReferencesAsync(projectId, mediaFileIds, cancellationToken);
+            var referenceCounts = await _catalog.GetProjectReferenceCountsAsync(cancellationToken);
+            RefreshMediaUsageBadges(referenceCounts);
+        }
+        finally
+        {
+            _catalogReferenceGate.Release();
+        }
+    }
+
+    private void RefreshMediaUsageBadges(IReadOnlyDictionary<long, int>? referenceCounts = null)
+    {
+        var currentMediaIds = _project.Tracks
+            .SelectMany(track => track.Items)
+            .Where(item => item.MediaFileId.HasValue)
+            .Select(item => item.MediaFileId!.Value)
+            .ToHashSet();
+        foreach (var media in MediaFiles)
+        {
+            var count = referenceCounts?.GetValueOrDefault(media.Media.Id) ?? media.ProjectReferenceCount;
+            media.UpdateProjectUsage(currentMediaIds.Contains(media.Media.Id), count);
+        }
+    }
+
+    public async Task MarkMediaSeenAsync(
+        IEnumerable<MediaCardViewModel> mediaFiles,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var media in mediaFiles.Where(media => !media.IsSeen).DistinctBy(media => media.Media.Id))
+        {
+            await _catalog.MarkSeenAsync(media.Media.Id, cancellationToken);
+            media.MarkSeen();
+        }
     }
 
     public Task CompleteCleanSessionAsync(CancellationToken cancellationToken = default) =>
@@ -1385,6 +1513,26 @@ public sealed class MainViewModel : ObservableObject
         await _settingsStore.SaveAsync(_settings);
     }
 
+    public async Task SaveTextOverlayPresetAsync(
+        TextOverlayPreset preset,
+        CancellationToken cancellationToken = default)
+    {
+        var existingIndex = _settings.TextOverlayPresets.FindIndex(candidate =>
+            candidate.Id == preset.Id || candidate.Name.Equals(preset.Name, StringComparison.OrdinalIgnoreCase));
+        if (existingIndex >= 0)
+        {
+            preset.Id = _settings.TextOverlayPresets[existingIndex].Id;
+            _settings.TextOverlayPresets[existingIndex] = preset;
+        }
+        else
+        {
+            _settings.TextOverlayPresets.Add(preset);
+        }
+
+        await _settingsStore.SaveAsync(_settings, cancellationToken);
+        StatusText = $"Saved text preset {preset.Name}";
+    }
+
     public void AddTrack(ProjectTrackKind kind, string name)
     {
         foreach (var existing in _project.Tracks)
@@ -2161,6 +2309,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMedia = selectedId.HasValue
             ? MediaFiles.FirstOrDefault(item => item.Media.Id == selectedId.Value)
             : MediaFiles.FirstOrDefault();
+        RefreshMediaUsageBadges();
         MediaView.Refresh();
         OnPropertyChanged(nameof(CatalogSummary));
     }
@@ -2384,6 +2533,7 @@ public sealed class MainViewModel : ObservableObject
             : trackId.HasValue
                 ? ProjectLayers.FirstOrDefault(row => row.IsTrackHeader && row.Track.Id == trackId.Value)
                 : ProjectLayers.FirstOrDefault();
+        RefreshMediaUsageBadges();
         RefreshTimelineLanes();
     }
 
@@ -2398,16 +2548,18 @@ public sealed class MainViewModel : ObservableObject
         {
             kindOrdinals[track.Kind] = kindOrdinals.GetValueOrDefault(track.Kind) + 1;
             var items = track.Items
-                .OrderBy(item => item.StartTicks)
-                .Select(item => new TimelineLaneItemViewModel(
+                .Select((item, stackingOrder) => new { Item = item, StackingOrder = stackingOrder })
+                .OrderBy(entry => entry.Item.StartTicks)
+                .Select(entry => new TimelineLaneItemViewModel(
                     track,
-                    item,
-                    clips.GetValueOrDefault(item.Id),
+                    entry.Item,
+                    clips.GetValueOrDefault(entry.Item.Id),
                     Timeline.PixelsPerSecond,
                     Timeline.TrackHeight,
-                    _selectedTimelineItemIds.Contains(item.Id),
-                    NeedsProjectPreview(item),
-                    track.Id != primaryVideoTrackId));
+                    _selectedTimelineItemIds.Contains(entry.Item.Id),
+                    NeedsProjectPreview(entry.Item),
+                    track.Id != primaryVideoTrackId,
+                    entry.StackingOrder));
             TimelineLanes.Add(new TimelineLaneViewModel(track, kindOrdinals[track.Kind], items));
         }
 

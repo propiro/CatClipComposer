@@ -1,5 +1,30 @@
 # Audit log
 
+## AUDIT-2026-08-14-004 — Effect interaction, preset, and catalog-state audit
+
+Scope: overlapping effect selection, effect copy/paste, text preset persistence/thumbnail ownership, wheel and
+numeric gestures, and durable Content Browser state/sorting.
+
+Findings and remediation:
+
+- Timeline items were chronologically projected without an explicit z-index, leaving overlapping hit testing
+  dependent on projection order. Original list insertion order now becomes WPF z-order while chronological
+  positions remain unchanged; newer items receive pointer input.
+- Only progress style had a narrow clipboard. The new effect clipboard deep-copies the complete persisted item,
+  generates a new identity, places it at the playhead, and validates native/plugin target-track compatibility.
+- Text styles had no reusable persistence. Core now models the parameters, INI mapping stores bounded Base64
+  JSON records safely across multiline text/paths, and only WPF renders the thumbnails.
+- The library conflated completed-export use with the requested project-reference indicator and had no durable
+  unseen state. Additive SQLite migration preserves existing rows as seen, inserts new scans as unseen, and
+  tracks project-GUID/media-ID sets separately from render history. Invalid foreign catalog IDs are ignored.
+- Sorting is an `ICollectionView` concern layered over the existing virtualized collection; the selected enum
+  persists without changing scan/query ordering. New state is also exposed through headless config/list output.
+
+Verification: Release build succeeds with zero warnings/errors; the StaticResource audit passes; a clean
+temporary catalog initializes and returns valid empty JSON through the shared CLI. Source review confirmed the
+scanner preserves seen state on upsert, project-reference writes are transactional, plugin paste honors declared
+compatibility, and no dependency, credential, network endpoint, or license surface changed.
+
 ## AUDIT-2026-08-14-003 — Stale coverage, preview switching, and moving-overlay audit
 
 Scope: investigate inexact transform cancellation, preserve visible prerender state across edits, reproduce the

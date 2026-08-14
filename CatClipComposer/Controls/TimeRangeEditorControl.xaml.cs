@@ -72,6 +72,7 @@ public partial class TimeRangeEditorControl : UserControl
 
     private void ConfigureEditor(NumericEditorControl editor)
     {
+        editor.IsTimeValue = true;
         editor.Minimum = 0;
         editor.Maximum = _projectEnd;
         editor.Step = _snapIncrement;

@@ -7,12 +7,17 @@ public sealed class MediaCardViewModel : ObservableObject
 {
     private int _index;
     private bool _showFileName;
+    private bool _isSeen;
+    private bool _isUsedInCurrentProject;
+    private int _projectReferenceCount;
 
     public MediaCardViewModel(MediaFile media, int index, bool showFileName)
     {
         Media = media;
         _index = index;
         _showFileName = showFileName;
+        _isSeen = media.IsSeen;
+        _projectReferenceCount = media.ProjectReferenceCount;
     }
 
     public MediaFile Media { get; }
@@ -30,6 +35,12 @@ public sealed class MediaCardViewModel : ObservableObject
     }
 
     public string FileName => Media.FileName;
+
+    public long DurationTicks => Media.DurationTicks;
+
+    public DateTime LastWriteUtc => Media.LastWriteUtc;
+
+    public string SortTags => string.IsNullOrWhiteSpace(Media.Tags) ? "\uffff" : Media.Tags;
 
     public string FullPath => Media.FullPath;
 
@@ -53,4 +64,69 @@ public sealed class MediaCardViewModel : ObservableObject
     public string TagsText => string.IsNullOrWhiteSpace(Media.Tags)
         ? "No tags"
         : Media.Tags;
+
+    public bool HasCornerBadge => IsUsedInCurrentProject || ProjectReferenceCount > 0 || !IsSeen;
+
+    public string CornerBadgeColor => IsUsedInCurrentProject
+        ? "#52C878"
+        : ProjectReferenceCount > 0
+            ? "#E2BD43"
+            : "#4B98E8";
+
+    public string CornerBadgeToolTip => IsUsedInCurrentProject
+        ? "Used in the current project"
+        : ProjectReferenceCount > 0
+            ? $"Used in {ProjectReferenceCount} saved or recovered project(s)"
+            : "New clip — preview it or choose Mark as seen";
+
+    public bool IsSeen
+    {
+        get => _isSeen;
+        private set
+        {
+            if (SetProperty(ref _isSeen, value))
+            {
+                NotifyBadgeChanged();
+            }
+        }
+    }
+
+    public bool IsUsedInCurrentProject
+    {
+        get => _isUsedInCurrentProject;
+        private set
+        {
+            if (SetProperty(ref _isUsedInCurrentProject, value))
+            {
+                NotifyBadgeChanged();
+            }
+        }
+    }
+
+    public int ProjectReferenceCount
+    {
+        get => _projectReferenceCount;
+        private set
+        {
+            if (SetProperty(ref _projectReferenceCount, Math.Max(0, value)))
+            {
+                NotifyBadgeChanged();
+            }
+        }
+    }
+
+    public void MarkSeen() => IsSeen = true;
+
+    public void UpdateProjectUsage(bool isUsedInCurrentProject, int projectReferenceCount)
+    {
+        IsUsedInCurrentProject = isUsedInCurrentProject;
+        ProjectReferenceCount = projectReferenceCount;
+    }
+
+    private void NotifyBadgeChanged()
+    {
+        OnPropertyChanged(nameof(HasCornerBadge));
+        OnPropertyChanged(nameof(CornerBadgeColor));
+        OnPropertyChanged(nameof(CornerBadgeToolTip));
+    }
 }

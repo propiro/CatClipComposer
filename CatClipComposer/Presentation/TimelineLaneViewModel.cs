@@ -89,7 +89,8 @@ public sealed class TimelineLaneItemViewModel
         double trackHeight,
         bool isSelected,
         bool needsProjectPreview,
-        bool canResize)
+        bool canResize,
+        int stackingOrder)
     {
         Id = item.Id;
         TrackKind = track.Kind;
@@ -111,6 +112,7 @@ public sealed class TimelineLaneItemViewModel
         IsVideo = item.Kind is ProjectItemKind.Video or ProjectItemKind.StillImage;
         IsSelected = isSelected;
         TrackId = track.Id;
+        StackingOrder = stackingOrder;
         Start = item.Start;
         Duration = item.Duration;
         ShowClipActions = IsVideo && isSelected;
@@ -136,6 +138,8 @@ public sealed class TimelineLaneItemViewModel
     public Guid Id { get; }
 
     public Guid TrackId { get; }
+
+    public int StackingOrder { get; }
 
     public ProjectTrackKind TrackKind { get; }
 

@@ -32,6 +32,7 @@ internal static class SqliteCatalogSchema
                 discovered_utc TEXT NOT NULL,
                 last_scanned_utc TEXT NOT NULL,
                 is_available INTEGER NOT NULL DEFAULT 1,
+                is_seen INTEGER NOT NULL DEFAULT 0,
                 use_count INTEGER NOT NULL DEFAULT 0,
                 last_used_utc TEXT NULL,
                 last_output_path TEXT NULL
@@ -39,6 +40,17 @@ internal static class SqliteCatalogSchema
 
             CREATE INDEX IF NOT EXISTS ix_media_files_available_name
             ON media_files(is_available, file_name);
+
+            CREATE TABLE IF NOT EXISTS project_media_references (
+                project_id TEXT NOT NULL,
+                media_file_id INTEGER NOT NULL,
+                updated_utc TEXT NOT NULL,
+                PRIMARY KEY(project_id, media_file_id),
+                FOREIGN KEY(media_file_id) REFERENCES media_files(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_project_media_references_media
+            ON project_media_references(media_file_id);
 
             CREATE TABLE IF NOT EXISTS render_jobs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +82,12 @@ internal static class SqliteCatalogSchema
             "media_files",
             "tags",
             "TEXT NOT NULL DEFAULT ''",
+            cancellationToken);
+        await EnsureColumnAsync(
+            connection,
+            "media_files",
+            "is_seen",
+            "INTEGER NOT NULL DEFAULT 1",
             cancellationToken);
         await EnsureColumnAsync(
             connection,

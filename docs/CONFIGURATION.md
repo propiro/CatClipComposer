@@ -34,6 +34,9 @@ Position=Bottom
 Color=#C8C0B2
 Height=10
 
+[TextOverlayPresets]
+; PresetN values are application-generated Base64 JSON records.
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true
@@ -45,6 +48,7 @@ Folder1=D:\Incoming clips
 MetadataFolder=C:\Users\Example\AppData\Local\CatClipComposer
 PreviewSlideCount=12
 BrowserViewMode=SmallGrid
+BrowserSortMode=Name
 SmallThumbnailSize=120
 LargeThumbnailSize=220
 ExtraLargeThumbnailSize=420
@@ -93,6 +97,8 @@ each `.nya` project and can be changed from **Project settings** or the timeline
 `LargeThumbnailSize` is clamped to 140-360 pixels and kept at least 20 pixels larger than the small size;
 `ExtraLargeThumbnailSize` is clamped to 240-640 and kept at least 40 pixels larger than Large.
 These browser preferences affect cached-image presentation only and never cause source videos to be loaded.
+`BrowserSortMode` accepts `Name`, `Date`, `Length`, or `Tag` and defaults to `Name`; Date places the newest
+source-file modification first, while untagged clips sort after named tags in Tag mode.
 
 `Preview.QualityPercent` controls the temporary LQ preview canvas and accepts the six UI stops `10`, `25`,
 `50`, `75`, `90`, or `100`; another finite integer is normalized to the nearest stop. It does not change the
@@ -110,6 +116,11 @@ selects the approximately three-second returning-launch minimum. Failed initiali
 as a recent-project menu and ignores entries whose files no longer exist. `ProgressDefaults` remembers the last
 accepted progress-bar style, top/bottom position, color, and 2-100 px height for the next progress item; malformed
 colors and sizes return to safe defaults.
+
+`TextOverlayPresets.PresetN` stores up to 100 named text-overlay parameter sets in numeric order. Values are
+application-generated Base64-encoded JSON so multiline text and paths cannot break INI parsing. Presets contain
+text, font identity, transform, opacity, and fades, but deliberately exclude timeline start/end. The editor
+regenerates each text/font thumbnail at runtime; no thumbnail cache or binary image is embedded in the INI.
 
 `RescanLibraryOnStartup` defaults to true; startup skips scanning when no source folder is configured. The splash
 reports the skip explicitly when this setting is false or no folder exists. When enabled with configured folders,

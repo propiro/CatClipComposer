@@ -17,12 +17,14 @@
                 <ColumnDefinition Width="28" />
             </Grid.ColumnDefinitions>
             <Button Padding="0" Click="Decrease_Click" Content="−"
-                    AutomationProperties.Name="Decrease value" />
+                    AutomationProperties.Name="Decrease value"
+                    ToolTip="Decrease value. Time fields use their normal step; Ctrl: 0.5 s; Shift: 1 s." />
             <TextBox x:Name="ValueTextBox" Grid.Column="1" Margin="3,0"
                      HorizontalContentAlignment="Center"
                      TextChanged="ValueTextBox_TextChanged" />
             <Button Grid.Column="2" Padding="0" Click="Increase_Click" Content="+"
-                    AutomationProperties.Name="Increase value" />
+                    AutomationProperties.Name="Increase value"
+                    ToolTip="Increase value. Time fields use their normal step; Ctrl: 0.5 s; Shift: 1 s." />
         </Grid>
     </Grid>
 </UserControl>

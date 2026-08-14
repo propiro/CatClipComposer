@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CatClipComposer.Core.Models;
@@ -35,6 +36,13 @@ public partial class LayerItemEditorWindow : Window
     private readonly SemaphoreSlim _framePreviewGate = new(1, 1);
     private EffectFramePreviewWindow? _framePreviewWindow;
     private CancellationTokenSource? _framePreviewCancellation;
+    private readonly List<TextOverlayPreset> _textPresets;
+    private readonly Func<TextOverlayPreset, Task>? _saveTextPreset;
+
+    private sealed record TextPresetChoice(TextOverlayPreset Preset, BitmapSource Thumbnail)
+    {
+        public string Name => Preset.Name;
+    }
 
     public LayerItemEditorWindow(
         LayerEditorKind kind,
@@ -45,10 +53,14 @@ public partial class LayerItemEditorWindow : Window
         TimeSpan? selectedSegmentStart = null,
         TimeSpan? selectedSegmentDuration = null,
         TimeSpan? previewFrame = null,
-        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
+        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null,
+        IReadOnlyList<TextOverlayPreset>? textPresets = null,
+        Func<TextOverlayPreset, Task>? saveTextPreset = null)
     {
         _previewFrame = previewFrame;
         _framePreviewRenderer = framePreviewRenderer;
+        _textPresets = textPresets?.Select(ClonePreset).ToList() ?? [];
+        _saveTextPreset = saveTextPreset;
         InitializeComponent();
         DesktopWindowTheme.Apply(this);
         PreviewFrameButton.IsEnabled = previewFrame.HasValue && framePreviewRenderer is not null;
@@ -78,18 +90,22 @@ public partial class LayerItemEditorWindow : Window
         FontSizeEditor.SetValue(42);
         VolumeEditor.SetValue(0.35);
         FadeInEditor.Minimum = 0;
+        FadeInEditor.IsTimeValue = true;
         FadeInEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
         FadeInEditor.Step = _snapSeconds;
         FadeInEditor.SetValue(0);
         FadeOutEditor.Minimum = 0;
+        FadeOutEditor.IsTimeValue = true;
         FadeOutEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
         FadeOutEditor.Step = _snapSeconds;
         FadeOutEditor.SetValue(0);
         OverlayFadeInEditor.Minimum = 0;
+        OverlayFadeInEditor.IsTimeValue = true;
         OverlayFadeInEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
         OverlayFadeInEditor.Step = _snapSeconds;
         OverlayFadeInEditor.SetValue(0);
         OverlayFadeOutEditor.Minimum = 0;
+        OverlayFadeOutEditor.IsTimeValue = true;
         OverlayFadeOutEditor.Maximum = Math.Max(_snapSeconds, projectDuration.TotalSeconds);
         OverlayFadeOutEditor.Step = _snapSeconds;
         OverlayFadeOutEditor.SetValue(0);
@@ -109,6 +125,7 @@ public partial class LayerItemEditorWindow : Window
             .FirstOrDefault(font => font.FamilyName.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase)) ??
             ((IEnumerable<FontChoice>)FontComboBox.ItemsSource).FirstOrDefault();
         ConfigureFields();
+        RefreshTextPresetChoices();
         if (selectedSegmentStart.HasValue && selectedSegmentDuration > TimeSpan.Zero)
         {
             TimeRangeEditor.Configure(
@@ -132,7 +149,9 @@ public partial class LayerItemEditorWindow : Window
         TimelineSnapMode snapMode,
         double framesPerSecond,
         TimeSpan? previewFrame = null,
-        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null)
+        Func<ProjectTimelineItem, IProgress<RenderProgress>, CancellationToken, Task<RenderResult>>? framePreviewRenderer = null,
+        IReadOnlyList<TextOverlayPreset>? textPresets = null,
+        Func<TextOverlayPreset, Task>? saveTextPreset = null)
         : this(
             GetEditorKind(item.Kind),
             projectDuration,
@@ -140,7 +159,9 @@ public partial class LayerItemEditorWindow : Window
             snapMode,
             framesPerSecond,
             previewFrame: previewFrame,
-            framePreviewRenderer: framePreviewRenderer)
+            framePreviewRenderer: framePreviewRenderer,
+            textPresets: textPresets,
+            saveTextPreset: saveTextPreset)
     {
         _loadingTransformFields = true;
         _existingId = item.Id;
@@ -219,6 +240,7 @@ public partial class LayerItemEditorWindow : Window
         TextFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         FontSizeField.Visibility = Visible(_kind == LayerEditorKind.Text);
+        TextPresetFields.Visibility = Visible(_kind == LayerEditorKind.Text);
         OverlayOpacityField.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
         TextPlacementFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
         OverlayFadeFields.Visibility = Visible(_kind is LayerEditorKind.Text or LayerEditorKind.Image or LayerEditorKind.MovingOverlay);
@@ -239,6 +261,194 @@ public partial class LayerItemEditorWindow : Window
             UpdateImagePreview();
         }
     }
+
+    private void ApplyTextPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (TextPresetComboBox.SelectedItem is not TextPresetChoice choice)
+        {
+            return;
+        }
+
+        var preset = choice.Preset;
+        _loadingTransformFields = true;
+        OverlayTextBox.Text = preset.Text;
+        FontSizeEditor.SetValue(preset.FontSize);
+        PositionComboBox.SelectedItem = preset.Position;
+        if (FontComboBox.ItemsSource is IEnumerable<FontChoice> fonts)
+        {
+            FontComboBox.SelectedItem = fonts.FirstOrDefault(font =>
+                (!string.IsNullOrWhiteSpace(preset.FontPath) &&
+                 font.FilePath.Equals(preset.FontPath, StringComparison.OrdinalIgnoreCase)) ||
+                font.FamilyName.Equals(preset.FontFamily, StringComparison.OrdinalIgnoreCase)) ??
+                FontComboBox.SelectedItem;
+        }
+
+        SetTransformEditorValues(preset.X, preset.Y, preset.Scale, preset.RotationDegrees);
+        OverlayOpacityEditor.SetValue(preset.Opacity * 100);
+        OverlayFadeInEditor.SetValue(preset.FadeInSeconds);
+        OverlayFadeOutEditor.SetValue(preset.FadeOutSeconds);
+        _existingCustomTransform = preset.HasCustomTransform;
+        _transformEdited = preset.HasCustomTransform;
+        _positionPresetChanged = false;
+        _loadingTransformFields = false;
+    }
+
+    private async void SaveTextPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (_kind != LayerEditorKind.Text || _saveTextPreset is null)
+        {
+            return;
+        }
+
+        if (!TryCreateTextPreset(out var preset, out var error))
+        {
+            MessageBox.Show(this, error, "Cannot save text preset", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            await _saveTextPreset(preset);
+            var index = _textPresets.FindIndex(candidate =>
+                candidate.Name.Equals(preset.Name, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+            {
+                _textPresets[index] = ClonePreset(preset);
+            }
+            else
+            {
+                _textPresets.Add(ClonePreset(preset));
+            }
+
+            RefreshTextPresetChoices(preset.Name);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Could not save text preset",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private bool TryCreateTextPreset(out TextOverlayPreset preset, out string error)
+    {
+        preset = null!;
+        error = string.Empty;
+        var text = OverlayTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text) || FontComboBox.SelectedItem is not FontChoice font ||
+            !int.TryParse(FontSizeEditor.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fontSize) ||
+            fontSize is < 8 or > 240 ||
+            !TryParse(OverlayXEditor.Text, OverlayTransformValues.MinimumCoordinate * 100,
+                OverlayTransformValues.MaximumCoordinate * 100, out var x) ||
+            !TryParse(OverlayYEditor.Text, OverlayTransformValues.MinimumCoordinate * 100,
+                OverlayTransformValues.MaximumCoordinate * 100, out var y) ||
+            !TryParse(OverlayScaleEditor.Text, OverlayTransformValues.MinimumScale * 100,
+                OverlayTransformValues.MaximumScale * 100, out var scale) ||
+            !TryParse(OverlayRotationEditor.Text, -360000, 360000, out var rotation) ||
+            !TryParse(OverlayOpacityEditor.Text, 0, 100, out var opacity) ||
+            !TryParse(OverlayFadeInEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeIn) ||
+            !TryParse(OverlayFadeOutEditor.Text, 0, TimeSpan.MaxValue.TotalSeconds, out var fadeOut))
+        {
+            error = "Enter text and valid font, transform, opacity, and fade values first.";
+            return false;
+        }
+
+        var oneLine = string.Join(" ", text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var baseName = oneLine.Length <= 42 ? oneLine : $"{oneLine[..39]}...";
+        var selectedPreset = (TextPresetComboBox.SelectedItem as TextPresetChoice)?.Preset;
+        var name = selectedPreset?.Name ?? baseName;
+        if (selectedPreset is null)
+        {
+            for (var suffix = 2; _textPresets.Any(candidate =>
+                     candidate.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); suffix++)
+            {
+                name = $"{baseName} ({suffix})";
+            }
+        }
+
+        preset = new TextOverlayPreset
+        {
+            Id = selectedPreset?.Id ?? Guid.NewGuid(),
+            Name = name,
+            Text = text,
+            FontPath = font.FilePath,
+            FontFamily = font.FamilyName,
+            FontSize = fontSize,
+            Position = PositionComboBox.SelectedItem is OverlayPosition position ? position : OverlayPosition.Center,
+            HasCustomTransform = _transformEdited || _existingCustomTransform,
+            X = x / 100,
+            Y = y / 100,
+            Scale = scale / 100,
+            RotationDegrees = rotation,
+            Opacity = opacity / 100,
+            FadeInSeconds = fadeIn,
+            FadeOutSeconds = fadeOut
+        };
+        return true;
+    }
+
+    private void RefreshTextPresetChoices(string? selectedName = null)
+    {
+        var choices = _textPresets
+            .OrderBy(preset => preset.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select(preset => new TextPresetChoice(preset, CreateTextPresetThumbnail(preset)))
+            .ToList();
+        TextPresetComboBox.ItemsSource = choices;
+        TextPresetComboBox.SelectedItem = choices.FirstOrDefault(choice =>
+            choice.Name.Equals(selectedName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static BitmapSource CreateTextPresetThumbnail(TextOverlayPreset preset)
+    {
+        const int width = 180;
+        const int height = 64;
+        var visual = new DrawingVisual();
+        using (var drawing = visual.RenderOpen())
+        {
+            drawing.DrawRectangle(new SolidColorBrush(Color.FromRgb(28, 28, 26)), null, new Rect(0, 0, width, height));
+            var formatted = new FormattedText(
+                preset.Text.ReplaceLineEndings(" "),
+                CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight,
+                new Typeface(new FontFamily(string.IsNullOrWhiteSpace(preset.FontFamily) ? "Segoe UI" : preset.FontFamily),
+                    FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                Math.Clamp(preset.FontSize * 0.45, 12, 28),
+                Brushes.White,
+                1)
+            {
+                MaxTextWidth = width - 16,
+                MaxTextHeight = height - 12,
+                Trimming = TextTrimming.CharacterEllipsis,
+                TextAlignment = TextAlignment.Center
+            };
+            drawing.PushClip(new RectangleGeometry(new Rect(6, 6, width - 12, height - 12)));
+            drawing.DrawText(formatted, new Point(8, Math.Max(6, (height - formatted.Height) / 2)));
+            drawing.Pop();
+        }
+
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    private static TextOverlayPreset ClonePreset(TextOverlayPreset preset) => new()
+    {
+        Id = preset.Id,
+        Name = preset.Name,
+        Text = preset.Text,
+        FontPath = preset.FontPath,
+        FontFamily = preset.FontFamily,
+        FontSize = preset.FontSize,
+        Position = preset.Position,
+        HasCustomTransform = preset.HasCustomTransform,
+        X = preset.X,
+        Y = preset.Y,
+        Scale = preset.Scale,
+        RotationDegrees = preset.RotationDegrees,
+        Opacity = preset.Opacity,
+        FadeInSeconds = preset.FadeInSeconds,
+        FadeOutSeconds = preset.FadeOutSeconds
+    };
 
     private static Visibility Visible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
 

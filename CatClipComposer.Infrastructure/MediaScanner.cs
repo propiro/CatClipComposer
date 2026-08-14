@@ -111,6 +111,8 @@ public sealed class MediaScanner(
                     DiscoveredUtc = existing?.DiscoveredUtc ?? now,
                     LastScannedUtc = now,
                     IsAvailable = true,
+                    IsSeen = existing?.IsSeen ?? false,
+                    ProjectReferenceCount = existing?.ProjectReferenceCount ?? 0,
                     UseCount = existing?.UseCount ?? 0,
                     LastUsedUtc = existing?.LastUsedUtc,
                     LastOutputPath = existing?.LastOutputPath

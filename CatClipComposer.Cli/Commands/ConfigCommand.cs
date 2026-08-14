@@ -32,6 +32,7 @@ internal static class ConfigCommand
                 settings.MetadataFolder,
                 settings.PreviewSlideCount,
                 browserViewMode = settings.BrowserViewMode.ToString(),
+                browserSortMode = settings.BrowserSortMode.ToString(),
                 settings.SmallThumbnailSize,
                 settings.LargeThumbnailSize,
                 settings.ExtraLargeThumbnailSize,
@@ -52,6 +53,7 @@ internal static class ConfigCommand
                     color = settings.DefaultProgressColor,
                     height = settings.DefaultProgressHeight
                 },
+                textOverlayPresetCount = settings.TextOverlayPresets.Count,
                 settings.OutputFolder,
                 settings.ProjectFolder,
                 settings.FfmpegPath,
@@ -116,7 +118,7 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync($"Metadata folder: {settings.MetadataFolder}");
         await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
         await context.Output.WriteLineAsync(
-            $"Browser view: {settings.BrowserViewMode}; thumbnails: small={settings.SmallThumbnailSize}px, " +
+            $"Browser view: {settings.BrowserViewMode}; sort={settings.BrowserSortMode}; thumbnails: small={settings.SmallThumbnailSize}px, " +
             $"large={settings.LargeThumbnailSize}px, extra-large={settings.ExtraLargeThumbnailSize}px");
         await context.Output.WriteLineAsync($"FFmpeg: {settings.FfmpegPath}");
         await context.Output.WriteLineAsync($"Custom fonts: {settings.CustomFontFolder}");
@@ -129,6 +131,7 @@ internal static class ConfigCommand
         await context.Output.WriteLineAsync(
             $"Progress defaults: {settings.DefaultProgressBarStyle}, {settings.DefaultProgressBarPosition}, " +
             $"{settings.DefaultProgressColor}, {settings.DefaultProgressHeight}px");
+        await context.Output.WriteLineAsync($"Text overlay presets: {settings.TextOverlayPresets.Count}");
         await context.Output.WriteLineAsync(
             $"Workspace: browser={settings.ContentBrowserDock}, preview={settings.PreviewDock}, " +
             $"layers={settings.LayersDock}, timeline={settings.TimelineDock}");

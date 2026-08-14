@@ -9,7 +9,9 @@ internal static class SqliteMediaMapper
         id, full_path, file_name, extension, duration_ticks, width, height,
         has_audio, file_size, last_write_utc, thumbnail_path, discovered_utc,
         last_scanned_utc, is_available, use_count, last_used_utc, last_output_path,
-        preview_sheet_path, tags
+        preview_sheet_path, tags, is_seen,
+        (SELECT COUNT(*) FROM project_media_references AS project_refs
+         WHERE project_refs.media_file_id = media_files.id) AS project_reference_count
         """;
 
     public static void AddUpsertParameters(SqliteCommand command, MediaFile mediaFile)
@@ -28,6 +30,7 @@ internal static class SqliteMediaMapper
         command.Parameters.AddWithValue("$tags", mediaFile.Tags);
         command.Parameters.AddWithValue("$discoveredUtc", SqliteUtc.Format(mediaFile.DiscoveredUtc));
         command.Parameters.AddWithValue("$lastScannedUtc", SqliteUtc.Format(mediaFile.LastScannedUtc));
+        command.Parameters.AddWithValue("$isSeen", mediaFile.IsSeen ? 1 : 0);
     }
 
     public static MediaFile Read(SqliteDataReader reader) => new()
@@ -50,6 +53,8 @@ internal static class SqliteMediaMapper
         LastUsedUtc = reader.IsDBNull(15) ? null : SqliteUtc.Parse(reader.GetString(15)),
         LastOutputPath = reader.IsDBNull(16) ? null : reader.GetString(16),
         PreviewSheetPath = reader.IsDBNull(17) ? null : reader.GetString(17),
-        Tags = reader.IsDBNull(18) ? string.Empty : reader.GetString(18)
+        Tags = reader.IsDBNull(18) ? string.Empty : reader.GetString(18),
+        IsSeen = reader.GetInt64(19) != 0,
+        ProjectReferenceCount = reader.GetInt32(20)
     };
 }

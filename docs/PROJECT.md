@@ -115,6 +115,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   duration using the same controls. With no selected Video range, new native overlays begin at the playhead.
   Live stale proxies retain that exact opacity; moved
   content leaves a crossed notice over its old prerendered location until the frame is refreshed.
+  Text appearance/transform settings can be saved as portable presets and selected from generated text/font
+  thumbnails without inheriting an old timeline interval.
 - **Progress bars — Done.** Progress is an independent timeline effect with whole-project, source-segment,
   or custom timing and per-item style, color, size, and position. Adding one inherits the selected clip range,
   names a single selection `PROGRESS <clip>`, remembers accepted visual defaults, and supports style copy/paste.
@@ -128,6 +130,8 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   snapping aligns starts or ends to source-clip boundaries. Resize movement uses one absolute pointer delta,
   so the handle cannot accelerate as WPF reports repeated relative deltas. Track names drag vertically to reorder the stack;
   Video track names bring Project Preview forward and timed effect/overlay blocks open their editor on double-click.
+  A later-added overlapping block remains on top for selection, full effect blocks copy/paste at the playhead,
+  time arrows accept Ctrl/Shift step modifiers, and the preview/timeline wheel gestures zoom or pan in context.
 - **Compact range and effect-frame editing — Done.** Start/End values share one miniature draggable timeline.
   Native overlay and plugin-effect dialogs group content/module, timing, transform, and appearance/adjustment
   controls consistently. They can render unsaved settings over the selected real project frame in a same-width
@@ -136,6 +140,9 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Effect discovery and block state — Done.** The Content Browser has a grouped Effects tab with native and
   plugin entries repeated under every compatible timeline category. Timeline blocks can be disabled without
   deletion; disabled blocks remain editable but render darkened/grayed and are excluded from output.
+- **Catalog state and sorting — Done.** Durable blue unseen, green current-project, and yellow other-project
+  corners summarize clip state without conflating project references with completed-export history. Browser
+  sorting persists across name, newest source date, duration, and custom-tag modes.
 - **Track-ordered filter composition — Done.** Video filter effects and overlays interleave bottom-to-top, so
   an overlay below Video blur is filtered and the same overlay above it stays sharp.
 - **Extensible plugin modules — Done.** Versioned media/stage/track contracts, isolated dependency loading,
@@ -171,7 +178,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.18 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Shared user-visible version — Done.** Version 0.1.28 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.29 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

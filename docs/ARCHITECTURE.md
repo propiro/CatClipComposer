@@ -43,8 +43,11 @@ The executable modules may reference Core and Infrastructure for composition. Co
 2. `IMediaScanner` enumerates configured folders and accepted extensions.
 3. `IMediaProbe` invokes FFprobe and parses duration, dimensions, and audio stream presence.
 4. Focused thumbnail/contact-sheet generators invoke FFmpeg and write keyed JPEG cache files.
-5. `IMediaCatalog` upserts paths and technical/search metadata into SQLite while preserving user tags.
-6. Project-use rows are queried from successful render jobs; merely adding a clip to a project never counts as use.
+5. `IMediaCatalog` upserts paths and technical/search metadata into SQLite while preserving user tags and the
+   explicit seen/unseen state. Existing catalogs migrate as seen; newly discovered rows start unseen.
+6. Recovery/save synchronization replaces each project GUID's set of catalog media references. Those references
+   drive green current-project and yellow other-project browser badges but remain separate from successful-export
+   usage history. Only completed renders increment `use_count` and appear in the detailed Usage view.
 
 ### Composition and render
 
@@ -117,6 +120,7 @@ The executable modules may reference Core and Infrastructure for composition. Co
    One compact range canvas moves or resizes Start/End together; effect-value sliders and arrow buttons use
    sensible UI bounds and snap steps, while finite manual text entry may exceed those convenience bounds when
    the renderer's hard safety limits permit it.
+   Time arrow buttons retain the configured normal snap; Ctrl uses 0.5 seconds and Shift uses 1 second.
 5. Effect frame preview clones the in-memory project, replaces only the working native overlay/progress item or
    plugin effect, renders a 0.1-second H.264 slice at the selected playhead, and never saves the candidate or
    records export history. The editor
@@ -133,6 +137,11 @@ The executable modules may reference Core and Infrastructure for composition. Co
    unchanged items contribute only hit-testing/selection chrome over the MediaElement. A stale item paints one
    exact-alpha live proxy; if its transform changed, a snapshot of the rendered transform supplies the crossed
    stale-location marker until the next successful prerender.
+7. Timeline lane projection preserves chronological layout while assigning insertion order as explicit WPF
+   z-order, so the newest overlapping block receives pointer input. Complete non-source effects can be cloned
+   through one JSON-shaped project-item copy and pasted at the playhead only onto a compatible track.
+8. Text presets persist domain parameters in the portable INI. The WPF editor alone regenerates recognizable
+   text/font thumbnails, keeping bitmap rendering out of Core and configuration persistence.
 
 ### Plugin discovery and effect rendering
 
@@ -194,7 +203,8 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`FfmpegFilterGraphBuilder`:** Build normalization, concat, overlay, and progress filters.
 - **`FfmpegRenderCommandBuilder`:** Build argument-safe FFmpeg process configuration.
 - **`FfmpegProcessRunner`:** Execute FFmpeg, cancel, collect errors, and report progress. `MOD-002` is closed.
-- **`SqliteMediaCatalog`:** Media/tag CRUD and successful-export/history SQL behind `IMediaCatalog`.
+- **`SqliteMediaCatalog`:** Media/tag/seen CRUD, project-reference replacement, and successful-export/history
+  SQL behind `IMediaCatalog`.
   Schema, connection, time conversion, mapping, and history projection are delegated; `MOD-003` is closed.
 - **Preview generators:** Produce a static thumbnail and evenly sampled contact sheet. A shared process
   runner removes duplicated process/cancellation behavior; images remain replaceable cache files.

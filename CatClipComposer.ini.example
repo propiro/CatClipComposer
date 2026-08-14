@@ -11,6 +11,8 @@ Position=Bottom
 Color=#C8C0B2
 Height=10
 
+[TextOverlayPresets]
+
 [Sources]
 IncludeSubfolders=true
 ShowFileNames=true
@@ -20,6 +22,7 @@ RescanLibraryOnStartup=true
 MetadataFolder=
 PreviewSlideCount=12
 BrowserViewMode=SmallGrid
+BrowserSortMode=Name
 SmallThumbnailSize=120
 LargeThumbnailSize=220
 ExtraLargeThumbnailSize=420

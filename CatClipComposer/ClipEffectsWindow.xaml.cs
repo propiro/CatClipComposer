@@ -40,10 +40,12 @@ public partial class ClipEffectsWindow : Window
             ? VideoFitMode.Fit
             : fitMode;
         var fadeStep = Math.Max(0.01, Math.Min(0.1, _duration.TotalSeconds / 100));
+        FadeInEditor.IsTimeValue = true;
         FadeInEditor.Minimum = 0;
         FadeInEditor.Maximum = Math.Max(fadeStep, _duration.TotalSeconds);
         FadeInEditor.Step = fadeStep;
         FadeInEditor.SetValue(fadeInSeconds);
+        FadeOutEditor.IsTimeValue = true;
         FadeOutEditor.Minimum = 0;
         FadeOutEditor.Maximum = Math.Max(fadeStep, _duration.TotalSeconds);
         FadeOutEditor.Step = fadeStep;

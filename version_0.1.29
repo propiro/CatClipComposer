@@ -1,0 +1,7 @@
+Cat Clip Composer 0.1.29
+
+- Selects the newest overlapping timeline effect and supports full effect copy/paste at the playhead.
+- Saves text overlay presets with generated text/font thumbnails.
+- Adds Project Preview wheel zoom, timeline wheel panning, and modifier-aware time steps.
+- Marks library clips as current-project, other-project, or new/unseen with durable corner badges.
+- Sorts the Content Browser by name, newest date, length, or custom tag.

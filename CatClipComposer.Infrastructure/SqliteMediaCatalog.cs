@@ -57,11 +57,11 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
                 INSERT INTO media_files (
                     full_path, file_name, extension, duration_ticks, width, height, has_audio,
                     file_size, last_write_utc, thumbnail_path, discovered_utc, last_scanned_utc,
-                    is_available, preview_sheet_path, tags)
+                    is_available, preview_sheet_path, tags, is_seen)
                 VALUES (
                     $fullPath, $fileName, $extension, $durationTicks, $width, $height, $hasAudio,
                     $fileSize, $lastWriteUtc, $thumbnailPath, $discoveredUtc, $lastScannedUtc, 1,
-                    $previewSheetPath, $tags)
+                    $previewSheetPath, $tags, $isSeen)
                 ON CONFLICT(full_path) DO UPDATE SET
                     file_name = excluded.file_name,
                     extension = excluded.extension,
@@ -129,6 +129,76 @@ public sealed class SqliteMediaCatalog : IMediaCatalog
         {
             throw new InvalidOperationException($"Catalog clip {id} was not found.");
         }
+    }
+
+    public async Task MarkSeenAsync(long id, CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.Create();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE media_files SET is_seen = 1 WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        if (await command.ExecuteNonQueryAsync(cancellationToken) == 0)
+        {
+            throw new InvalidOperationException($"Catalog clip {id} was not found.");
+        }
+    }
+
+    public async Task ReplaceProjectMediaReferencesAsync(
+        Guid projectId,
+        IReadOnlyCollection<long> mediaFileIds,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.Create();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = connection.BeginTransaction();
+        await using (var deleteCommand = connection.CreateCommand())
+        {
+            deleteCommand.Transaction = transaction;
+            deleteCommand.CommandText = "DELETE FROM project_media_references WHERE project_id = $projectId;";
+            deleteCommand.Parameters.AddWithValue("$projectId", projectId.ToString("D"));
+            await deleteCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        var updatedUtc = SqliteUtc.Format(DateTime.UtcNow);
+        foreach (var mediaFileId in mediaFileIds.Where(id => id > 0).Distinct())
+        {
+            await using var insertCommand = connection.CreateCommand();
+            insertCommand.Transaction = transaction;
+            insertCommand.CommandText = """
+                INSERT INTO project_media_references(project_id, media_file_id, updated_utc)
+                SELECT $projectId, id, $updatedUtc
+                FROM media_files
+                WHERE id = $mediaFileId;
+                """;
+            insertCommand.Parameters.AddWithValue("$projectId", projectId.ToString("D"));
+            insertCommand.Parameters.AddWithValue("$mediaFileId", mediaFileId);
+            insertCommand.Parameters.AddWithValue("$updatedUtc", updatedUtc);
+            await insertCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<long, int>> GetProjectReferenceCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var counts = new Dictionary<long, int>();
+        await using var connection = _connectionFactory.Create();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT media_file_id, COUNT(*)
+            FROM project_media_references
+            GROUP BY media_file_id;
+            """;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            counts[reader.GetInt64(0)] = reader.GetInt32(1);
+        }
+
+        return counts;
     }
 
     public async Task<IReadOnlyList<MediaUsageEntry>> GetUsageAsync(

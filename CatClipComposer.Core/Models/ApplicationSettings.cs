@@ -46,6 +46,14 @@ public enum ContentBrowserViewMode
     ExtraLargeGrid
 }
 
+public enum ContentBrowserSortMode
+{
+    Name,
+    Date,
+    Length,
+    Tag
+}
+
 public sealed class ApplicationSettings
 {
     public List<string> SourceFolders { get; set; } = [];
@@ -59,6 +67,8 @@ public sealed class ApplicationSettings
     public int PreviewSlideCount { get; set; } = 12;
 
     public ContentBrowserViewMode BrowserViewMode { get; set; } = ContentBrowserViewMode.SmallGrid;
+
+    public ContentBrowserSortMode BrowserSortMode { get; set; } = ContentBrowserSortMode.Name;
 
     public int SmallThumbnailSize { get; set; } = 120;
 
@@ -91,6 +101,8 @@ public sealed class ApplicationSettings
     public string DefaultProgressColor { get; set; } = "#C8C0B2";
 
     public int DefaultProgressHeight { get; set; } = 10;
+
+    public List<TextOverlayPreset> TextOverlayPresets { get; set; } = [];
 
     public WorkspaceDockSlot ContentBrowserDock { get; set; } = WorkspaceDockSlot.Left;
 
@@ -138,6 +150,7 @@ public sealed class ApplicationSettings
         MetadataFolder = MetadataFolder,
         PreviewSlideCount = PreviewSlideCount,
         BrowserViewMode = BrowserViewMode,
+        BrowserSortMode = BrowserSortMode,
         SmallThumbnailSize = SmallThumbnailSize,
         LargeThumbnailSize = LargeThumbnailSize,
         ExtraLargeThumbnailSize = ExtraLargeThumbnailSize,
@@ -154,6 +167,24 @@ public sealed class ApplicationSettings
         DefaultProgressBarPosition = DefaultProgressBarPosition,
         DefaultProgressColor = DefaultProgressColor,
         DefaultProgressHeight = DefaultProgressHeight,
+        TextOverlayPresets = TextOverlayPresets.Select(preset => new TextOverlayPreset
+        {
+            Id = preset.Id,
+            Name = preset.Name,
+            Text = preset.Text,
+            FontPath = preset.FontPath,
+            FontFamily = preset.FontFamily,
+            FontSize = preset.FontSize,
+            Position = preset.Position,
+            HasCustomTransform = preset.HasCustomTransform,
+            X = preset.X,
+            Y = preset.Y,
+            Scale = preset.Scale,
+            RotationDegrees = preset.RotationDegrees,
+            Opacity = preset.Opacity,
+            FadeInSeconds = preset.FadeInSeconds,
+            FadeOutSeconds = preset.FadeOutSeconds
+        }).ToList(),
         ContentBrowserDock = ContentBrowserDock,
         PreviewDock = PreviewDock,
         LayersDock = LayersDock,

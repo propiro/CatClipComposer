@@ -162,11 +162,17 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox VerticalContentAlignment="Center"
                                      ToolTip="Filter by name or path"
                                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
-                            <Button Grid.Column="1"
+                            <ComboBox Grid.Column="1" Width="128" Margin="4,0,0,0"
+                                      ItemsSource="{Binding BrowserSortChoices}"
+                                      DisplayMemberPath="Label" SelectedValuePath="Mode"
+                                      SelectedValue="{Binding BrowserSortMode, Mode=TwoWay}"
+                                      ToolTip="Sort clips by name, newest file date, duration, or custom tags." />
+                            <Button Grid.Column="2"
                                     Margin="4,0,0,0"
                                     Click="Scan_Click"
                                     Content="Refresh" />
@@ -190,6 +196,7 @@
                                 <ContextMenu>
                                     <MenuItem Click="AddSelectedCatalogItems_Click" Header="Add selected clips to timeline" />
                                     <MenuItem Click="EditSelectedTags_Click" Header="Edit tags for selected clips…" />
+                                    <MenuItem Click="MarkSelectedCatalogItemsSeen_Click" Header="Mark selected clips as seen" />
                                     <Separator />
                                     <MenuItem Click="OpenSource_Click" Header="Show selected file" />
                                 </ContextMenu>
@@ -240,6 +247,11 @@
                                                         Background="#DD151513">
                                                     <TextBlock FontSize="10" Text="{Binding DurationText}" />
                                                 </Border>
+                                                <Polygon Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                         Points="0,0 16,0 16,16" Stretch="Fill"
+                                                         Fill="{Binding CornerBadgeColor}"
+                                                         ToolTip="{Binding CornerBadgeToolTip}"
+                                                         Visibility="{Binding HasCornerBadge, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             </Grid>
                                         </Border>
                                         <StackPanel Grid.Row="1" Margin="3,5,2,0">
@@ -272,6 +284,11 @@
                                                 <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="3,1" Background="#DD151513">
                                                     <TextBlock FontSize="9" Text="{Binding DurationText}" />
                                                 </Border>
+                                                <Polygon Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                         Points="0,0 14,0 14,14" Stretch="Fill"
+                                                         Fill="{Binding CornerBadgeColor}"
+                                                         ToolTip="{Binding CornerBadgeToolTip}"
+                                                         Visibility="{Binding HasCornerBadge, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             </Grid>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -448,7 +465,9 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Border Background="{StaticResource PreviewBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                                    <Grid ClipToBounds="True">
+                                    <Grid x:Name="ProjectPreviewVideoSurface" ClipToBounds="True"
+                                          RenderTransformOrigin="0.5,0.5"
+                                          PreviewMouseWheel="ProjectPreviewVideoSurface_PreviewMouseWheel">
                                         <MediaElement x:Name="ProjectPreviewPlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
                                                       IsMuted="True" Volume="0.5" ScrubbingEnabled="True" Stretch="Uniform"
                                                       MediaOpened="ProjectPreviewPlayer_MediaOpened" MediaEnded="ProjectPreviewPlayer_MediaEnded"
@@ -697,6 +716,7 @@
                                                         <MenuItem CommandParameter="{Binding Header}" Click="TrackMoveDown_Click" Header="Move track down" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="ColorCode_Click" Header="Set track color…" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="AddCompatibleEffectContext_Click" Header="Add compatible effect…" />
+                                                        <MenuItem CommandParameter="{Binding Header}" Click="LayerTrackPasteEffect_Click" Header="Paste copied effect at playhead" />
                                                         <Separator />
                                                         <MenuItem Click="AddTrack_Click" Header="Add track…" />
                                                         <MenuItem CommandParameter="{Binding Header}" Click="RemoveTrackContext_Click" Header="Remove empty track" />
@@ -727,6 +747,9 @@
                                                                 <MenuItem CommandParameter="{Binding}" Click="AddClipEffectContext_Click" Header="Add compatible effect for this item…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="ColorCode_Click" Header="Set item color…" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
+                                                                <Separator />
+                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemCopyEffect_Click" Header="Copy effect" />
+                                                                <MenuItem CommandParameter="{Binding}" Click="LayerItemPasteEffect_Click" Header="Paste effect at playhead" />
                                                                 <MenuItem CommandParameter="{Binding}" Click="LayerItemToggleTransformLock_Click"
                                                                           Header="{Binding TransformLockActionText}"
                                                                           Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -886,7 +909,8 @@
                     <Grid x:Name="TimelineDropSurface" Grid.Row="2" Margin="6,0,6,6"
                           AllowDrop="True" Focusable="True"
                           DragOver="TimelineListBox_DragOver" Drop="TimelineListBox_Drop"
-                          KeyDown="TimelineListBox_KeyDown">
+                          KeyDown="TimelineListBox_KeyDown"
+                          PreviewMouseWheel="TimelineDropSurface_PreviewMouseWheel">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto">
                             <Grid>
@@ -918,6 +942,7 @@
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackMoveDown_Click" Header="Move track down" />
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackColor_Click" Header="Set track color…" />
                                                             <MenuItem CommandParameter="{Binding}" Click="TimelineTrackAddEffect_Click" Header="Add compatible effect…" />
+                                                            <MenuItem CommandParameter="{Binding}" Click="TimelineTrackPasteEffect_Click" Header="Paste copied effect at playhead" />
                                                             <Separator />
                                                             <MenuItem Click="AddTrack_Click" Header="Add track…" />
                                                         </ContextMenu>
@@ -1011,6 +1036,7 @@
                                                                 <Style TargetType="ContentPresenter">
                                                                     <Setter Property="Canvas.Left" Value="{Binding Left}" />
                                                                     <Setter Property="Canvas.Top" Value="2" />
+                                                                    <Setter Property="Panel.ZIndex" Value="{Binding StackingOrder}" />
                                                                 </Style>
                                                             </ItemsControl.ItemContainerStyle>
                                                             <ItemsControl.ItemTemplate>
@@ -1031,6 +1057,9 @@
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemAddEffect_Click" Header="Add compatible effect…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemColor_Click" Header="Set item color…" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleEnabled_Click" Header="{Binding EnableActionText}" />
+                                                                                <Separator />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemCopyEffect_Click" Header="Copy effect" />
+                                                                                <MenuItem CommandParameter="{Binding}" Click="TimelineItemPasteEffect_Click" Header="Paste effect at playhead" />
                                                                                 <MenuItem CommandParameter="{Binding}" Click="TimelineItemToggleTransformLock_Click"
                                                                                           Header="{Binding TransformLockActionText}"
                                                                                           Visibility="{Binding IsPositionableOverlay, Converter={StaticResource BooleanToVisibilityConverter}}" />

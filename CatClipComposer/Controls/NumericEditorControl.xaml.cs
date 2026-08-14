@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace CatClipComposer.Controls;
 
@@ -19,6 +20,8 @@ public partial class NumericEditorControl : UserControl
     }
 
     public event EventHandler? Edited;
+
+    public bool IsTimeValue { get; set; }
 
     public bool ShowSlider
     {
@@ -105,9 +108,23 @@ public partial class NumericEditorControl : UserControl
         Edited?.Invoke(this, EventArgs.Empty);
     }
 
-    private void Decrease_Click(object sender, RoutedEventArgs e) => Adjust(-Step);
+    private void Decrease_Click(object sender, RoutedEventArgs e) => Adjust(-GetButtonStep());
 
-    private void Increase_Click(object sender, RoutedEventArgs e) => Adjust(Step);
+    private void Increase_Click(object sender, RoutedEventArgs e) => Adjust(GetButtonStep());
+
+    private double GetButtonStep()
+    {
+        if (!IsTimeValue)
+        {
+            return Step;
+        }
+
+        return Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)
+            ? 1
+            : Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
+                ? 0.5
+                : Step;
+    }
 
     private void Adjust(double change)
     {

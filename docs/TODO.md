@@ -375,6 +375,26 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
   and CLI output. Space expands/restores Browser, Layers, or Timeline even after one of its buttons had focus,
   without reactivating that button or stealing text/dropdown/slider input.
 
+### `BROWSER-007` — Show durable clip state and configurable catalog sorting
+
+- Priority/status: P0 / Done
+- Acceptance: Thumbnail corners prioritize green current-project, yellow other saved/recovered-project, and
+  blue newly imported/unseen state. Previewing or the context action marks a clip seen durably. The persisted
+  browser selector sorts by name, newest file date, duration, or custom tag without disabling virtualization.
+
+### `TIMELINE-011` — Prioritize newest overlaps and add effect clipboard/navigation gestures
+
+- Priority/status: P0 / Done
+- Acceptance: Insertion order supplies explicit z-order so the later-added overlapping block receives pointer
+  input. Context menus and Ctrl+C/Ctrl+V copy a complete non-source effect to a compatible track at the playhead.
+  Project Preview wheel zooms and timeline wheel pans; time arrows use Ctrl=0.5 s and Shift=1 s.
+
+### `UX-TEXT-001` — Save recognizable text overlay presets
+
+- Priority/status: P1 / Done
+- Acceptance: Text, font, transform, opacity, and fades persist as bounded portable INI presets without timing.
+  The text editor regenerates and displays a text/font thumbnail for each preset and can apply or update it.
+
 ### `UX-SHELL-001` — Correct compact menus and proportional scrollbars
 
 - Priority/status: P1 / Done

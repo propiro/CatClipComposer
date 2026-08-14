@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using CatClipComposer.Core.Models;
 
 namespace CatClipComposer.Infrastructure.Configuration;
@@ -54,6 +55,14 @@ internal static class ApplicationSettingsIniMapper
         settings.DefaultProgressColor = ini.Get("ProgressDefaults", "Color") ?? settings.DefaultProgressColor;
         settings.DefaultProgressHeight = ReadInt(
             ini, "ProgressDefaults", "Height", settings.DefaultProgressHeight);
+        settings.TextOverlayPresets = ini.GetSection("TextOverlayPresets")
+            .Where(pair => pair.Key.StartsWith("Preset", StringComparison.OrdinalIgnoreCase))
+            .Select(pair => new { pair.Value, Index = ParseIndexedKey(pair.Key, "Preset") })
+            .Where(item => item.Index >= 0)
+            .OrderBy(item => item.Index)
+            .Select(item => DecodeTextPreset(item.Value))
+            .OfType<TextOverlayPreset>()
+            .ToList();
         settings.MetadataFolder = ini.Get("Library", "MetadataFolder") ?? settings.MetadataFolder;
         settings.PreviewSlideCount = ReadInt(
             ini,
@@ -65,6 +74,11 @@ internal static class ApplicationSettingsIniMapper
             "Library",
             "BrowserViewMode",
             settings.BrowserViewMode);
+        settings.BrowserSortMode = ReadEnum(
+            ini,
+            "Library",
+            "BrowserSortMode",
+            settings.BrowserSortMode);
         settings.SmallThumbnailSize = ReadInt(
             ini,
             "Library",
@@ -164,6 +178,14 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"Color={settings.DefaultProgressColor}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Height={settings.DefaultProgressHeight}");
         builder.AppendLine();
+        builder.AppendLine("[TextOverlayPresets]");
+        for (var index = 0; index < settings.TextOverlayPresets.Count; index++)
+        {
+            var json = JsonSerializer.Serialize(settings.TextOverlayPresets[index]);
+            var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            builder.AppendLine(CultureInfo.InvariantCulture, $"Preset{index}={encoded}");
+        }
+        builder.AppendLine();
         builder.AppendLine("[Sources]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"IncludeSubfolders={settings.IncludeSubfolders.ToString().ToLowerInvariant()}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ShowFileNames={settings.ShowFileNames.ToString().ToLowerInvariant()}");
@@ -178,6 +200,7 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine(CultureInfo.InvariantCulture, $"MetadataFolder={settings.MetadataFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"PreviewSlideCount={settings.PreviewSlideCount}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"BrowserViewMode={settings.BrowserViewMode}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"BrowserSortMode={settings.BrowserSortMode}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"SmallThumbnailSize={settings.SmallThumbnailSize}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"LargeThumbnailSize={settings.LargeThumbnailSize}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ExtraLargeThumbnailSize={settings.ExtraLargeThumbnailSize}");
@@ -268,6 +291,13 @@ internal static class ApplicationSettingsIniMapper
             ? settings.DefaultProgressColor.ToUpperInvariant()
             : "#C8C0B2";
         settings.DefaultProgressHeight = Math.Clamp(settings.DefaultProgressHeight, 2, 100);
+        settings.TextOverlayPresets = settings.TextOverlayPresets
+            .Select(NormalizeTextPreset)
+            .Where(preset => !string.IsNullOrWhiteSpace(preset.Name) && !string.IsNullOrWhiteSpace(preset.Text))
+            .GroupBy(preset => preset.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.Last())
+            .Take(100)
+            .ToList();
         settings.FfmpegPath = string.IsNullOrWhiteSpace(settings.FfmpegPath)
             ? "ffmpeg.exe"
             : settings.FfmpegPath.Trim();
@@ -358,5 +388,46 @@ internal static class ApplicationSettingsIniMapper
         int.TryParse(key["Folder".Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var index)
             ? index
             : -1;
+
+    private static TextOverlayPreset? DecodeTextPreset(string encoded)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<TextOverlayPreset>(
+                Encoding.UTF8.GetString(Convert.FromBase64String(encoded)));
+        }
+        catch (Exception exception) when (exception is FormatException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static TextOverlayPreset NormalizeTextPreset(TextOverlayPreset preset)
+    {
+        preset.Id = preset.Id == Guid.Empty ? Guid.NewGuid() : preset.Id;
+        preset.Name = preset.Name.Trim();
+        if (preset.Name.Length > 80)
+        {
+            preset.Name = preset.Name[..80];
+        }
+
+        if (preset.Text.Length > 4000)
+        {
+            preset.Text = preset.Text[..4000];
+        }
+
+        preset.FontPath = preset.FontPath.Trim();
+        preset.FontFamily = string.IsNullOrWhiteSpace(preset.FontFamily) ? "Segoe UI" : preset.FontFamily.Trim();
+        preset.FontSize = Math.Clamp(preset.FontSize, 8, 240);
+        preset.Position = Enum.IsDefined(preset.Position) ? preset.Position : OverlayPosition.Center;
+        preset.X = OverlayTransformValues.NormalizeCoordinate(preset.X);
+        preset.Y = OverlayTransformValues.NormalizeCoordinate(preset.Y);
+        preset.Scale = OverlayTransformValues.NormalizeScale(preset.Scale);
+        preset.RotationDegrees = OverlayTransformValues.NormalizeRotation(preset.RotationDegrees);
+        preset.Opacity = double.IsFinite(preset.Opacity) ? Math.Clamp(preset.Opacity, 0, 1) : 1;
+        preset.FadeInSeconds = double.IsFinite(preset.FadeInSeconds) ? Math.Clamp(preset.FadeInSeconds, 0, 86400) : 0;
+        preset.FadeOutSeconds = double.IsFinite(preset.FadeOutSeconds) ? Math.Clamp(preset.FadeOutSeconds, 0, 86400) : 0;
+        return preset;
+    }
 
 }

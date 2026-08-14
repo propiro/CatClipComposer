@@ -16,6 +16,16 @@ public interface IMediaCatalog
 
     Task UpdateTagsAsync(long id, string tags, CancellationToken cancellationToken = default);
 
+    Task MarkSeenAsync(long id, CancellationToken cancellationToken = default);
+
+    Task ReplaceProjectMediaReferencesAsync(
+        Guid projectId,
+        IReadOnlyCollection<long> mediaFileIds,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<long, int>> GetProjectReferenceCountsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<MediaUsageEntry>> GetUsageAsync(
         long mediaFileId,
         CancellationToken cancellationToken = default);

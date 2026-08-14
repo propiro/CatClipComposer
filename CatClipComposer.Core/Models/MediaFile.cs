@@ -34,6 +34,10 @@ public sealed class MediaFile
 
     public bool IsAvailable { get; init; } = true;
 
+    public bool IsSeen { get; init; } = true;
+
+    public int ProjectReferenceCount { get; init; }
+
     public int UseCount { get; init; }
 
     public DateTime? LastUsedUtc { get; init; }

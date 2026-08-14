@@ -36,7 +36,8 @@ All commands except help/version initialize the selected SQLite catalog. Human-r
 ### `config`
 
 Shows the resolved INI path, whether the file exists, the resolved data/database paths, loaded plugin
-modules/diagnostics, and all effective settings, including content-browser mode, thumbnail sizes, panel docks,
+modules/diagnostics, and all effective settings, including content-browser view/sort mode, thumbnail sizes,
+text-preset count, panel docks,
 window/workspace dimensions, preview layout/tab, LQ preview resolution/selected-overlay quality mode,
 focused/expanded panels, and first-startup completion state.
 A missing INI is valid and displays normalized defaults.
@@ -70,7 +71,9 @@ CatClipComposer.Cli.exe list
 CatClipComposer.Cli.exe list --all --json
 ```
 
-The JSON item fields include ID, file name/path, duration, dimensions, audio and availability flags, tags, both preview paths, usage count, last-use time, and last output path.
+The JSON item fields include ID, file name/path, duration, dimensions, audio and availability flags, seen/new
+state, project-reference count, tags, both preview paths, successful-export usage count, last-use time, and last
+output path.
 
 ### `tag` and `usage`
 
