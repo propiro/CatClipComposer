@@ -1,5 +1,22 @@
 # Audit log
 
+## AUDIT-2026-08-15-001 — v0.1.32 public release verification
+
+Scope: public source synchronization, immutable release tag, GitHub Actions package gates, release visibility,
+asset identity, and local repository cleanliness.
+
+Findings and verification:
+
+- Public `main` and dereferenced annotated tag `v0.1.32` both resolved to tested commit
+  `f0b48fe347d873267a8c431ab75b5ce286b3ca5b` before publication.
+- Workflow run `31849674438` completed successfully. Checkout/LFS, .NET setup, exact tag/version validation,
+  portable publishing, package validation, and release creation each reported success.
+- The non-draft, non-prerelease GitHub Release exposes the expected 282,417,319-byte Windows x64 ZIP and
+  103-byte checksum asset. The checksum file names the ZIP and contains
+  `15ec7a8b73e4bb715a1e214dd04675bc390ae57d5bd81942544a0236ef3ce1eb`.
+- No tag was moved or reused, no generated executable was committed to the source branch, and the working tree
+  remained clean after publication.
+
 ## AUDIT-2026-08-14-007 — Text geometry, overlap hit testing, About layout, and tag editor audit
 
 Scope: the reported text-object/render mismatch, project-preview overlap selection, resizable About artwork,

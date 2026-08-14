@@ -2,6 +2,15 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-15 — v0.1.32 public source and Windows release
+
+- Pushed the two pending source commits to public `main` after refreshing GitHub authentication, then created the
+  immutable annotated `v0.1.32` tag at `f0b48fe347d873267a8c431ab75b5ce286b3ca5b`.
+- The tag-only Windows workflow completed successfully: LFS checkout, .NET setup, tag/version validation, portable
+  build/package validation, and GitHub Release publication all passed.
+- Published `CatClipComposer-v0.1.32-win-x64.zip` (282,417,319 bytes) and its adjacent SHA-256 file. The public
+  checksum is `15ec7a8b73e4bb715a1e214dd04675bc390ae57d5bd81942544a0236ef3ce1eb`.
+
 ## 2026-08-14 — v0.1.32 text geometry, overlap selection, About image, and tag shortcuts
 
 - Diagnosed the supplied multiline Spaceport text exactly: its Windows CRLF pairs were interpreted as two line
