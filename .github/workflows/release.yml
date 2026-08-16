@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   publish:
-    name: Build and publish portable Windows application
+    name: Build and publish light Windows application
     runs-on: windows-latest
     steps:
       - name: Check out tagged source and Git LFS payloads
@@ -39,24 +39,40 @@ jobs:
           }
           "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Build, validate, and package portable application
+      - name: Build, validate, and package light application
         shell: pwsh
         run: |
           $releaseRoot = Join-Path $env:RUNNER_TEMP "CatClipComposer-$env:APP_VERSION"
           $packagePath = Join-Path $releaseRoot "CatClipComposer"
           New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
-          .\scripts\Publish-Portable.ps1 -OutputPath $packagePath
+          .\scripts\Publish-Portable.ps1 -OutputPath $packagePath -SelfContained $false
 
           $marker = @(Get-ChildItem -LiteralPath $packagePath -File -Filter 'version_*')
           if ($marker.Count -ne 1 -or $marker[0].Name -cne "version_$env:APP_VERSION") {
               throw "Published version marker does not match $env:APP_VERSION."
+          }
+          $runtimeConfigPath = Join-Path $packagePath "CatClipComposer.runtimeconfig.json"
+          $runtimeConfig = Get-Content -LiteralPath $runtimeConfigPath -Raw -Encoding utf8 | ConvertFrom-Json
+          $frameworks = @()
+          if ($null -ne $runtimeConfig.runtimeOptions.framework) {
+              $frameworks += $runtimeConfig.runtimeOptions.framework
+          }
+          if ($null -ne $runtimeConfig.runtimeOptions.frameworks) {
+              $frameworks += @($runtimeConfig.runtimeOptions.frameworks)
+          }
+          $desktopFramework = @($frameworks | Where-Object {
+              $_.name -ceq "Microsoft.WindowsDesktop.App" -and
+              ([string]$_.version).StartsWith("8.")
+          })
+          if ($desktopFramework.Count -ne 1 -or $null -ne $runtimeConfig.runtimeOptions.includedFrameworks) {
+              throw "Published GUI does not require the .NET 8 Desktop Runtime."
           }
           $reportedVersion = & (Join-Path $packagePath "CatClipComposer.Cli.exe") version
           if ($LASTEXITCODE -ne 0 -or $reportedVersion -cne "Cat Clip Composer v$env:APP_VERSION") {
               throw "Published CLI version check failed: '$reportedVersion'."
           }
 
-          $zipName = "CatClipComposer-v$env:APP_VERSION-win-x64.zip"
+          $zipName = "CatClipComposer-v$env:APP_VERSION-win-x64-light.zip"
           $zipPath = Join-Path $releaseRoot $zipName
           Compress-Archive -LiteralPath $packagePath -DestinationPath $zipPath -CompressionLevel Optimal
           $checksumPath = "$zipPath.sha256"
@@ -74,13 +90,17 @@ jobs:
           @"
           Cat Clip Composer v$env:APP_VERSION for Windows x64.
 
-          1. Download CatClipComposer-v$env:APP_VERSION-win-x64.zip.
+          1. Download CatClipComposer-v$env:APP_VERSION-win-x64-light.zip.
           2. Verify it with the adjacent .sha256 file.
           3. Extract the complete CatClipComposer folder over the folder you already use.
           4. Run CatClipComposer.exe.
 
-          The archive is self-contained and includes the CLI, built-in plugin, documentation, fonts folder,
-          and the separately packaged LGPL-compatible FFmpeg runtime with its license/source/build records.
+          This light archive requires the free Microsoft .NET 8 Desktop Runtime x64. If it is missing,
+          Windows displays the native .NET host prompt with the appropriate download link. You can also get it at:
+          https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+
+          The archive includes the CLI, built-in plugin, documentation, fonts folder, and the separately packaged
+          LGPL-compatible FFmpeg runtime with its license/source/build records.
           The application is not code-signed, so Windows may show an unknown-publisher warning.
           "@ | Set-Content -LiteralPath $notesPath -Encoding utf8
 

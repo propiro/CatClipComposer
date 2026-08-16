@@ -197,8 +197,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 3. Responses have byte limits and a 15-second timeout, checks are serialized/cached for five minutes, cancellation
    is propagated, remote XML prohibits DTDs, and partial endpoint failures remain visible without hiding successful
    results. No updater downloads, executes, or replaces application files.
-4. Browser launch accepts only HTTPS `github.com/propiro/CatClipComposer` paths. A binary update requires the
-   expected `CatClipComposer-v&lt;version&gt;-win-x64.zip` Release asset; repository code is reported separately.
+4. Browser launch accepts only HTTPS `github.com/propiro/CatClipComposer` paths. A binary update accepts the
+   preferred `CatClipComposer-v&lt;version&gt;-win-x64-light.zip` Release asset or the earlier unsuffixed full-package
+   name; repository code is reported separately.
 
 ## Responsibility audit
 
@@ -242,9 +243,10 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.
-- **Portable publisher:** Compose the two single-file entry points, extensionless version marker, INI, docs,
-  mandatory pinned FFmpeg payload, plugin modules, and custom-font folder. It validates marker identity, hashes,
-  license flags, versions, and required render capabilities before publishing.
+- **Portable publisher:** Compose either the default shared framework-dependent GUI/CLI file set or explicit
+  self-contained single-file entry points, plus the extensionless version marker, INI, docs, mandatory pinned
+  FFmpeg payload, plugin modules, and custom-font folder. It validates .NET runtime contracts, shared-file
+  identity, marker identity, hashes, license flags, versions, and required render capabilities before publishing.
 - **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate the
   staged splash pipeline, saved software layout, conditional live scan, project/recovery state, and main-window
   handoff. The WPF shell alone owns its 20–40 ms ordinary-line pacing and 100–200 ms opening/completion holds;

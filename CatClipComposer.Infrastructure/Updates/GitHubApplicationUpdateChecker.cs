@@ -140,11 +140,15 @@ public sealed partial class GitHubApplicationUpdateChecker : IApplicationUpdateC
         }
 
         var normalizedReleaseVersion = releaseVersion?.ToString(3);
-        var expectedBinaryName = normalizedReleaseVersion is null
-            ? null
-            : $"CatClipComposer-v{normalizedReleaseVersion}-win-x64.zip";
-        var binaryPackageFound = expectedBinaryName is not null && release?.Assets?.Any(asset =>
-            asset.Name.Equals(expectedBinaryName, StringComparison.OrdinalIgnoreCase)) == true;
+        var expectedBinaryNames = normalizedReleaseVersion is null
+            ? Array.Empty<string>()
+            : new[]
+            {
+                $"CatClipComposer-v{normalizedReleaseVersion}-win-x64-light.zip",
+                $"CatClipComposer-v{normalizedReleaseVersion}-win-x64.zip"
+            };
+        var binaryPackageFound = release?.Assets?.Any(asset =>
+            expectedBinaryNames.Contains(asset.Name, StringComparer.OrdinalIgnoreCase)) == true;
         var latestBinaryVersion = binaryPackageFound ? normalizedReleaseVersion : null;
         var isBinaryUpdateAvailable = current is not null && releaseVersion is not null &&
                                       binaryPackageFound && releaseVersion > current;

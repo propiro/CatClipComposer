@@ -471,9 +471,17 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: A pushed tag matching the central version runs a Windows workflow with hydrated LFS and immutable-
-  SHA-pinned official actions, calls the repository publisher, verifies CLI/marker/package gates, creates the full
+  SHA-pinned official actions, calls the repository publisher, verifies CLI/marker/package gates, creates the
   portable ZIP and lowercase SHA-256, and publishes a GitHub Release via minimum `contents: write` permission.
   No tag is pushed until the local/manual acceptance checklist passes.
+
+### `DEPLOY-005` — Make future release packages light by default
+
+- Priority/status: P0 / Done
+- Acceptance: The publisher and tag workflow default to a multi-file Windows x64 package requiring the .NET 8
+  Desktop Runtime; native apphosts retain the standard missing-runtime prompt/link; GUI and CLI runtime contracts,
+  shared-file conflicts, marker, plugin, and FFmpeg payload are gated. `-SelfContained $true` remains an explicit
+  full-package option, v0.1.32 remains unchanged, and update checks recognize both asset-name generations.
 
 ### `BROWSER-008` — Inspect clip technical and usage information
 
@@ -633,8 +641,8 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `DEPLOY-002` — Keep application DLL/runtime clutter out of the portable root
 
 - Priority/status: P1 / Done
-- Acceptance: Single-file publishes leave only two entry-point executables and the INI beside organized
-  `docs` and `thirdparty` folders.
+- Acceptance: Explicit full single-file publishes leave only two entry-point executables and the INI beside
+  organized `docs` and `thirdparty` folders; the later light default is tracked separately by `DEPLOY-005`.
 
 ### `DEPLOY-003` — Always ship an audited FFmpeg runtime with the application
 

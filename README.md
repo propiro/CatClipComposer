@@ -6,7 +6,8 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current application and component version: **0.1.32**.
+Current source application and component version: **0.1.33**. The latest published v0.1.32 Windows package
+remains the full self-contained build; future release packages default to the smaller light format below.
 
 ## Documentation
 
@@ -107,8 +108,9 @@ Current application and component version: **0.1.32**.
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option;
   place the extensionless `version_<version>` marker beside both executables so an unpacked build is visibly
   distinguishable without launching it.
-- Render saved layered projects headlessly and publish the GUI/CLI/runtime as two single-file executables
-  with the pinned audited FFmpeg runtime under `thirdparty` and portable custom fonts under `fonts`.
+- Render saved layered projects headlessly and publish the GUI/CLI as a compact shared-file application by
+  default, with an explicit full self-contained option. Both formats keep the pinned audited FFmpeg runtime
+  under `thirdparty` and portable custom fonts under `fonts`.
 - See a wide split Mr Cat startup/rescan splash with a named pipeline stage, visible
   percentage, progress bar, and timestamped console log. Startup separately reports software layout, plugins,
   catalog, project-file/recovery, fonts, and editor readiness. When configured, library scans report per-file
@@ -139,13 +141,24 @@ package. If no release asset is listed yet, use the source-build instructions be
 
 When a portable package is available:
 
-1. Download `CatClipComposer-v<version>-win-x64.zip`, not GitHub's automatically generated **Source code**
-   archives.
+1. Download the named application ZIP, not GitHub's automatically generated **Source code** archives. Future
+   releases use `CatClipComposer-v<version>-win-x64-light.zip`; for the current v0.1.32 full release, download
+   the unsuffixed `CatClipComposer-v0.1.32-win-x64.zip`.
 2. Optionally verify the download with the adjacent `.sha256` checksum file.
 3. Extract the complete `CatClipComposer` folder to a writable location.
 4. Keep `version_<version>` plus the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside
    `CatClipComposer.exe`. The marker filename should match the version in the Release name.
-5. Run `CatClipComposer.exe`. The normal self-contained package does not need a separate .NET installation.
+5. Run `CatClipComposer.exe`.
+
+The default light package requires the free **Microsoft .NET 8 Desktop Runtime x64**. If it is already
+installed, no other setup is needed. If it is missing or incompatible, the native .NET application host shows
+a Windows error prompt with the appropriate download link before Cat Clip Composer starts. You can also install
+it directly from Microsoft's [.NET 8 download page](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+by choosing **.NET Desktop Runtime** for **Windows x64**. The Desktop Runtime includes the base .NET Runtime;
+the SDK is not required for end users.
+
+The v0.1.32 full package stays available for machines where installing .NET is undesirable. Maintainers can
+also make a later full package explicitly, but light is the release default unless stated otherwise.
 
 Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.
 
@@ -180,14 +193,20 @@ dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj --configur
 dotnet run --project .\CatClipComposer.Cli\CatClipComposer.Cli.csproj --configuration Release -- --help
 ```
 
-Create the self-contained portable Windows x64 package under `publish\CatClipComposer`:
+Create the normal light Windows x64 package under `publish\CatClipComposer`:
 
 ```powershell
 .\scripts\Publish-Portable.ps1
 ```
 
-See [portable deployment](docs/DEPLOYMENT.md) for framework-dependent publishing, package validation, and
-safe replacement of an existing portable folder.
+Create a full self-contained package only when explicitly required:
+
+```powershell
+.\scripts\Publish-Portable.ps1 -SelfContained $true
+```
+
+See [portable deployment](docs/DEPLOYMENT.md) for runtime behavior, package validation, and safe replacement
+of an existing portable folder.
 
 Maintainers publish the validated portable ZIP and its SHA-256 file as assets on a `v<version>` GitHub
 Release. Generated build output is never committed to the source branch.

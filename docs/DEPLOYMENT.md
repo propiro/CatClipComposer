@@ -1,23 +1,30 @@
 # Portable one-folder deployment
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-16
 
 Cat Clip Composer always deploys its pinned FFmpeg runtime. Both normal builds and portable publishes place
 the tools under `thirdparty\ffmpeg`, separate from the application executables and configuration.
 
 ## Publish
 
-Create the normal self-contained Windows x64 package:
+Create the normal light Windows x64 package. It is framework-dependent, shares managed dependencies between
+the GUI and CLI, and requires the Microsoft .NET 8 Desktop Runtime x64 on the destination computer:
 
 ```powershell
 .\scripts\Publish-Portable.ps1
 ```
 
-Create a framework-dependent package that requires the .NET 8 Desktop Runtime:
+Create a full self-contained package only when a release is explicitly meant to carry its own .NET runtime:
 
 ```powershell
-.\scripts\Publish-Portable.ps1 -SelfContained $false
+.\scripts\Publish-Portable.ps1 -SelfContained $true
 ```
+
+The light package still has native Windows `CatClipComposer.exe` and `CatClipComposer.Cli.exe` apphosts. When
+.NET 8 is present, they start normally. If the required runtime is absent, the native .NET host reports the
+missing `Microsoft.WindowsDesktop.App` 8.x framework and supplies the appropriate download link before managed
+WPF code runs. Install **.NET Desktop Runtime 8, Windows x64** from
+<https://dotnet.microsoft.com/en-us/download/dotnet/8.0>; the plain .NET Runtime alone does not contain WPF.
 
 The output folder must be empty. Use `-Force` to replace an earlier generated package explicitly; if that
 folder already contains `CatClipComposer.ini`, its exact bytes are carried into the replacement package so
@@ -30,11 +37,15 @@ payload and validates it before any package is accepted.
 
 ## GitHub Releases
 
-Publish the validated, self-contained Windows x64 output as GitHub Release assets rather than committing
+Publish the validated light Windows x64 output as GitHub Release assets rather than committing
 generated executables to the source branch. Each public release contains:
 
-- `CatClipComposer-v<version>-win-x64.zip`
-- `CatClipComposer-v<version>-win-x64.zip.sha256`
+- `CatClipComposer-v<version>-win-x64-light.zip`
+- `CatClipComposer-v<version>-win-x64-light.zip.sha256`
+
+The already-published v0.1.32 unsuffixed ZIP remains the full self-contained package. A future full package
+must be deliberately built with `-SelfContained $true` and identified as full in its asset name and notes;
+the automated tag workflow defaults to light.
 
 The ZIP contains the complete `CatClipComposer` folder. GitHub's automatically generated source archives are
 source checkouts, not end-user application packages.
@@ -43,11 +54,11 @@ After the version change, automated verification, commit/push, and the user's ma
 and push an annotated tag that exactly matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.32 -m "Cat Clip Composer v0.1.32"
-git push origin v0.1.32
+git tag -a v0.1.33 -m "Cat Clip Composer v0.1.33"
+git push origin v0.1.33
 ```
 
-Replace `0.1.32` with the central version. Do not reuse or move a published version tag; increment the
+Replace `0.1.33` with the central version. Do not reuse or move a published version tag; increment the
 application version for another release. `.github/workflows/release.yml` then runs on `windows-latest`, hydrates
 Git LFS, validates the tag/version and exact FFmpeg payload, calls the same portable publisher used locally,
 checks the CLI/marker, creates the complete ZIP plus lowercase SHA-256 file, and publishes both through the
@@ -67,7 +78,14 @@ Windows security.
 ```text
 CatClipComposer/
 |-- CatClipComposer.exe
+|-- CatClipComposer.dll
+|-- CatClipComposer.deps.json
+|-- CatClipComposer.runtimeconfig.json
 |-- CatClipComposer.Cli.exe
+|-- CatClipComposer.Cli.dll
+|-- CatClipComposer.Cli.deps.json
+|-- CatClipComposer.Cli.runtimeconfig.json
+|-- shared application and SQLite DLLs
 |-- version_<version>
 |-- CatClipComposer.ini
 |-- fonts/
@@ -89,10 +107,12 @@ CatClipComposer/
         `-- MANIFEST.sha256
 ```
 
-The root contains only the GUI/CLI entry points, extensionless `version_<version>` marker, and portable INI
-plus organized `fonts`, `plugins`, `docs`, and `thirdparty` subfolders. The marker contains a short changelist;
-its changing filename lets users verify an extracted build was actually replaced without launching it.
-Application assemblies, native SQLite, and the optional .NET runtime remain inside the single-file programs.
+The light root contains the GUI/CLI apphosts, their small application assemblies/runtime metadata, shared
+application and native SQLite dependencies, the extensionless `version_<version>` marker, and portable INI,
+plus organized `fonts`, `plugins`, `docs`, and `thirdparty` subfolders. These root files are one application
+unit; copying only an EXE will not work. The marker contains a short changelist, and its changing filename lets
+users verify an extracted build was actually replaced without launching it. A full build instead bundles the
+application assemblies, SQLite dependency, and .NET runtime inside its two single-file executables.
 Plugin assemblies remain replaceable under `plugins`; the publisher requires the built-in module assembly.
 FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
 interface-compatible build as required by the applicable license.
@@ -153,6 +173,9 @@ Before publishing, the script verifies:
 8. The copied package payload still matches its manifest.
 9. The portable custom-font folder is included separately from the application executables.
 10. The built-in plugin module assembly is included under `plugins`.
+11. A light publish contains native GUI/CLI apphosts plus `.deps.json` and `.runtimeconfig.json` files.
+12. The GUI runtime contract requires `Microsoft.WindowsDesktop.App` 8.x, the CLI requires
+    `Microsoft.NETCore.App` 8.x, and neither runtime configuration embeds a self-contained framework.
 
 ## Updating FFmpeg
 

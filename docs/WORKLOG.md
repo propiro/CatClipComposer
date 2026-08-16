@@ -2,6 +2,23 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-16 — v0.1.33 light-by-default Windows packaging
+
+- Made framework-dependent Windows x64 publication the default while retaining the prior compressed
+  self-contained layout behind explicit `-SelfContained $true`. The usual `publish\CatClipComposer` folder now
+  contains the v0.1.33 light build; the public v0.1.32 full Release and immutable tag were not changed.
+- The light publisher validates GUI/CLI apphosts, dependency/runtime configuration files, .NET 8 Desktop/Core
+  framework contracts, version markers, plugin output, FFmpeg payload, and merged-file hashes. The Windows-specific
+  SQLite provider is shared only when its strong assembly identity matches the CLI-resolved provider.
+- Changed future tagged assets to `CatClipComposer-v<version>-win-x64-light.zip`, added explicit .NET 8 Desktop
+  Runtime installation/release guidance, and kept the About update checker compatible with both new light names
+  and earlier unsuffixed full archives.
+- Verification: repeated zero-warning/error Release builds; 39-key/18-file XAML resource gate; light CLI version
+  and fresh SQLite-catalog smokes; hidden light WPF startup; forced missing-runtime apphost output with Microsoft's
+  x64 download URL; explicit full-package publication; and package/version/layout inspection. The measured light
+  package is 143.02 MiB unpacked and 61.29 MiB zipped versus 358.29 MiB and 267.41 MiB for the full mode. No NuGet,
+  FFmpeg, plugin, font, or other redistributed dependency changed.
+
 ## 2026-08-15 — v0.1.32 public source and Windows release
 
 - Pushed the two pending source commits to public `main` after refreshing GitHub authentication, then created the

@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.33
+
+- Makes light .NET 8 Desktop Runtime packages the default for future Windows releases.
+- Keeps full self-contained packaging available through an explicit publisher switch.
+- Validates the light package runtime contract and shared GUI/CLI dependency layout.
+- Recognizes both light and earlier full Windows archives during update checks.

@@ -1,5 +1,37 @@
 # Audit log
 
+## AUDIT-2026-08-16-001 — Light deployment and runtime-bootstrap audit
+
+Scope: framework-dependent/full publication policy, .NET discovery and missing-runtime UX, GUI/CLI shared-file
+layout, release naming, update detection, versioning, documentation, and preservation of the existing public release.
+
+Findings and remediation:
+
+- The two compressed self-contained executables duplicated most of the .NET runtime. A framework-dependent
+  multi-file GUI/CLI package shares application and SQLite dependencies and leaves Microsoft's runtime outside
+  the archive, reducing the measured ZIP from 267.41 MiB to 61.29 MiB while the unchanged FFmpeg bundle remains.
+- WPF cannot display its own missing-runtime dialog because managed code has not started. The generated native
+  apphost already supplies that Windows dialog and download URL. Publisher gates now require GUI
+  `Microsoft.WindowsDesktop.App` 8.x and CLI `Microsoft.NETCore.App` 8.x runtime metadata and reject an embedded
+  framework. Documentation points directly to Microsoft's Desktop Runtime x64 page and does not auto-download,
+  execute, elevate, or install anything.
+- GUI and CLI resolve byte-different Windows/general variants of `SQLitePCLRaw.provider.e_sqlite3.dll` with the
+  same strong assembly identity. The merger retains the GUI's Windows-specific file only for that exact filename
+  and matching identity; every other differing shared path fails publication. A CLI `list` smoke initialized and
+  queried a fresh SQLite database against the retained Windows provider.
+- Tagged releases now default explicitly to the light publisher and `-light.zip` asset name. Update checks accept
+  that exact new name and the earlier unsuffixed form, so public v0.1.32 remains detectable and untouched. Full
+  publication still passes when explicitly selected; no v0.1.33 tag or binary Release was created by this change.
+- Review found no new package dependency, FFmpeg payload, credential, updater download, installer, service,
+  elevation, or licensing boundary. Generated packages and size-study ZIPs remain outside tracked source.
+
+Verification: Release solution build succeeded repeatedly with zero warnings/errors; the publisher's XAML and
+FFmpeg gates passed; the light CLI reported v0.1.33 and initialized an empty catalog; the light WPF apphost created
+a window with installed .NET 8; an isolated empty `DOTNET_ROOT` produced exit `0x80008083`, the expected install
+message, and Microsoft's x64 app-launch download URL; explicit full publication and CLI version passed; the light
+and full outputs measured 143.02/358.29 MiB unpacked and 61.29/267.41 MiB zipped. Dependencies did not change, so a
+new package vulnerability audit was not required.
+
 ## AUDIT-2026-08-15-001 — v0.1.32 public release verification
 
 Scope: public source synchronization, immutable release tag, GitHub Actions package gates, release visibility,
