@@ -120,45 +120,54 @@ remains the full self-contained build; future release packages default to the sm
   visible for at least five seconds; its completion is persisted in the portable INI, and later startups remain
   visible for at least approximately three seconds.
 
-## Is FFmpeg required?
-
-**Yes.** Cat Clip Composer is the editor and project manager; FFmpeg and FFprobe are its media engine. The
-application uses them to inspect source files, generate thumbnails and contact sheets, render project
-previews, composite effects and overlays, mix audio, and export the finished video. Windows playback in the
-preview controls does not replace that processing engine.
-
-Normal builds and portable packages already contain a pinned Windows x64 FFmpeg/FFprobe shared runtime, so
-most users should not install FFmpeg separately. The default `ffmpeg.exe` preference resolves to
-`thirdparty\ffmpeg\ffmpeg.exe` beside the application.
-
 ## Installation
 
-### Portable application
+### Which installation type should I use?
+
+**Q: I already have the Microsoft .NET 8 Desktop Runtime x64. Which package should I use?**
+
+**A:** Use the **Light** package. It is the normal choice for future releases, contains all Cat Clip Composer
+features, and is much smaller because it uses the .NET 8 Desktop Runtime already installed in Windows. Look for
+an asset named `CatClipComposer-v<version>-win-x64-light.zip`.
+
+**Q: I do not have .NET 8, or I do not want to install it separately. Which package should I use?**
+
+**A:** Use a **Full** or **self-contained** package. It carries its own .NET runtime and does not require a
+separate .NET installation, but the download is substantially larger. The current v0.1.32 full package is named
+`CatClipComposer-v0.1.32-win-x64.zip`. Future releases default to Light; when a newer Full package is offered,
+it will be identified as Full/self-contained in its asset name and Release notes.
+
+**Q: Is the ordinary “.NET Runtime 8” enough for the Light package?**
+
+**A:** No. Cat Clip Composer uses WPF, so the Light package specifically needs the **.NET 8 Desktop Runtime
+x64**. The Desktop Runtime includes the ordinary .NET Runtime. The .NET 8 SDK also includes it, but end users do
+not need the SDK or a programming environment. To check an existing installation, run `dotnet --list-runtimes`
+and look for `Microsoft.WindowsDesktop.App 8.x` under the x64 .NET installation.
+
+**Q: What happens if I accidentally download Light without the required runtime?**
+
+**A:** The native .NET application host displays a Windows prompt with a Microsoft download link before Cat
+Clip Composer starts. Install **.NET Desktop Runtime 8 for Windows x64** from Microsoft's
+[.NET 8 download page](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), then run the same extracted
+`CatClipComposer.exe` again.
+
+### How do I install either portable package?
 
 Cat Clip Composer uses a portable, one-folder Windows package rather than an installer. Check the
 [latest GitHub Release](https://github.com/propiro/CatClipComposer/releases/latest) for a Windows x64
-package. If no release asset is listed yet, use the source-build instructions below.
+package. GitHub's automatically generated **Source code** archives are not runnable application packages.
 
-When a portable package is available:
+**Q: How do I install the downloaded ZIP?**
 
-1. Download the named application ZIP, not GitHub's automatically generated **Source code** archives. Future
-   releases use `CatClipComposer-v<version>-win-x64-light.zip`; for the current v0.1.32 full release, download
-   the unsuffixed `CatClipComposer-v0.1.32-win-x64.zip`.
+**A:**
+
+1. Download the Light package if .NET 8 Desktop Runtime x64 is installed, or a Full package if you do not want
+   a separate runtime installation.
 2. Optionally verify the download with the adjacent `.sha256` checksum file.
 3. Extract the complete `CatClipComposer` folder to a writable location.
 4. Keep `version_<version>` plus the `thirdparty`, `plugins`, `fonts`, and `docs` folders beside
    `CatClipComposer.exe`. The marker filename should match the version in the Release name.
 5. Run `CatClipComposer.exe`.
-
-The default light package requires the free **Microsoft .NET 8 Desktop Runtime x64**. If it is already
-installed, no other setup is needed. If it is missing or incompatible, the native .NET application host shows
-a Windows error prompt with the appropriate download link before Cat Clip Composer starts. You can also install
-it directly from Microsoft's [.NET 8 download page](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-by choosing **.NET Desktop Runtime** for **Windows x64**. The Desktop Runtime includes the base .NET Runtime;
-the SDK is not required for end users.
-
-The v0.1.32 full package stays available for machines where installing .NET is undesirable. Maintainers can
-also make a later full package explicitly, but light is the release default unless stated otherwise.
 
 Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.
 
@@ -253,6 +262,81 @@ To add another lane, select **+ Track** in Project Layers Data, choose Video, Ov
 Background, or Effects, and name it. Select that track header before adding an effect or layer item. Media
 cards can be dropped directly onto any Video lane. Click a workspace panel and press Space to focus or
 restore Content Browser, Project Layers Data, or Project Timeline.
+
+## Frequently asked questions
+
+### Can Cat Clip Composer be used for videos that do not contain cats?
+
+**A:** Yes. The name reflects the project's origin, not a content restriction. Cat Clip Composer can catalog,
+arrange, preview, and render any compatible local video clips. Dogs, birds, reptiles, holiday footage, memes,
+tutorial fragments, and entirely cat-free compilations are all acceptable.
+
+### Is Mr. Cat really that beautiful?
+
+**A:** Yes. Mr. Cat is indeed that beautiful. His photograph appears on the splash screen and in the About window,
+where the application takes care to show the complete, uncropped cat.
+
+### Which video files can I import?
+
+**A:** The catalog accepts MP4, WebM, AVI, MOV, MKV, and M4V containers. Actual decoding also depends on the codecs
+inside the file and the capabilities of the bundled FFmpeg build; a supported filename extension cannot rescue
+a damaged file or guarantee support for every unusual codec.
+
+### Does Cat Clip Composer modify my original video files?
+
+**A:** No. Scanning reads source metadata and creates separate catalog/thumbnail data. Projects are stored as `.nya`
+documents, previews are cached separately, and export writes a new output through a temporary file before replacing
+an explicitly selected existing destination. Cat Clip Composer does not trim or rewrite source files in place.
+
+### Can I trim clips like in a full nonlinear video editor?
+
+**A:** Not currently. Source trimming remains a deferred feature. The present editor focuses on arranging complete
+clips and adding timed video/image/text overlays, progress graphics, background blur, fades, music, per-clip
+volume, fit/fill/stretch behavior, and other supported effects. It is deliberately narrower than Premiere,
+DaVinci Resolve, or another general-purpose nonlinear editor.
+
+### Can I make both horizontal and vertical videos?
+
+**A:** Yes. Project presets include YouTube 1080p, 4K, and vertical Shorts, plus square, classic 4:3, and custom
+resolution/FPS/bitrate/quality settings. Fit, Fill, Stretch, and the blurred-background effect help adapt source
+clips to a different output shape.
+
+### Why do I sometimes need to prerender before seeing the project video?
+
+**A:** Clip Preview can play an individual source file directly. Project Preview must first ask FFmpeg to composite the
+selected frame, range, or full timeline with its tracks and effects. Frame, Range, and All each provide LQ/HQ
+prerender choices, and valid rendered chunks are cached so they can be revisited until an affected edit makes them
+stale.
+
+### Does Cat Clip Composer require FFmpeg?
+
+**A:** Yes. FFmpeg and FFprobe inspect media, generate thumbnails, render previews, composite effects, mix audio, and
+export the finished video. Normal Light and Full packages already include the project's pinned LGPL-compatible
+FFmpeg/FFprobe bundle under `thirdparty\ffmpeg`, so users normally do not install it separately. Preferences can
+point to another compatible local build when needed.
+
+### Can Cat Clip Composer export H.264 video?
+
+**A:** Yes, through the bundled Windows Media Foundation `h264_mf` encoder option. The non-GPL compatibility default is
+native MPEG-4 video with AAC audio. `libx264` is not part of the mandatory package and is only available as an
+explicit opt-in when the user supplies a compatible FFmpeg build with the appropriate license obligations.
+
+### Does Cat Clip Composer upload my clips or require an account?
+
+**A:** No. Cataloging, project editing, preview rendering, and export run locally and require no Cat Clip Composer
+account or cloud service. The About window has an optional manual GitHub update check; it reports available code
+or binary versions but does not download or install them and sends no credentials.
+
+### Which operating systems are supported?
+
+**A:** The current application is for Windows x64, with Windows 10 22H2 or later as the documented baseline. There is no
+supported macOS, Linux, ARM64, or 32-bit Windows package at present.
+
+### Is Cat Clip Composer production-ready?
+
+**A:** Treat it as a pre-1.0, entirely vibecoded experiment. It has project recovery, undo/redo, safe temporary-output
+replacement, audits, and real render tests, but it is still evolving quickly. Keep backups of important project
+files and verify a completed export before deleting or archiving any source material.
 
 ## Configuration and local application data
 

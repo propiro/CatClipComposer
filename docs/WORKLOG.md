@@ -2,6 +2,20 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-16 — Installation choices and factual video FAQ
+
+- Reworked the public installation guidance into direct question-and-answer choices: use Light with the .NET 8
+  Desktop Runtime x64, or use an available Full/self-contained package when a separate runtime installation is
+  undesirable. Clarified that the plain .NET Runtime is insufficient for WPF, the SDK is unnecessary for users,
+  v0.1.32 is the current unsuffixed Full asset, and future releases default to Light.
+- Added a question-and-answer FAQ confirming that non-cat footage is welcome and that Mr. Cat is indeed that
+  beautiful. Additional answers accurately cover accepted containers versus codecs, source-file safety, deferred
+  trimming, output shapes, layered prerendering, FFmpeg, H.264/default encoders, local operation, supported Windows
+  platforms, and the project's experimental pre-1.0 status.
+- This was a documentation-only change: application behavior, component version, application/dependency binaries,
+  and the existing v0.1.32 binary Release did not change. The usual local light package was republished so its
+  bundled documentation matches the repository.
+
 ## 2026-08-16 — v0.1.33 light-by-default Windows packaging
 
 - Made framework-dependent Windows x64 publication the default while retaining the prior compressed

@@ -1,5 +1,29 @@
 # Audit log
 
+## AUDIT-2026-08-16-002 — README installation and FAQ accuracy review
+
+Scope: public package-choice wording and factual answers about supported media, editing scope, preview behavior,
+rendering dependencies, privacy/network behavior, platform support, and release maturity.
+
+Findings and verification:
+
+- Light now unambiguously means the smaller package for systems with `Microsoft.WindowsDesktop.App` 8.x; Full
+  means self-contained and needs no separate .NET installation. The README does not claim every future release
+  has both assets: v0.1.32 is identified as the current Full download, while newer Full assets are conditional.
+- The FAQ distinguishes accepted container extensions from the codecs inside them and does not guarantee damaged
+  or unusual media will decode. It states the implemented presets, overlays/effects/audio, H.264 Media Foundation
+  option, MPEG-4/AAC default, cached FFmpeg project-prerender workflow, and non-destructive source/catalog boundary.
+- Known limitations remain explicit: source trimming is deferred, this is not a general nonlinear editor, releases
+  are Windows x64 only, and the entirely vibecoded application remains a changing pre-1.0 experiment. Local core
+  workflows are separated from the optional manual, non-installing GitHub update check.
+- The Mr. Cat answer is intentionally categorical and consistent with the splash/About presentation requirements.
+  No application code, version metadata, dependency, third-party payload, installer, or release asset changed.
+
+Verification: README claims were cross-checked against `docs/PROJECT.md`, `docs/DEPLOYMENT.md`,
+`docs/STACK_AND_LICENSES.md`, and current configuration/headless documentation. A clean Release solution build and
+`git diff --check` are recorded with the documentation commit; a dependency audit was unnecessary because no
+package changed.
+
 ## AUDIT-2026-08-16-001 — Light deployment and runtime-bootstrap audit
 
 Scope: framework-dependent/full publication policy, .NET discovery and missing-runtime UX, GUI/CLI shared-file
