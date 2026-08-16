@@ -11,5 +11,6 @@ public sealed record ApplicationServices(
     IMediaScanner Scanner,
     IVideoRenderer VideoRenderer,
     ICompositionExporter CompositionExporter,
+    IFfmpegCommandService FfmpegCommandService,
     IPluginCatalog Plugins,
     IApplicationUpdateChecker UpdateChecker);

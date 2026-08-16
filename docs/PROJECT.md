@@ -1,6 +1,6 @@
 # Project goals and feature status
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-16
 
 ## Product goal
 
@@ -161,6 +161,10 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Resolution, aspect, codec, quality, and FPS presets — Done.** Seven common presets plus custom settings
   persist per project.
 - **Safe final compilation — Done.** Rendering uses a temporary output and supports cancellation.
+- **Inspectable final FFmpeg command — Done.** Project Settings creates the current final render graph for a
+  chosen MP4 path, shows the complete command in an editable window, copies it, or executes edited arguments
+  directly through the configured FFmpeg executable. The window discloses that direct runs bypass safe output
+  replacement and export history.
 - **Successful-export usage history — Done.** Completed jobs record ordered source clips and final output.
 - **History browsing — Done.** A modeless toggle surface combines newest-first project actions, exports, and
   log/crash files; prior outputs and source locations open in File Explorer. Clip inspection adds technical,
@@ -198,7 +202,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Light release policy — Done.** Future tagged releases default to a much smaller multi-file package requiring
   the free .NET 8 Desktop Runtime x64; its native apphost supplies the missing-runtime download prompt. Full
   packaging remains available only through an explicit publisher switch.
-- **Shared user-visible version — Done.** Version 0.1.33 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.34 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

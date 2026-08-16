@@ -107,3 +107,13 @@ public sealed record RenderProgress(
 public sealed record RenderResult(
     string OutputPath,
     TimeSpan Duration);
+
+public sealed record FfmpegCommandPreview(
+    string CommandText,
+    string OutputPath,
+    string? SupportingFilesFolder);
+
+public sealed record FfmpegCommandExecutionResult(
+    int ExitCode,
+    string StandardOutput,
+    string StandardError);

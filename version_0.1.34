@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.34
+
+- Adds a final FFmpeg command inspector under Project Settings.
+- Shows the complete generated command in an editable text field.
+- Copies the edited command to the clipboard or executes it through the configured FFmpeg binary.
+- Restricts direct execution to FFmpeg without invoking a command shell.

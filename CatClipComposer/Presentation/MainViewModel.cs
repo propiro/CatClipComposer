@@ -19,6 +19,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IMediaScanner _scanner;
     private readonly IVideoRenderer _videoRenderer;
     private readonly ICompositionExporter _compositionExporter;
+    private readonly IFfmpegCommandService _ffmpegCommandService;
     private readonly IPluginCatalog _plugins;
     private readonly ProjectUndoHistory _projectHistory;
     private CancellationTokenSource? _operationCancellation;
@@ -49,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
         IMediaScanner scanner,
         IVideoRenderer videoRenderer,
         ICompositionExporter compositionExporter,
+        IFfmpegCommandService ffmpegCommandService,
         IPluginCatalog plugins)
     {
         _settings = settings;
@@ -58,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         _scanner = scanner;
         _videoRenderer = videoRenderer;
         _compositionExporter = compositionExporter;
+        _ffmpegCommandService = ffmpegCommandService;
         _plugins = plugins;
         _projectHistory = new ProjectUndoHistory(settings.UndoHistoryCapacity);
         Timeline = new TimelineViewModel(15);
@@ -898,6 +901,40 @@ public sealed class MainViewModel : ObservableObject
             _operationCancellation.Dispose();
             _operationCancellation = null;
         }
+    }
+
+    public async Task<FfmpegCommandPreview> CreateFinalFfmpegCommandAsync(
+        string outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsBusy)
+        {
+            throw new InvalidOperationException("Another operation is already running.");
+        }
+
+        if (Timeline.Clips.Count == 0)
+        {
+            throw new InvalidOperationException("Add at least one clip to the timeline before creating an FFmpeg command.");
+        }
+
+        StatusText = "Preparing final FFmpeg command...";
+        SynchronizeProjectFromTimeline();
+        var renderPlan = ProjectRenderMapper.Create(_project, _plugins);
+        if (renderPlan.Segments.Count == 0)
+        {
+            throw new InvalidOperationException("The project does not contain renderable video content.");
+        }
+
+        var orientation = _project.Output.Height > _project.Output.Width
+            ? OutputOrientation.Portrait
+            : OutputOrientation.Landscape;
+        var result = await _ffmpegCommandService.CreateAsync(
+            CreateRenderRequest(renderPlan, outputPath, orientation),
+            _settings.FfmpegPath,
+            Path.Combine(_settings.MetadataFolder, "ffmpeg-command-assets"),
+            cancellationToken);
+        StatusText = $"FFmpeg command ready: {Path.GetFileName(outputPath)}";
+        return result;
     }
 
     public async Task<RenderResult> RenderProjectPreviewAsync(

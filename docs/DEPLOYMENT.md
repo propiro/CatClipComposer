@@ -54,11 +54,11 @@ After the version change, automated verification, commit/push, and the user's ma
 and push an annotated tag that exactly matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.33 -m "Cat Clip Composer v0.1.33"
-git push origin v0.1.33
+git tag -a v0.1.34 -m "Cat Clip Composer v0.1.34"
+git push origin v0.1.34
 ```
 
-Replace `0.1.33` with the central version. Do not reuse or move a published version tag; increment the
+Replace `0.1.34` with the central version. Do not reuse or move a published version tag; increment the
 application version for another release. `.github/workflows/release.yml` then runs on `windows-latest`, hydrates
 Git LFS, validates the tag/version and exact FFmpeg payload, calls the same portable publisher used locally,
 checks the CLI/marker, creates the complete ZIP plus lowercase SHA-256 file, and publishes both through the

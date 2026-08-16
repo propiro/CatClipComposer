@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-16
 
 ## Repository modules
 
@@ -224,6 +224,10 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`FfmpegVideoRenderer`:** Validate and coordinate temporary render output.
 - **`FfmpegFilterGraphBuilder`:** Build normalization, concat, overlay, and progress filters.
 - **`FfmpegRenderCommandBuilder`:** Build argument-safe FFmpeg process configuration.
+- **`FfmpegCommandService`:** Project the same final render request and command builder into a displayable
+  Windows command line, persist any text-overlay support files, and directly execute edited arguments only when
+  the parsed executable still resolves to the configured FFmpeg binary. It never invokes a command shell; WPF
+  owns output selection, confirmation, clipboard access, and the command window.
 - **`FfmpegProcessRunner`:** Execute FFmpeg, cancel, collect errors, and report progress. `MOD-002` is closed.
 - **`SqliteMediaCatalog`:** Media/tag/seen CRUD, project-reference replacement, and successful-export/history
   SQL behind `IMediaCatalog`.

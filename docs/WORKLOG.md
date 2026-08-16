@@ -2,6 +2,19 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-16 — v0.1.34 final FFmpeg command inspector
+
+- Added **FFmpeg command...** under Project Settings. It asks for the intended MP4 destination, builds the exact
+  current final project graph through the shared render mapper and command builder, and opens an editable command
+  field with **COPY TO CLIPBOARD**, **EXECUTE FFMPEG**, and Close actions.
+- Direct execution parses the edited Windows command line without PowerShell or `cmd.exe`, requires the executable
+  to remain the configured FFmpeg binary, passes arguments through `ProcessStartInfo.ArgumentList`, captures
+  bounded output, supports cancellation, and warns about overwrite access and its export-history/safe-replacement
+  bypass. Generated text-overlay files remain in the metadata command-assets folder so copied commands stay valid.
+- Advanced the source/component marker to v0.1.34. Verification covered clean Release builds, WPF command-window
+  construction, static XAML resources, and a real one-second FFmpeg generation/edit/execute smoke that rendered
+  text and rejected a substituted non-FFmpeg executable. No dependency or redistributed payload changed.
+
 ## 2026-08-16 — Installation choices and factual video FAQ
 
 - Reworked the public installation guidance into direct question-and-answer choices: use Light with the .NET 8

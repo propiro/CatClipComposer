@@ -73,6 +73,7 @@ public partial class App : Application
                 services.Scanner,
                 services.VideoRenderer,
                 services.CompositionExporter,
+                services.FfmpegCommandService,
                 services.Plugins,
                 services.UpdateChecker);
             MainWindow = mainWindow;

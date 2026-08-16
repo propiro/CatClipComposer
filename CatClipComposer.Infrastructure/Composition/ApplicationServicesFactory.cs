@@ -38,6 +38,7 @@ public static class ApplicationServicesFactory
             previewSheetGenerator);
         IVideoRenderer videoRenderer = new FfmpegVideoRenderer();
         ICompositionExporter compositionExporter = new CompositionExportService(videoRenderer, catalog);
+        IFfmpegCommandService ffmpegCommandService = new FfmpegCommandService();
         IPluginCatalog plugins = PluginCatalog.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
         IApplicationUpdateChecker updateChecker = new GitHubApplicationUpdateChecker();
 
@@ -49,6 +50,7 @@ public static class ApplicationServicesFactory
             scanner,
             videoRenderer,
             compositionExporter,
+            ffmpegCommandService,
             plugins,
             updateChecker);
     }

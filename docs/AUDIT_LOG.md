@@ -1,5 +1,32 @@
 # Audit log
 
+## AUDIT-2026-08-16-003 — Editable FFmpeg command execution boundary
+
+Scope: final-command fidelity, UI disclosure, command parsing, process execution, support-file lifetime, and
+effects on normal export safety/history behavior.
+
+Findings and remediation:
+
+- The Project Settings action maps the in-memory project through the same Core render projection and
+  `FfmpegRenderCommandBuilder` used by final export, including output dimensions, encoder settings, filters,
+  overlays, progress, and audio. The selected path is the displayed/direct command destination.
+- Display formatting quotes every executable/argument with Windows escaping. Execution reparses through the
+  operating system's `CommandLineToArgvW`, verifies the first argument resolves exactly to the configured FFmpeg
+  path, and transfers every remaining token through `ProcessStartInfo.ArgumentList`. No shell, script host,
+  elevation, downloaded command, or arbitrary executable substitution is permitted.
+- Editable FFmpeg arguments intentionally retain FFmpeg's normal local read/write authority. The window requires
+  confirmation, identifies `-y` overwrite behavior, supports process-tree cancellation, captures only a bounded
+  output tail, and explains that direct execution bypasses the application's atomic temporary-output replacement
+  and completed-export history. The normal Export path remains unchanged.
+- Text overlays require temporary UTF-8 input files. Inspector-created copies are intentionally persisted below
+  the configured metadata `ffmpeg-command-assets` directory so clipboard commands do not immediately break; no
+  source clip, credential, network request, package dependency, FFmpeg binary, or license boundary changed.
+
+Verification: zero-warning/error Release solution builds passed. A WPF smoke constructed the window and verified
+the editable field plus Copy/Execute/Close controls. A real one-second MPEG-4/AAC command with a text overlay was
+generated, edited with a harmless FFmpeg argument, executed successfully, decoded by FFprobe, and rejected after
+its executable was changed to `cmd.exe`. Static XAML and final package checks are recorded with the commit.
+
 ## AUDIT-2026-08-16-002 — README installation and FAQ accuracy review
 
 Scope: public package-choice wording and factual answers about supported media, editing scope, preview behavior,

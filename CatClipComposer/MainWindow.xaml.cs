@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly IMediaCatalog _catalog;
     private readonly IApplicationUpdateChecker _updateChecker;
+    private readonly IFfmpegCommandService _ffmpegCommandService;
     private readonly WorkspaceLayoutController _workspaceLayout;
     private Point _catalogDragStart;
     private Point _timelineDragStart;
@@ -94,6 +95,7 @@ public partial class MainWindow : Window
         IMediaScanner scanner,
         IVideoRenderer videoRenderer,
         ICompositionExporter compositionExporter,
+        IFfmpegCommandService ffmpegCommandService,
         IPluginCatalog plugins,
         IApplicationUpdateChecker updateChecker)
     {
@@ -102,6 +104,7 @@ public partial class MainWindow : Window
         ApplyPersistedWindowGeometry(settings);
         _catalog = catalog;
         _updateChecker = updateChecker;
+        _ffmpegCommandService = ffmpegCommandService;
         _viewModel = new MainViewModel(
             settings,
             settingsStore,
@@ -110,6 +113,7 @@ public partial class MainWindow : Window
             scanner,
             videoRenderer,
             compositionExporter,
+            ffmpegCommandService,
             plugins);
         _workspaceLayout = new WorkspaceLayoutController(
             ContentBrowserPanel,
@@ -448,6 +452,58 @@ public partial class MainWindow : Window
                 dialog.ResultTargetDurationMinutes,
                 dialog.ResultBackgroundColor,
                 dialog.ResultSettings);
+        }
+    }
+
+    private async void FfmpegCommand_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsBusy)
+        {
+            return;
+        }
+
+        if (_viewModel.Timeline.Clips.Count == 0)
+        {
+            MessageBox.Show(
+                this,
+                "Add at least one clip to the timeline before creating an FFmpeg command.",
+                "Empty timeline",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(_viewModel.Settings.OutputFolder);
+            var outputDialog = new SaveFileDialog
+            {
+                Title = "Choose output for the FFmpeg command",
+                InitialDirectory = _viewModel.Settings.OutputFolder,
+                FileName = $"CatCompilation-{DateTime.Now:yyyyMMdd-HHmm}.mp4",
+                DefaultExt = ".mp4",
+                Filter = "MP4 video (*.mp4)|*.mp4",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+            if (outputDialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            var preview = await _viewModel.CreateFinalFfmpegCommandAsync(outputDialog.FileName);
+            var commandWindow = new FfmpegCommandWindow(
+                preview,
+                _ffmpegCommandService,
+                _viewModel.Settings.FfmpegPath)
+            {
+                Owner = this
+            };
+            commandWindow.ShowDialog();
+        }
+        catch (Exception exception)
+        {
+            DesktopDialogs.ShowError(this, "The final FFmpeg command could not be created.", exception);
         }
     }
 

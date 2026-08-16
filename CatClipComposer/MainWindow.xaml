@@ -587,8 +587,15 @@
                                                            TextTrimming="CharacterEllipsis"
                                                            ToolTip="{Binding ProjectFilePath}"
                                                            Text="{Binding ProjectFilePath, TargetNullValue=Not saved yet}" />
-                                                <Button HorizontalAlignment="Left" Click="OutputSettings_Click"
-                                                        Content="Edit project settings…" />
+                                                <WrapPanel>
+                                                    <Button Click="OutputSettings_Click"
+                                                            Content="Edit project settings…"
+                                                            ToolTip="Edit the project's final output resolution, frame rate, encoder, bitrate, and quality settings." />
+                                                    <Button Margin="4,0,0,0"
+                                                            Click="FfmpegCommand_Click"
+                                                            Content="FFmpeg command…"
+                                                            ToolTip="Show, edit, copy, or directly execute the complete FFmpeg command for the current project and final output settings." />
+                                                </WrapPanel>
                                             </StackPanel>
                                         </Border>
                                     </Expander>

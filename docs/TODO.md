@@ -619,6 +619,14 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 - Acceptance: Officially sourced presets and validated custom 640x360/24 settings reached FFmpeg and
   FFprobe.
 
+### `RENDER-CMD-001` — Inspect, copy, and directly execute the final FFmpeg command
+
+- Priority/status: P1 / Done
+- Acceptance: Project Settings chooses a final output and uses the shared project mapper/command builder to show
+  the complete command in an editable field with Copy, Execute FFmpeg, and Close actions. Direct execution asks
+  for confirmation, supports cancellation, launches no shell, rejects executable substitution, preserves
+  generated text support files, and discloses its safe-replacement/export-history bypass.
+
 ### `DEPLOY-001` — Produce a one-folder deployment with a tidy `thirdparty` boundary
 
 - Priority/status: P1 / Done

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using CatClipComposer.Core.Models;
 using CatClipComposer.Core.Services;
 
@@ -25,18 +24,11 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         IReadOnlyDictionary<int, string> timedTextPaths = new Dictionary<int, string>();
         var totalDuration = request.OutputRangeDuration ??
                             TimeSpan.FromTicks(request.Segments.Sum(segment => segment.Duration.Ticks));
-        var (fallbackWidth, fallbackHeight) = request.Orientation == OutputOrientation.Portrait
-            ? (1080, 1920)
-            : (1920, 1080);
-        var sourceWidth = request.OutputWidth > 0 ? request.OutputWidth : fallbackWidth;
-        var sourceHeight = request.OutputHeight > 0 ? request.OutputHeight : fallbackHeight;
-        var scale = Math.Clamp(request.PreviewScale, 0.1, 1);
-        var width = MakeEven(Math.Max(2, (int)Math.Round(sourceWidth * scale)));
-        var height = MakeEven(Math.Max(2, (int)Math.Round(sourceHeight * scale)));
+        var (width, height) = ResolveOutputDimensions(request);
 
         try
         {
-            timedTextPaths = await CreateTimedOverlayTextFilesAsync(
+            timedTextPaths = await FfmpegTimedTextFileWriter.CreateAsync(
                 request,
                 outputDirectory,
                 operationId,
@@ -81,7 +73,7 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
         }
     }
 
-    private static void ValidateRequest(RenderRequest request)
+    internal static void ValidateRequest(RenderRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Segments.Count == 0)
@@ -181,46 +173,18 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
             $".{Path.GetFileNameWithoutExtension(outputPath)}.{operationId}.partial{Path.GetExtension(outputPath)}");
     }
 
-    private static int MakeEven(int value) => value % 2 == 0 ? value : value + 1;
-
-    private static async Task<IReadOnlyDictionary<int, string>> CreateTimedOverlayTextFilesAsync(
-        RenderRequest request,
-        string outputDirectory,
-        string operationId,
-        CancellationToken cancellationToken)
+    internal static (int Width, int Height) ResolveOutputDimensions(RenderRequest request)
     {
-        var paths = new Dictionary<int, string>();
-        var overlays = request.TimedOverlays ?? [];
-        try
-        {
-            for (var index = 0; index < overlays.Count; index++)
-            {
-                var overlay = overlays[index];
-                if (overlay.Kind != RenderOverlayKind.Text || string.IsNullOrWhiteSpace(overlay.Text))
-                {
-                    continue;
-                }
-
-                var path = Path.Combine(outputDirectory, $".overlay-{operationId}-{index}.txt");
-                await File.WriteAllTextAsync(
-                    path,
-                    TextOverlayContent.NormalizeForRendering(overlay.Text),
-                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                    cancellationToken);
-                paths[index] = path;
-            }
-
-            return paths;
-        }
-        catch
-        {
-            foreach (var path in paths.Values)
-            {
-                TemporaryFile.TryDelete(path);
-            }
-
-            throw;
-        }
+        var (fallbackWidth, fallbackHeight) = request.Orientation == OutputOrientation.Portrait
+            ? (1080, 1920)
+            : (1920, 1080);
+        var sourceWidth = request.OutputWidth > 0 ? request.OutputWidth : fallbackWidth;
+        var sourceHeight = request.OutputHeight > 0 ? request.OutputHeight : fallbackHeight;
+        var scale = Math.Clamp(request.PreviewScale, 0.1, 1);
+        return (
+            MakeEven(Math.Max(2, (int)Math.Round(sourceWidth * scale))),
+            MakeEven(Math.Max(2, (int)Math.Round(sourceHeight * scale))));
     }
 
+    private static int MakeEven(int value) => value % 2 == 0 ? value : value + 1;
 }
