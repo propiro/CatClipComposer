@@ -11,17 +11,20 @@
           Link="$(VersionMarkerFileName)"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="Always"
+          ExcludeFromSingleFile="true"
           Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)thirdparty\ffmpeg\**\*"
           Link="thirdparty\ffmpeg\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'CatClipComposer'">
     <None Include="$(MSBuildThisFileDirectory)fonts\**\*"
           Link="fonts\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <Target Name="ValidateVersionMarker"

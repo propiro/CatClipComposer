@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.35
+
+- Publishes both Light entry points as clean framework-dependent single-file executables.
+- Removes application DLL, dependency JSON, runtime JSON, and native SQLite clutter from the portable root.
+- Keeps the portable INI and visible version marker beside the executables.
+- Keeps plugins, fonts, documentation, and the replaceable FFmpeg runtime in organized subfolders.

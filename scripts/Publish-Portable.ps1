@@ -139,85 +139,55 @@ function Assert-FfmpegPayload([string]$Directory, [bool]$InspectCapabilities) {
     }
 }
 
-function Assert-FrameworkDependentPublish(
+function Assert-SingleFilePublish(
     [string]$Directory,
     [string]$ApplicationName,
-    [string]$RequiredFramework) {
-    foreach ($requiredName in @(
-        "$ApplicationName.exe",
-        "$ApplicationName.dll",
-        "$ApplicationName.deps.json",
-        "$ApplicationName.runtimeconfig.json")) {
-        if (-not (Test-Path -LiteralPath (Join-Path $Directory $requiredName))) {
-            throw "Framework-dependent publish is missing '$requiredName' under '$Directory'."
+    [bool]$IsSelfContained) {
+    $expectedFileNames = @("$ApplicationName.exe", $versionMarkerName)
+    $topLevelFiles = @(Get-ChildItem -LiteralPath $Directory -File)
+    $unexpectedFiles = @($topLevelFiles | Where-Object { $_.Name -notin $expectedFileNames })
+    if ($topLevelFiles.Count -ne $expectedFileNames.Count -or $unexpectedFiles.Count -ne 0) {
+        $actualNames = ($topLevelFiles.Name | Sort-Object) -join ", "
+        throw "Single-file publish for $ApplicationName has unexpected root files: $actualNames"
+    }
+
+    foreach ($requiredName in $expectedFileNames) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Directory $requiredName) -PathType Leaf)) {
+            throw "Single-file publish is missing '$requiredName' under '$Directory'."
         }
     }
 
-    $runtimeConfigurationPath = Join-Path $Directory "$ApplicationName.runtimeconfig.json"
-    $runtimeConfiguration = Get-Content -LiteralPath $runtimeConfigurationPath -Raw -Encoding utf8 |
-        ConvertFrom-Json
-    $runtimeOptions = $runtimeConfiguration.runtimeOptions
-    if ($null -eq $runtimeOptions) {
-        throw "Framework-dependent publish has no runtimeOptions: $runtimeConfigurationPath"
-    }
-    if ($null -ne $runtimeOptions.includedFrameworks) {
-        throw "Framework-dependent publish unexpectedly embeds .NET frameworks: $runtimeConfigurationPath"
-    }
-
-    $frameworks = @()
-    if ($null -ne $runtimeOptions.framework) {
-        $frameworks += $runtimeOptions.framework
-    }
-    if ($null -ne $runtimeOptions.frameworks) {
-        $frameworks += @($runtimeOptions.frameworks)
-    }
-    $matchingFramework = @($frameworks | Where-Object {
-        $_.name -ceq $RequiredFramework -and
-        ([string]$_.version).StartsWith("8.", [System.StringComparison]::Ordinal)
-    })
-    if ($matchingFramework.Count -ne 1) {
-        throw "Framework-dependent publish must require $RequiredFramework 8.x: $runtimeConfigurationPath"
+    if (-not $IsSelfContained) {
+        $executable = Get-Item -LiteralPath (Join-Path $Directory "$ApplicationName.exe")
+        if ($executable.Length -ge 64MB) {
+            throw "Light executable is unexpectedly large and may contain framework or FFmpeg files: $($executable.FullName)"
+        }
     }
 }
 
-function Copy-MergedFrameworkDependentFiles([string]$Source, [string]$Destination) {
-    $excludedTopLevelDirectories = @("docs", "fonts", "plugins", "thirdparty")
-    $sourcePrefix = [System.IO.Path]::GetFullPath($Source).TrimEnd(
-        [System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
-    foreach ($file in Get-ChildItem -LiteralPath $Source -Recurse -File) {
-        if (-not $file.FullName.StartsWith(
-            $sourcePrefix,
-            [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Publish file escaped its source directory: $($file.FullName)"
+function Assert-PortableRootLayout([string]$Directory) {
+    $expectedFileNames = @(
+        "CatClipComposer.exe",
+        "CatClipComposer.Cli.exe",
+        "CatClipComposer.ini",
+        $versionMarkerName)
+    $expectedDirectoryNames = @("docs", "fonts", "plugins", "thirdparty")
+    $rootFiles = @(Get-ChildItem -LiteralPath $Directory -File)
+    $rootDirectories = @(Get-ChildItem -LiteralPath $Directory -Directory)
+    $unexpectedFiles = @($rootFiles | Where-Object { $_.Name -notin $expectedFileNames })
+    $unexpectedDirectories = @($rootDirectories | Where-Object { $_.Name -notin $expectedDirectoryNames })
+    if ($rootFiles.Count -ne $expectedFileNames.Count -or $unexpectedFiles.Count -ne 0) {
+        $actualNames = ($rootFiles.Name | Sort-Object) -join ", "
+        throw "Portable root must contain only the GUI, CLI, INI, and version marker; found: $actualNames"
+    }
+    if ($rootDirectories.Count -ne $expectedDirectoryNames.Count -or $unexpectedDirectories.Count -ne 0) {
+        $actualNames = ($rootDirectories.Name | Sort-Object) -join ", "
+        throw "Portable root contains unexpected directories: $actualNames"
+    }
+    foreach ($requiredName in $expectedFileNames + $expectedDirectoryNames) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Directory $requiredName))) {
+            throw "Portable root is missing '$requiredName'."
         }
-        $relativePath = $file.FullName.Substring($sourcePrefix.Length)
-        $topLevelName = $relativePath.Split(
-            [System.IO.Path]::DirectorySeparatorChar,
-            [System.StringSplitOptions]::RemoveEmptyEntries)[0]
-        if ($topLevelName -in $excludedTopLevelDirectories -or
-            $file.Name -like "version_*") {
-            continue
-        }
-
-        $destinationPath = Join-Path $Destination $relativePath
-        if (Test-Path -LiteralPath $destinationPath) {
-            $sourceHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
-            $destinationHash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash
-            if ($sourceHash -ne $destinationHash) {
-                $isSharedWindowsSqliteProvider =
-                    $relativePath -ceq "SQLitePCLRaw.provider.e_sqlite3.dll" -and
-                    [Reflection.AssemblyName]::GetAssemblyName($file.FullName).FullName -ceq
-                    [Reflection.AssemblyName]::GetAssemblyName($destinationPath).FullName
-                if (-not $isSharedWindowsSqliteProvider) {
-                    throw "GUI and CLI publish outputs conflict at '$relativePath'."
-                }
-            }
-            continue
-        }
-
-        $destinationDirectory = Split-Path -Parent $destinationPath
-        New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath
     }
 }
 
@@ -240,15 +210,12 @@ try {
         "--self-contained", $SelfContained.ToString().ToLowerInvariant(),
         "--nologo",
         "-p:DebugType=None",
-        "-p:DebugSymbols=false"
+        "-p:DebugSymbols=false",
+        "-p:PublishSingleFile=true",
+        "-p:IncludeNativeLibrariesForSelfExtract=true"
     )
     if ($SelfContained) {
-        $publishArguments += @(
-            "-p:PublishSingleFile=true",
-            "-p:IncludeNativeLibrariesForSelfExtract=true",
-            "-p:EnableCompressionInSingleFile=true")
-    } else {
-        $publishArguments += "-p:PublishSingleFile=false"
+        $publishArguments += "-p:EnableCompressionInSingleFile=true"
     }
 
     & dotnet @publishArguments --output $desktopPublish (
@@ -267,23 +234,8 @@ try {
     $cliExe = Join-Path $cliPublish "CatClipComposer.Cli.exe"
     $desktopVersionMarker = Join-Path $desktopPublish $versionMarkerName
     $cliVersionMarker = Join-Path $cliPublish $versionMarkerName
-    if ($SelfContained) {
-        $desktopFiles = @(Get-ChildItem -LiteralPath $desktopPublish -File)
-        $cliFiles = @(Get-ChildItem -LiteralPath $cliPublish -File)
-        $expectedDesktopNames = @("CatClipComposer.exe", $versionMarkerName)
-        $expectedCliNames = @("CatClipComposer.Cli.exe", $versionMarkerName)
-        if ($desktopFiles.Count -ne 2 -or
-            @($desktopFiles | Where-Object { $_.Name -notin $expectedDesktopNames }).Count -ne 0) {
-            throw "Desktop single-file publish produced an unexpected file layout."
-        }
-        if ($cliFiles.Count -ne 2 -or
-            @($cliFiles | Where-Object { $_.Name -notin $expectedCliNames }).Count -ne 0) {
-            throw "CLI single-file publish produced an unexpected file layout."
-        }
-    } else {
-        Assert-FrameworkDependentPublish $desktopPublish "CatClipComposer" "Microsoft.WindowsDesktop.App"
-        Assert-FrameworkDependentPublish $cliPublish "CatClipComposer.Cli" "Microsoft.NETCore.App"
-    }
+    Assert-SingleFilePublish $desktopPublish "CatClipComposer" $SelfContained
+    Assert-SingleFilePublish $cliPublish "CatClipComposer.Cli" $SelfContained
     $sourceMarkerHash = (Get-FileHash -LiteralPath $versionMarkerSource -Algorithm SHA256).Hash
     foreach ($publishedMarker in @($desktopVersionMarker, $cliVersionMarker)) {
         if (-not (Test-Path -LiteralPath $publishedMarker) -or
@@ -292,13 +244,8 @@ try {
         }
     }
 
-    if ($SelfContained) {
-        Copy-Item -LiteralPath $desktopExe -Destination $packageRoot
-        Copy-Item -LiteralPath $cliExe -Destination $packageRoot
-    } else {
-        Copy-MergedFrameworkDependentFiles $desktopPublish $packageRoot
-        Copy-MergedFrameworkDependentFiles $cliPublish $packageRoot
-    }
+    Copy-Item -LiteralPath $desktopExe -Destination $packageRoot
+    Copy-Item -LiteralPath $cliExe -Destination $packageRoot
     Copy-Item -LiteralPath $desktopVersionMarker -Destination $packageRoot
     $pluginPublish = Join-Path $desktopPublish "plugins"
     $builtInPlugin = Join-Path $pluginPublish "CatClipComposer.Plugins.BuiltIn.dll"
@@ -325,6 +272,7 @@ try {
         -Destination $packageRoot -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $repositoryRoot "fonts") `
         -Destination $packageRoot -Recurse -Force
+    Assert-PortableRootLayout $packageRoot
     Assert-FfmpegPayload (Join-Path $packageRoot "thirdparty\ffmpeg") $false
     $packagedVersionMarkers = @(Get-ChildItem -LiteralPath $packageRoot -File -Filter "version_*")
     if ($packagedVersionMarkers.Count -ne 1 -or

@@ -1,5 +1,35 @@
 # Audit log
 
+## AUDIT-2026-08-18-001 — Clean-root single-file packaging audit
+
+Scope: Light/Full root layout, .NET runtime boundary, SQLite loading, external payload separation, overwrite
+safety, release-workflow validation, versioning, documentation, and package execution.
+
+Findings and remediation:
+
+- The default v0.1.34 Light publisher deliberately emitted framework-dependent DLLs and runtime JSON beside the
+  apphosts so GUI and CLI could share them. Although valid, it violated the desired tidy portable root. Both entry
+  points now use framework-dependent single-file bundles; native SQLite uses .NET's standard extraction mechanism.
+- `IncludeNativeLibrariesForSelfExtract` is required to remove `e_sqlite3.dll` from root. FFmpeg's DLLs must not be
+  captured by that setting, so the build explicitly marks the complete FFmpeg tree, fonts, and version marker as
+  external single-file assets. The plugin remains dynamically replaceable under `plugins`.
+- The package root gate accepts exactly `CatClipComposer.exe`, `CatClipComposer.Cli.exe`, `CatClipComposer.ini`,
+  `version_0.1.35`, and the four documented subfolders. Raw Light executable size limits detect accidental .NET
+  or FFmpeg embedding; the tag workflow repeats the exact root allow-list before creating a Release.
+- Light remains framework-dependent: hiding installed .NET makes the apphost stop before managed code, identify
+  the missing runtime, and supply Microsoft's app-launch/download URLs. Full remains explicit and self-contained.
+  Neither mode uses a custom launcher, installer, elevation, download, or new process-execution mechanism.
+- Portable replacement still stages and validates the complete package before replacing the requested folder,
+  preserves exact existing INI bytes only with `-Force`, rejects dangerous output roots, and always includes the
+  audited external FFmpeg payload. The public v0.1.32 Full Release remains unchanged.
+
+Verification: Release solution build passed with zero warnings/errors; static XAML resources passed. Fresh Light
+and Full publishes each produced four root files and four expected directories. The Light GUI created a v0.1.35
+window; its CLI reported v0.1.35, loaded all three built-in modules, created/queryed an isolated SQLite catalog,
+and rendered a one-second 1920x1080 MPEG-4/AAC still composition that FFprobe decoded. An isolated empty
+`DOTNET_ROOT`/`DOTNET_ROOT_X64` produced the required missing-runtime message and Microsoft link. No NuGet,
+FFmpeg, font, plugin implementation, or other dependency changed, so a new vulnerability audit was unnecessary.
+
 ## AUDIT-2026-08-16-003 — Editable FFmpeg command execution boundary
 
 Scope: final-command fidelity, UI disclosure, command parsing, process execution, support-file lifetime, and

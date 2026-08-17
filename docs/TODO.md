@@ -478,9 +478,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `DEPLOY-005` — Make future release packages light by default
 
 - Priority/status: P0 / Done
-- Acceptance: The publisher and tag workflow default to a multi-file Windows x64 package requiring the .NET 8
-  Desktop Runtime; native apphosts retain the standard missing-runtime prompt/link; GUI and CLI runtime contracts,
-  shared-file conflicts, marker, plugin, and FFmpeg payload are gated. `-SelfContained $true` remains an explicit
+- Acceptance: The publisher and tag workflow default to two framework-dependent single-file Windows x64 entry
+  points requiring the .NET 8 Desktop Runtime; native apphosts retain the standard missing-runtime prompt/link;
+  clean-root layout, size, marker, plugin, and FFmpeg payload are gated. `-SelfContained $true` remains an explicit
   full-package option, v0.1.32 remains unchanged, and update checks recognize both asset-name generations.
 
 ### `BROWSER-008` — Inspect clip technical and usage information
@@ -649,8 +649,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `DEPLOY-002` — Keep application DLL/runtime clutter out of the portable root
 
 - Priority/status: P1 / Done
-- Acceptance: Explicit full single-file publishes leave only two entry-point executables and the INI beside
-  organized `docs` and `thirdparty` folders; the later light default is tracked separately by `DEPLOY-005`.
+- Acceptance: Light and explicit Full single-file publishes leave only two entry-point executables, the INI, and
+  current version marker beside organized `docs`, `fonts`, `plugins`, and `thirdparty` folders. Any loose
+  application DLL, dependency/runtime JSON, native SQLite file, or unexpected root directory fails publication.
 
 ### `DEPLOY-003` — Always ship an audited FFmpeg runtime with the application
 
@@ -854,8 +855,9 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `AUD-PORTABLE-002` — Verify compact root layout and package guards
 
 - Priority/status: P1 / Done
-- Evidence: Single-file root checks, published CLI execution, FFmpeg integrity/license checks, and notice
-  copying pass.
+- Evidence: Framework-dependent and self-contained single-file root checks, published GUI/CLI execution, isolated
+  missing-.NET reporting, SQLite/plugin loading, real FFmpeg rendering, payload integrity/license checks, and
+  notice copying pass.
 
 ### `AUD-RELEASE-FFMPEG-001` — Audit the exact bundled FFmpeg binary and notices
 

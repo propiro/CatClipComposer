@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current source application and component version: **0.1.34**. The latest published v0.1.32 Windows package
+Current source application and component version: **0.1.35**. The latest published v0.1.32 Windows package
 remains the full self-contained build; future release packages default to the smaller light format below.
 
 ## Documentation
@@ -111,9 +111,10 @@ remains the full self-contained build; future release packages default to the sm
 - Show the shared semantic version in the main title/status bars and through the headless `--version` option;
   place the extensionless `version_<version>` marker beside both executables so an unpacked build is visibly
   distinguishable without launching it.
-- Render saved layered projects headlessly and publish the GUI/CLI as a compact shared-file application by
-  default, with an explicit full self-contained option. Both formats keep the pinned audited FFmpeg runtime
-  under `thirdparty` and portable custom fonts under `fonts`.
+- Render saved layered projects headlessly and publish the GUI/CLI as clean single-file entry points by default.
+  Light executables use the installed .NET 8 Desktop Runtime; an explicit Full mode embeds .NET. Both formats
+  keep application DLL/JSON clutter out of the root while leaving the pinned audited FFmpeg runtime under
+  `thirdparty`, built-in modules under `plugins`, and portable custom fonts under `fonts`.
 - See a wide split Mr Cat startup/rescan splash with a named pipeline stage, visible
   percentage, progress bar, and timestamped console log. Startup separately reports software layout, plugins,
   catalog, project-file/recovery, fonts, and editor readiness. When configured, library scans report per-file
@@ -172,7 +173,8 @@ package. GitHub's automatically generated **Source code** archives are not runna
    `CatClipComposer.exe`. The marker filename should match the version in the Release name.
 5. Run `CatClipComposer.exe`.
 
-Do not copy only the executable: the application also needs the bundled plugin and FFmpeg files.
+The portable root intentionally contains only the GUI/CLI executables, INI, and visible version marker. Do not
+copy only an executable: the application also needs the bundled `plugins` and `thirdparty` contents.
 
 The application is not currently code-signed. Windows SmartScreen may therefore show an unknown-publisher
 warning on first launch. Only continue when the archive came from this repository's Releases page and its

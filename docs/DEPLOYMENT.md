@@ -1,14 +1,14 @@
 # Portable one-folder deployment
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 Cat Clip Composer always deploys its pinned FFmpeg runtime. Both normal builds and portable publishes place
 the tools under `thirdparty\ffmpeg`, separate from the application executables and configuration.
 
 ## Publish
 
-Create the normal light Windows x64 package. It is framework-dependent, shares managed dependencies between
-the GUI and CLI, and requires the Microsoft .NET 8 Desktop Runtime x64 on the destination computer:
+Create the normal light Windows x64 package. It contains clean framework-dependent single-file GUI and CLI
+entry points and requires the Microsoft .NET 8 Desktop Runtime x64 on the destination computer:
 
 ```powershell
 .\scripts\Publish-Portable.ps1
@@ -20,8 +20,9 @@ Create a full self-contained package only when a release is explicitly meant to 
 .\scripts\Publish-Portable.ps1 -SelfContained $true
 ```
 
-The light package still has native Windows `CatClipComposer.exe` and `CatClipComposer.Cli.exe` apphosts. When
-.NET 8 is present, they start normally. If the required runtime is absent, the native .NET host reports the
+The Light package's native Windows `CatClipComposer.exe` and `CatClipComposer.Cli.exe` apphosts bundle the
+application assemblies and native SQLite dependency, but not the .NET runtime. When .NET 8 is present, they
+start normally. If the required runtime is absent, the native .NET host reports the
 missing `Microsoft.WindowsDesktop.App` 8.x framework and supplies the appropriate download link before managed
 WPF code runs. Install **.NET Desktop Runtime 8, Windows x64** from
 <https://dotnet.microsoft.com/en-us/download/dotnet/8.0>; the plain .NET Runtime alone does not contain WPF.
@@ -54,11 +55,11 @@ After the version change, automated verification, commit/push, and the user's ma
 and push an annotated tag that exactly matches `Directory.Build.props`:
 
 ```powershell
-git tag -a v0.1.34 -m "Cat Clip Composer v0.1.34"
-git push origin v0.1.34
+git tag -a v0.1.35 -m "Cat Clip Composer v0.1.35"
+git push origin v0.1.35
 ```
 
-Replace `0.1.34` with the central version. Do not reuse or move a published version tag; increment the
+Replace `0.1.35` with the central version. Do not reuse or move a published version tag; increment the
 application version for another release. `.github/workflows/release.yml` then runs on `windows-latest`, hydrates
 Git LFS, validates the tag/version and exact FFmpeg payload, calls the same portable publisher used locally,
 checks the CLI/marker, creates the complete ZIP plus lowercase SHA-256 file, and publishes both through the
@@ -78,14 +79,7 @@ Windows security.
 ```text
 CatClipComposer/
 |-- CatClipComposer.exe
-|-- CatClipComposer.dll
-|-- CatClipComposer.deps.json
-|-- CatClipComposer.runtimeconfig.json
 |-- CatClipComposer.Cli.exe
-|-- CatClipComposer.Cli.dll
-|-- CatClipComposer.Cli.deps.json
-|-- CatClipComposer.Cli.runtimeconfig.json
-|-- shared application and SQLite DLLs
 |-- version_<version>
 |-- CatClipComposer.ini
 |-- fonts/
@@ -107,12 +101,12 @@ CatClipComposer/
         `-- MANIFEST.sha256
 ```
 
-The light root contains the GUI/CLI apphosts, their small application assemblies/runtime metadata, shared
-application and native SQLite dependencies, the extensionless `version_<version>` marker, and portable INI,
-plus organized `fonts`, `plugins`, `docs`, and `thirdparty` subfolders. These root files are one application
-unit; copying only an EXE will not work. The marker contains a short changelist, and its changing filename lets
-users verify an extracted build was actually replaced without launching it. A full build instead bundles the
-application assemblies, SQLite dependency, and .NET runtime inside its two single-file executables.
+The root contains exactly four files: the GUI, CLI, extensionless `version_<version>` marker, and portable INI.
+Light executables bundle the application assemblies and native SQLite dependency but use the installed .NET 8
+Desktop Runtime. Full executables additionally carry .NET. Application DLLs, `.deps.json`, `.runtimeconfig.json`,
+and `e_sqlite3.dll` are therefore never loose root files. The marker contains a short changelist, and its changing
+filename lets users verify an extracted build was actually replaced without launching it. Copying only an EXE
+still omits required plugins and FFmpeg tools.
 Plugin assemblies remain replaceable under `plugins`; the publisher requires the built-in module assembly.
 FFmpeg's shared runtime files stay together in their own folder and can be replaced with an
 interface-compatible build as required by the applicable license.
@@ -164,7 +158,7 @@ the build will otherwise lack a runnable tool payload and the publisher's hash c
 Before publishing, the script verifies:
 
 1. Exactly one checked-in extensionless version marker matches `Directory.Build.props`.
-2. GUI and CLI publish outputs contain byte-identical copies beside their executables, with no stale marker.
+2. GUI and CLI publish outputs contain exactly one single-file executable plus one byte-identical marker at root.
 3. Required FFmpeg executables, records, and license files exist.
 4. Every runtime/license SHA-256 matches `MANIFEST.sha256`.
 5. FFmpeg and FFprobe report the pinned version.
@@ -173,9 +167,9 @@ Before publishing, the script verifies:
 8. The copied package payload still matches its manifest.
 9. The portable custom-font folder is included separately from the application executables.
 10. The built-in plugin module assembly is included under `plugins`.
-11. A light publish contains native GUI/CLI apphosts plus `.deps.json` and `.runtimeconfig.json` files.
-12. The GUI runtime contract requires `Microsoft.WindowsDesktop.App` 8.x, the CLI requires
-    `Microsoft.NETCore.App` 8.x, and neither runtime configuration embeds a self-contained framework.
+11. The final root contains only GUI/CLI executables, INI, and marker; loose application DLL/JSON/SQLite files fail.
+12. Light executable size gates detect accidentally embedded .NET or FFmpeg payloads, both entry points execute
+    against installed .NET 8, and the WPF project remains explicitly targeted at `net8.0-windows` with WPF enabled.
 
 ## Updating FFmpeg
 

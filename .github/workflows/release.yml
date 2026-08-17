@@ -51,21 +51,20 @@ jobs:
           if ($marker.Count -ne 1 -or $marker[0].Name -cne "version_$env:APP_VERSION") {
               throw "Published version marker does not match $env:APP_VERSION."
           }
-          $runtimeConfigPath = Join-Path $packagePath "CatClipComposer.runtimeconfig.json"
-          $runtimeConfig = Get-Content -LiteralPath $runtimeConfigPath -Raw -Encoding utf8 | ConvertFrom-Json
-          $frameworks = @()
-          if ($null -ne $runtimeConfig.runtimeOptions.framework) {
-              $frameworks += $runtimeConfig.runtimeOptions.framework
+          $expectedRootFiles = @(
+              "CatClipComposer.exe",
+              "CatClipComposer.Cli.exe",
+              "CatClipComposer.ini",
+              "version_$env:APP_VERSION")
+          $actualRootFiles = @(Get-ChildItem -LiteralPath $packagePath -File)
+          $unexpectedRootFiles = @($actualRootFiles | Where-Object { $_.Name -notin $expectedRootFiles })
+          if ($actualRootFiles.Count -ne $expectedRootFiles.Count -or $unexpectedRootFiles.Count -ne 0) {
+              throw "Light package root contains DLL/JSON/runtime clutter: $($actualRootFiles.Name -join ', ')"
           }
-          if ($null -ne $runtimeConfig.runtimeOptions.frameworks) {
-              $frameworks += @($runtimeConfig.runtimeOptions.frameworks)
-          }
-          $desktopFramework = @($frameworks | Where-Object {
-              $_.name -ceq "Microsoft.WindowsDesktop.App" -and
-              ([string]$_.version).StartsWith("8.")
-          })
-          if ($desktopFramework.Count -ne 1 -or $null -ne $runtimeConfig.runtimeOptions.includedFrameworks) {
-              throw "Published GUI does not require the .NET 8 Desktop Runtime."
+          [xml]$desktopProject = Get-Content -LiteralPath "CatClipComposer\CatClipComposer.csproj" -Raw -Encoding utf8
+          if ([string]$desktopProject.Project.PropertyGroup.TargetFramework -cne "net8.0-windows" -or
+              [string]$desktopProject.Project.PropertyGroup.UseWPF -cne "true") {
+              throw "Published GUI project no longer targets the .NET 8 Windows Desktop/WPF runtime."
           }
           $reportedVersion = & (Join-Path $packagePath "CatClipComposer.Cli.exe") version
           if ($LASTEXITCODE -ne 0 -or $reportedVersion -cne "Cat Clip Composer v$env:APP_VERSION") {

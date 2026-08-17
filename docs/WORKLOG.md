@@ -2,6 +2,23 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-18 — v0.1.35 clean-root Light and Full packaging
+
+- Replaced the v0.1.33-era framework-dependent multi-file merge with single-file publishing for both GUI and
+  CLI in the default Light package. Application assemblies and native SQLite are now bundled into each small
+  apphost while .NET 8 remains external; explicit Full mode also embeds .NET.
+- Marked FFmpeg, fonts, and the visible version marker as external single-file assets. Plugins continue to be
+  copied after publishing. This prevents replaceable LGPL FFmpeg files from being duplicated inside either EXE
+  and leaves exactly four root files: GUI, CLI, portable INI, and `version_0.1.35`.
+- Added publisher and GitHub workflow gates that reject any root DLL, dependency/runtime JSON, native SQLite file,
+  or unexpected directory. Advanced all source/component metadata to v0.1.35; no public tag or binary Release
+  was created pending manual acceptance.
+- Verification: zero-warning/error Release build and 39-key/19-file XAML audit; Light and Full clean-root
+  publishes; installed-runtime GUI startup; CLI/version/plugin/SQLite smokes; isolated missing-.NET host output
+  with Microsoft's download link; and a real one-second 1920x1080 MPEG-4/AAC render through external FFmpeg.
+  Light measured 145.52 MiB unpacked with 5.66/2.85 MB entry points; Full measured 244.42 MiB, down from the prior
+  358.29 MiB full layout because FFmpeg is no longer redundantly embedded. No dependency changed.
+
 ## 2026-08-16 — v0.1.34 final FFmpeg command inspector
 
 - Added **FFmpeg command...** under Project Settings. It asks for the intended MP4 destination, builds the exact

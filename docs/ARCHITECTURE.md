@@ -1,6 +1,6 @@
 # Architecture
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 ## Repository modules
 
@@ -247,10 +247,11 @@ Each component is listed separately to keep its responsibility and boundary read
 - **`CliApplication`:** Parse invocation, initialize shared services, dispatch, and map failures to exit codes.
 - **CLI command modules:** Implement config, scan, list, metadata, project render, and history behavior while
   sharing Core/Infrastructure workflows.
-- **Portable publisher:** Compose either the default shared framework-dependent GUI/CLI file set or explicit
-  self-contained single-file entry points, plus the extensionless version marker, INI, docs, mandatory pinned
-  FFmpeg payload, plugin modules, and custom-font folder. It validates .NET runtime contracts, shared-file
-  identity, marker identity, hashes, license flags, versions, and required render capabilities before publishing.
+- **Portable publisher:** Compose two single-file entry points: framework-dependent by default or explicitly
+  self-contained. Native SQLite is embedded/extracted by each entry point, while plugin modules, fonts, and the
+  mandatory replaceable FFmpeg payload remain organized subfolders. The package root gate permits only the GUI,
+  CLI, INI, and extensionless version marker, then validates marker identity, hashes, license flags, versions,
+  plugins, required render capabilities, and the selected runtime policy before publishing.
 - **Application startup:** Provide the shared `ApplicationServicesFactory` composition root and coordinate the
   staged splash pipeline, saved software layout, conditional live scan, project/recovery state, and main-window
   handoff. The WPF shell alone owns its 20–40 ms ordinary-line pacing and 100–200 ms opening/completion holds;

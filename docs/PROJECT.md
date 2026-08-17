@@ -1,6 +1,6 @@
 # Project goals and feature status
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 ## Product goal
 
@@ -191,18 +191,19 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 
 - **Non-GPL default rendering — Done.** Native MPEG-4 and Media Foundation H.264 need no GPL component;
   libx264 is only an explicit user-supplied-tool opt-in.
-- **One-folder deployment — Done.** Normal GUI/CLI releases share a compact framework-dependent file set and
-  require the .NET 8 Desktop Runtime; full single-file self-contained publication remains explicit. The pinned
+- **One-folder deployment — Done.** Normal GUI/CLI releases use clean framework-dependent single-file entry
+  points and require the .NET 8 Desktop Runtime; full single-file self-contained publication remains explicit. The pinned
   LGPL FFmpeg shared runtime, its DLLs, license, source record, build information, and hashes are always under
   `thirdparty`.
 - **Visible package version marker — Done.** Every executable output carries one extensionless
   `version_<version>` file with a short changelist; build and publish reject a missing, stale, or duplicate marker.
 - **Public binary release — Done.** GitHub Release v0.1.32 provides the self-contained Windows x64 folder as
   a versioned ZIP with an adjacent SHA-256 checksum and no programming environment requirement.
-- **Light release policy — Done.** Future tagged releases default to a much smaller multi-file package requiring
-  the free .NET 8 Desktop Runtime x64; its native apphost supplies the missing-runtime download prompt. Full
-  packaging remains available only through an explicit publisher switch.
-- **Shared user-visible version — Done.** Version 0.1.34 metadata drives every component, the window title and
+- **Light release policy — Done.** Future tagged releases default to a clean-root package with two
+  framework-dependent single-file executables requiring the free .NET 8 Desktop Runtime x64; their native
+  apphosts supply the missing-runtime download prompt. Full packaging remains available only through an explicit
+  publisher switch.
+- **Shared user-visible version — Done.** Version 0.1.35 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope
