@@ -475,23 +475,8 @@ public partial class MainWindow : Window
 
         try
         {
-            Directory.CreateDirectory(_viewModel.Settings.OutputFolder);
-            var outputDialog = new SaveFileDialog
-            {
-                Title = "Choose output for the FFmpeg command",
-                InitialDirectory = _viewModel.Settings.OutputFolder,
-                FileName = $"CatCompilation-{DateTime.Now:yyyyMMdd-HHmm}.mp4",
-                DefaultExt = ".mp4",
-                Filter = "MP4 video (*.mp4)|*.mp4",
-                AddExtension = true,
-                OverwritePrompt = true
-            };
-            if (outputDialog.ShowDialog(this) != true)
-            {
-                return;
-            }
-
-            var preview = await _viewModel.CreateFinalFfmpegCommandAsync(outputDialog.FileName);
+            var outputPath = CreateDefaultOutputPath(ResolveDefaultExportDirectory());
+            var preview = await _viewModel.CreateFinalFfmpegCommandAsync(outputPath);
             var commandWindow = new FfmpegCommandWindow(
                 preview,
                 _ffmpegCommandService,
@@ -2275,41 +2260,103 @@ public partial class MainWindow : Window
 
         try
         {
-            Directory.CreateDirectory(_viewModel.Settings.OutputFolder);
-            var dialog = new SaveFileDialog
+            var initialDirectory = ResolveDefaultExportDirectory();
+            var dialog = new ExportDestinationWindow(
+                initialDirectory,
+                $"CatCompilation-{DateTime.Now:yyyyMMdd-HHmm}.mp4")
             {
-                Title = "Export compilation",
-                InitialDirectory = _viewModel.Settings.OutputFolder,
-                FileName = $"CatCompilation-{DateTime.Now:yyyyMMdd-HHmm}.mp4",
-                DefaultExt = ".mp4",
-                Filter = "MP4 video (*.mp4)|*.mp4",
-                AddExtension = true,
-                OverwritePrompt = true
+                Owner = this
             };
-            if (dialog.ShowDialog(this) != true)
+            if (dialog.ShowDialog() != true || dialog.OutputPath is null)
             {
                 return;
             }
 
-            var result = await _viewModel.ExportAsync(dialog.FileName);
-            if (MessageBox.Show(
-                    this,
-                    $"Compilation saved successfully:{Environment.NewLine}{Environment.NewLine}{result.OutputPath}{Environment.NewLine}{Environment.NewLine}Show it in File Explorer?",
-                    "Export complete",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Information) == MessageBoxResult.Yes)
+            var outputPath = dialog.OutputPath;
+            var outputDirectory = Path.GetDirectoryName(outputPath)!;
+            await _viewModel.RememberLastExportFolderAsync(outputDirectory);
+            var output = _viewModel.OutputSettings;
+            var exportSummary =
+                $"{_viewModel.ProjectName} · {_viewModel.Timeline.Clips.Count} timeline item(s) · " +
+                $"{output.Width} x {output.Height} at {output.FramesPerSecond:0.###} fps · " +
+                $"{FormatExportDuration(_viewModel.Timeline.Duration)}";
+            var progressWindow = new ExportProgressWindow(
+                outputPath,
+                exportSummary,
+                progress => _viewModel.ExportAsync(outputPath, progress),
+                _viewModel.CancelOperation)
             {
-                DesktopShell.ShowFileInExplorer(result.OutputPath);
-            }
-        }
-        catch (OperationCanceledException)
-        {
+                Owner = this
+            };
+            progressWindow.ShowDialog();
         }
         catch (Exception exception)
         {
             DesktopDialogs.ShowError(this, "The compilation could not be exported.", exception);
         }
     }
+
+    private string ResolveDefaultExportDirectory()
+    {
+        var candidates = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_viewModel.Settings.LastExportFolder))
+        {
+            candidates.Add(_viewModel.Settings.LastExportFolder);
+        }
+
+        var sourceFolder = _viewModel.Settings.SourceFolders.FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(sourceFolder))
+        {
+            var sourceDirectory = new DirectoryInfo(Path.GetFullPath(sourceFolder));
+            candidates.Add(Path.Combine(
+                sourceDirectory.Parent?.FullName ?? sourceDirectory.FullName,
+                "CCC_output"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_viewModel.Settings.OutputFolder))
+        {
+            candidates.Add(_viewModel.Settings.OutputFolder);
+        }
+
+        candidates.Add(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CCC_output"));
+
+        Exception? lastFailure = null;
+        foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var fullPath = Path.GetFullPath(candidate);
+                Directory.CreateDirectory(fullPath);
+                return fullPath;
+            }
+            catch (Exception exception) when (
+                exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                lastFailure = exception;
+            }
+        }
+
+        throw new IOException("No writable export directory could be prepared.", lastFailure);
+    }
+
+    private static string CreateDefaultOutputPath(string directory)
+    {
+        var baseName = $"CatCompilation-{DateTime.Now:yyyyMMdd-HHmmss}";
+        var outputPath = Path.Combine(directory, $"{baseName}.mp4");
+        for (var suffix = 2; File.Exists(outputPath); suffix++)
+        {
+            outputPath = Path.Combine(directory, $"{baseName}-{suffix}.mp4");
+        }
+
+        return outputPath;
+    }
+
+    private static string FormatExportDuration(TimeSpan value) =>
+        value.TotalHours >= 1
+            ? value.ToString(@"h\:mm\:ss")
+            : value.ToString(@"m\:ss");
 
     private void MoveLeft_Click(object sender, RoutedEventArgs e) =>
         _viewModel.MoveSelectedTimelineClip(-1);

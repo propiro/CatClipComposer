@@ -12,7 +12,9 @@ internal sealed class FfmpegProcessRunner
         ProcessStartInfo startInfo,
         TimeSpan totalDuration,
         IProgress<RenderProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        double startPercent = 0,
+        double endPercent = 99.5)
     {
         using var process = new Process { StartInfo = startInfo };
         Start(process);
@@ -21,7 +23,7 @@ internal sealed class FfmpegProcessRunner
 
         while (await process.StandardOutput.ReadLineAsync(cancellationToken) is { } line)
         {
-            ReportProgress(line, totalDuration, progress);
+            ReportProgress(line, totalDuration, progress, startPercent, endPercent);
         }
 
         await process.WaitForExitAsync(cancellationToken);
@@ -45,7 +47,9 @@ internal sealed class FfmpegProcessRunner
     private static void ReportProgress(
         string line,
         TimeSpan totalDuration,
-        IProgress<RenderProgress>? progress)
+        IProgress<RenderProgress>? progress,
+        double startPercent,
+        double endPercent)
     {
         TimeSpan processed;
         if (line.StartsWith("out_time_us=", StringComparison.Ordinal) &&
@@ -69,15 +73,21 @@ internal sealed class FfmpegProcessRunner
             return;
         }
 
-        var percent = totalDuration <= TimeSpan.Zero
+        var encodedFraction = totalDuration <= TimeSpan.Zero
             ? 0
-            : Math.Clamp(processed.TotalMilliseconds / totalDuration.TotalMilliseconds * 100, 0, 99.5);
+            : Math.Clamp(processed.TotalMilliseconds / totalDuration.TotalMilliseconds, 0, 0.995);
+        var percent = startPercent + ((endPercent - startPercent) * encodedFraction);
         progress?.Report(new RenderProgress(
             percent,
             processed,
             totalDuration,
-            $"Rendering {percent:0}%"));
+            $"FFmpeg encoding {FormatDuration(processed)} of {FormatDuration(totalDuration)}"));
     }
+
+    private static string FormatDuration(TimeSpan value) =>
+        value.TotalHours >= 1
+            ? value.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
+            : value.ToString(@"m\:ss", CultureInfo.InvariantCulture);
 
     private static void TryKill(Process process)
     {

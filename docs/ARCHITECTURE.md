@@ -59,7 +59,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    command-line overrides. Final export retains all project settings. Temporary WPF previews select the
    Media Foundation H.264 compatibility encoder for stable Windows playback and may apply a 10–100% even
    canvas scale without changing the saved output profile.
-4. `ICompositionExporter` owns the shared GUI/CLI export transaction.
+4. `ICompositionExporter` owns the shared GUI/CLI export transaction. WPF's application-native destination
+   window selects the final path without an operating-system picker; its modal progress window observes the same
+   `RenderProgress` stream used by presentation status while Core/Infrastructure remain UI-independent.
 5. `IVideoRenderer` validates inputs and produces a normalized layered filter graph.
 6. FFmpeg renders to a unique partial path.
 7. A successful render atomically replaces the selected output.
@@ -137,7 +139,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
    and rotation gestures. `MainViewModel` owns a transactional draft: live movement updates the proxy without
    creating one history entry per mouse move; OK/Enter captures one project change, while Cancel/Escape restores
    every original placement field and releases any pending pointer interaction before redrawing. Item-ID
-   selection remains shared with the timeline and Project Layers Data panel.
+   selection remains shared with the timeline and Project Layers Data panel. The selected visual receives an
+   explicit topmost z-index, and text proxies use the selected typeface's supported glyph map plus outline geometry
+   so WPF does not invent fallback glyphs or stretched line-box dimensions absent from FFmpeg output.
    A schema-8 item lock disables gesture initiation while preserving shared selection and form-based editing;
    schema 9 opacity flows through the same shared mapper to FFmpeg alpha/color controls. Once a render exists,
    unchanged items contribute only hit-testing/selection chrome over the MediaElement. A stale item paints one
@@ -205,8 +209,9 @@ The executable modules may reference Core and Infrastructure for composition. Co
 
 Each component is listed separately to keep its responsibility and boundary readable in narrow editors.
 
-- **`MainViewModel`:** WPF catalog/settings/scan/export presentation. Timeline state and the shared
-  render/history transaction are delegated.
+- **`MainViewModel`:** WPF catalog/settings/scan/export presentation, including last-export-directory persistence
+  and fan-out of structured render progress to application windows. Timeline state and the shared render/history
+  transaction are delegated.
 - **`CompositionExportService`:** Render and record successful output history. It is shared by GUI and CLI
   and owns neither presentation nor FFmpeg construction.
 - **`JsonProjectStore`:** Validate and atomically save/load normal and recovery project documents. It owns

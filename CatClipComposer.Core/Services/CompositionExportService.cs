@@ -22,6 +22,11 @@ public sealed class CompositionExportService(
             .Where(segment => segment.MediaFileId.HasValue)
             .Select(segment => segment.MediaFileId!.Value)
             .ToList();
+        progress?.Report(new RenderProgress(
+            99,
+            result.Duration,
+            result.Duration,
+            $"Recording export history for {Path.GetFileName(result.OutputPath)}"));
         await mediaCatalog.RecordExportAsync(
             result.OutputPath,
             result.Duration,

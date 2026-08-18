@@ -851,7 +851,9 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public async Task<RenderResult> ExportAsync(string outputPath)
+    public async Task<RenderResult> ExportAsync(
+        string outputPath,
+        IProgress<RenderProgress>? externalProgress = null)
     {
         if (IsBusy)
         {
@@ -869,25 +871,61 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "Preparing compilation…";
         try
         {
+            var lastReportedPercent = 0d;
+            void Report(RenderProgress update)
+            {
+                if (update.Percent + 0.001 < lastReportedPercent)
+                {
+                    return;
+                }
+
+                lastReportedPercent = Math.Max(lastReportedPercent, update.Percent);
+                ScanProgress = update.Percent;
+                StatusText = update.Message;
+                externalProgress?.Report(update);
+            }
+
+            Report(new RenderProgress(
+                1,
+                TimeSpan.Zero,
+                Timeline.Duration,
+                $"Preparing {ProjectName} for {Path.GetFileName(outputPath)}"));
             SynchronizeProjectFromTimeline();
+            Report(new RenderProgress(
+                2,
+                TimeSpan.Zero,
+                Timeline.Duration,
+                "Saving project recovery data before export"));
             await _projectStore.SaveRecoveryAsync(_project, _operationCancellation.Token);
+            Report(new RenderProgress(
+                3,
+                TimeSpan.Zero,
+                Timeline.Duration,
+                $"Mapping {_project.Tracks.Count} project layers and active effects"));
             var renderPlan = ProjectRenderMapper.Create(_project, _plugins);
             var orientation = _project.Output.Height > _project.Output.Width
                 ? OutputOrientation.Portrait
                 : OutputOrientation.Landscape;
             var progress = new Progress<RenderProgress>(update =>
             {
-                ScanProgress = update.Percent;
-                StatusText = update.Message;
+                Report(update);
             });
             var result = await _compositionExporter.ExportAsync(
                 CreateRenderRequest(renderPlan, outputPath, orientation),
                 _settings.FfmpegPath,
                 progress,
                 _operationCancellation.Token);
+            Report(new RenderProgress(
+                99.5,
+                result.Duration,
+                result.Duration,
+                "Refreshing catalog usage and export history"));
             await LoadCatalogAsync(_operationCancellation.Token);
-            ScanProgress = 100;
-            StatusText = $"Saved compilation: {Path.GetFileName(result.OutputPath)}";
+            Report(new RenderProgress(
+                100,
+                result.Duration,
+                result.Duration,
+                $"Saved compilation: {Path.GetFileName(result.OutputPath)}"));
             return result;
         }
         catch (OperationCanceledException)
@@ -901,6 +939,15 @@ public sealed class MainViewModel : ObservableObject
             _operationCancellation.Dispose();
             _operationCancellation = null;
         }
+    }
+
+    public async Task RememberLastExportFolderAsync(
+        string folder,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+        _settings.LastExportFolder = Path.GetFullPath(folder);
+        await _settingsStore.SaveAsync(_settings, cancellationToken);
     }
 
     public async Task<FfmpegCommandPreview> CreateFinalFfmpegCommandAsync(

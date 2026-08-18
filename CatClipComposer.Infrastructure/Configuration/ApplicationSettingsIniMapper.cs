@@ -110,6 +110,7 @@ internal static class ApplicationSettingsIniMapper
             "UndoHistoryCapacity",
             settings.UndoHistoryCapacity);
         settings.OutputFolder = ini.Get("Output", "Folder") ?? settings.OutputFolder;
+        settings.LastExportFolder = ini.Get("Output", "LastExportFolder") ?? settings.LastExportFolder;
         settings.ProjectFolder = ini.Get("Output", "ProjectFolder") ?? settings.ProjectFolder;
         settings.FfmpegPath = ini.Get("Tools", "FfmpegPath") ?? settings.FfmpegPath;
         settings.CustomFontFolder = ini.Get("Tools", "CustomFontFolder") ?? settings.CustomFontFolder;
@@ -223,6 +224,7 @@ internal static class ApplicationSettingsIniMapper
         builder.AppendLine();
         builder.AppendLine("[Output]");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Folder={settings.OutputFolder}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"LastExportFolder={settings.LastExportFolder}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"ProjectFolder={settings.ProjectFolder}");
         builder.AppendLine();
         builder.AppendLine("[Tools]");
@@ -275,6 +277,7 @@ internal static class ApplicationSettingsIniMapper
         settings.OutputFolder = string.IsNullOrWhiteSpace(settings.OutputFolder)
             ? Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)
             : settings.OutputFolder.Trim();
+        settings.LastExportFolder = settings.LastExportFolder?.Trim() ?? string.Empty;
         settings.ProjectFolder = string.IsNullOrWhiteSpace(settings.ProjectFolder)
             ? Path.Combine(settings.OutputFolder, "Projects")
             : settings.ProjectFolder.Trim();

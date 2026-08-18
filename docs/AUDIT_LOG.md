@@ -1,5 +1,35 @@
 # Audit log
 
+## AUDIT-2026-08-19-001 — Text geometry and export workflow boundary audit
+
+Scope: WPF/FFmpeg text geometry, overlap hit priority, destination selection, progress reporting, cancellation,
+safe output replacement, settings persistence, command inspection, dependency impact, and package-root hygiene.
+
+Findings and remediation:
+
+- The previous proxy measured WPF line boxes, permitted fallback glyphs missing from the requested FFmpeg font,
+  added arbitrary padding, and stretched the result through a `Viewbox`. The proxy now filters against the actual
+  `GlyphTypeface.CharacterToGlyphMap`, builds painted glyph geometry, sizes to its bounds plus explicit stroke
+  extent, and paints a path. FFmpeg remains authoritative; no font substitution or render filter changed.
+- Drawing the selected item last usually won hit testing but did not state an invariant if supporting visuals were
+  inserted later. The selected item now receives z-index 1000, edit actions 1100, and stale markers -1.
+- Export previously delegated destination selection and completion disclosure to Windows dialogs while progress
+  was limited to the main status area. The new WPF chooser performs only local filesystem navigation/creation,
+  validates names and explicit replacement approval, and persists `Output.LastExportFolder`. The modal progress
+  window receives the existing structured progress contract and keeps project mutation unavailable during export.
+- Renderer progress is now staged across asset preparation, graph/process startup, FFmpeg media-time encoding,
+  output validation/replacement, export-history recording, and catalog refresh. Cancellation still kills the FFmpeg
+  process tree; a completed existing destination is replaced only after the unique partial output succeeds.
+- The command inspector no longer opens a save picker. It proposes a unique path in the same resolved export
+  directory and opens the constrained editable command window directly. Its previously audited no-shell execution
+  and normal-export bypass disclosure are unchanged.
+
+Verification: Release solution builds passed with zero warnings/errors after each completed code group. The final
+39-key/21-file XAML audit, version-marker and CLI checks, explicit last-export INI load/CLI exposure, static
+command/export picker audit, and installed-runtime GUI startup passed. No v0.1.36 portable package was created.
+No NuGet, FFmpeg, font, plugin implementation, or redistributed dependency changed, so a new package-vulnerability
+audit is unnecessary.
+
 ## AUDIT-2026-08-18-001 — Clean-root single-file packaging audit
 
 Scope: Light/Full root layout, .NET runtime boundary, SQLite loading, external payload separation, overwrite

@@ -28,6 +28,11 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
 
         try
         {
+            progress?.Report(new RenderProgress(
+                4,
+                TimeSpan.Zero,
+                totalDuration,
+                $"Preparing text and overlay assets for {Path.GetFileName(request.OutputPath)}"));
             timedTextPaths = await FfmpegTimedTextFileWriter.CreateAsync(
                 request,
                 outputDirectory,
@@ -40,11 +45,18 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
                 timedTextPaths,
                 width,
                 height);
+            progress?.Report(new RenderProgress(
+                8,
+                TimeSpan.Zero,
+                totalDuration,
+                $"Starting FFmpeg at {width} x {height}; temporary output stays beside the destination"));
             var processResult = await _processRunner.RunAsync(
                 startInfo,
                 totalDuration,
                 progress,
-                cancellationToken);
+                cancellationToken,
+                startPercent: 10,
+                endPercent: 97);
             cancellationToken.ThrowIfCancellationRequested();
 
             if (processResult.ExitCode != 0 || !File.Exists(temporaryOutputPath))
@@ -55,12 +67,12 @@ public sealed class FfmpegVideoRenderer : IVideoRenderer
                         : processResult.StandardError.Trim());
             }
 
-            File.Move(temporaryOutputPath, request.OutputPath, overwrite: true);
             progress?.Report(new RenderProgress(
-                100,
+                98,
                 totalDuration,
                 totalDuration,
-                "Compilation complete"));
+                $"Validating and replacing {Path.GetFileName(request.OutputPath)}"));
+            File.Move(temporaryOutputPath, request.OutputPath, overwrite: true);
             return new RenderResult(request.OutputPath, totalDuration);
         }
         finally

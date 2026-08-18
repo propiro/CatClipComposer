@@ -6,7 +6,7 @@ Cat Clip Composer is a focused Windows desktop application for building YouTube-
 
 The software includes a photo of Mr. Cat as its splash screen.
 
-Current source application and component version: **0.1.35**. The latest published v0.1.32 Windows package
+Current source application and component version: **0.1.36**. The latest published v0.1.32 Windows package
 remains the full self-contained build; future release packages default to the smaller light format below.
 
 ## Documentation
@@ -67,9 +67,12 @@ remains the full self-contained build; future release packages default to the sm
 - Render solid, segmented, or tick progress effects over the complete project, selected clips, or a custom
   range; accepted visual styles become defaults and can be copied/pasted between progress blocks.
 - Choose YouTube 1080p/4K/Shorts, square, classic 4:3, or custom resolution/FPS/bitrate/quality with configurable MPEG-4/H.264 video and AAC audio.
-- Safely render to a temporary file before replacing the selected destination.
-- Open **Project settings > FFmpeg command...** to choose a final MP4 path and inspect the complete generated
-  command in an editable field. The window can copy the edited command or execute it through the configured
+- Safely render to a temporary file before replacing the selected destination. Export uses an in-application
+  directory/file chooser followed by a dedicated progress window with destination, current stage, FFmpeg media
+  time, elapsed time, percentage, cancellation, and a timestamped activity log.
+- Open **Project settings > FFmpeg command...** to inspect the complete generated command immediately with a
+  unique proposed MP4 path in the current export directory. The window shows the command in an editable field
+  and can copy the edited command or execute it through the configured
   FFmpeg executable, with an explicit confirmation and without invoking a command shell.
 - Show render progress, support cancellation, and record which source clips were used in every completed output.
 - Toggle a modeless History surface for reverse-chronological actions, completed exports, and log/crash files;
@@ -322,8 +325,9 @@ point to another compatible local build when needed.
 
 ### How can I inspect, copy, or run the complete final FFmpeg command?
 
-**A:** Expand **Project settings** below Project Preview and select **FFmpeg command...**. Choose the intended MP4
-output, then use the editable command window's **COPY TO CLIPBOARD** or **EXECUTE FFMPEG** button. Direct execution
+**A:** Expand **Project settings** below Project Preview and select **FFmpeg command...**. The editable command
+window opens directly with a unique proposed MP4 path; edit that path or any FFmpeg arguments there, then use
+**COPY TO CLIPBOARD** or **EXECUTE FFMPEG**. Direct execution
 is restricted to the configured FFmpeg executable and does not invoke PowerShell or `cmd.exe`. It deliberately
 bypasses Cat Clip Composer's temporary-output replacement and export-history transaction, so review edited paths
 and arguments carefully; the confirmation also warns that the generated `-y` argument permits output overwrite.

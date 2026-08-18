@@ -60,6 +60,8 @@ public sealed class ApplicationSettings
 
     public string OutputFolder { get; set; } = string.Empty;
 
+    public string LastExportFolder { get; set; } = string.Empty;
+
     public string ProjectFolder { get; set; } = string.Empty;
 
     public string MetadataFolder { get; set; } = string.Empty;
@@ -148,6 +150,7 @@ public sealed class ApplicationSettings
     {
         SourceFolders = [.. SourceFolders],
         OutputFolder = OutputFolder,
+        LastExportFolder = LastExportFolder,
         ProjectFolder = ProjectFolder,
         MetadataFolder = MetadataFolder,
         PreviewSlideCount = PreviewSlideCount,

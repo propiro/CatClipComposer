@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using CatClipComposer.Core.Models;
@@ -167,12 +167,14 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         {
             var visual = CreateItemVisual(item, viewport);
             Children.Add(visual.Element);
+            SetZIndex(visual.Element, item.Id == _selectedItemId ? 1000 : 0);
             SetLeft(visual.Element, visual.Left);
             SetTop(visual.Element, visual.Top);
             if (item.Id == _editingItemId)
             {
                 var actionPanel = CreateActionPanel(item.Id);
                 Children.Add(actionPanel);
+                SetZIndex(actionPanel, 1100);
                 SetLeft(actionPanel, Math.Clamp(visual.Left, 2, Math.Max(2, ActualWidth - 116)));
                 SetTop(actionPanel, Math.Clamp(
                     visual.Top + visual.Height + 4,
@@ -186,6 +188,7 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
             {
                 var markerVisual = CreateStaleMarkerVisual(renderedState, viewport);
                 Children.Add(markerVisual.Element);
+                SetZIndex(markerVisual.Element, -1);
                 SetLeft(markerVisual.Element, markerVisual.Left);
                 SetTop(markerVisual.Element, markerVisual.Top);
             }
@@ -327,15 +330,19 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         var renderText = TextOverlayContent.NormalizeForRendering(
             string.IsNullOrEmpty(item.Text) ? "Text" : item.Text);
         var fontSize = Math.Max(1, item.FontSize * outputScale);
-        var fontFamily = new FontFamily(string.IsNullOrWhiteSpace(item.FontFamily) ? "Segoe UI" : item.FontFamily);
+        var fontFamily = ResolveFontFamily(item);
+        var typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        var glyphTypeface = TryResolveGlyphTypeface(item, typeface);
+        var supportedText = FilterUnsupportedGlyphs(renderText, glyphTypeface);
         var formatted = new FormattedText(
-            renderText,
+            supportedText,
             CultureInfo.CurrentUICulture,
             FlowDirection.LeftToRight,
-            new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+            typeface,
             fontSize,
             Brushes.White,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        var glyphGeometry = formatted.BuildGeometry(new Point());
         var strokeColor = Colors.Black;
         try
         {
@@ -345,29 +352,103 @@ public sealed class ProjectPreviewOverlayCanvas : Canvas
         {
         }
 
-        var text = new TextBlock
+        var strokeExtent = item.TextStrokeEnabled
+            ? Math.Max(0, item.TextStrokeWidth * outputScale)
+            : 0;
+        var paintedBounds = glyphGeometry.Bounds;
+        var contentWidth = paintedBounds.IsEmpty ? 18 : Math.Max(1, paintedBounds.Width + strokeExtent * 2);
+        var contentHeight = paintedBounds.IsEmpty ? 18 : Math.Max(1, paintedBounds.Height + strokeExtent * 2);
+        var content = new Canvas
         {
-            Text = renderText,
-            FontFamily = fontFamily,
-            FontSize = fontSize,
-            Foreground = Brushes.White,
-            TextAlignment = TextAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Center,
-            Effect = item.TextStrokeEnabled && item.TextStrokeWidth > 0
-                ? new DropShadowEffect
-                {
-                    BlurRadius = Math.Max(1, (item.TextStrokeWidth + item.TextStrokeSmoothness) * outputScale * 2),
-                    ShadowDepth = 0,
-                    Color = strokeColor,
-                    Opacity = 1
-                }
-                : null
+            Width = contentWidth,
+            Height = contentHeight,
+            Background = Brushes.Transparent
         };
+        if (!paintedBounds.IsEmpty)
+        {
+            var glyphPath = new System.Windows.Shapes.Path
+            {
+                Data = glyphGeometry,
+                Fill = Brushes.White,
+                Stroke = item.TextStrokeEnabled && item.TextStrokeWidth > 0
+                    ? new SolidColorBrush(strokeColor)
+                    : null,
+                // WPF centers a stroke on the glyph edge while FFmpeg expands borderw
+                // outwards by the requested width, so the WPF thickness is doubled.
+                StrokeThickness = strokeExtent * 2,
+                StrokeLineJoin = PenLineJoin.Round
+            };
+            Canvas.SetLeft(glyphPath, strokeExtent - paintedBounds.Left);
+            Canvas.SetTop(glyphPath, strokeExtent - paintedBounds.Top);
+            content.Children.Add(glyphPath);
+        }
+
         return (
-            Math.Max(28, formatted.WidthIncludingTrailingWhitespace + 12),
-            Math.Max(22, formatted.Height + 10),
-            text);
+            Math.Max(18, contentWidth),
+            Math.Max(18, contentHeight),
+            content);
+    }
+
+    private static GlyphTypeface? TryResolveGlyphTypeface(ProjectTimelineItem item, Typeface typeface)
+    {
+        if (!string.IsNullOrWhiteSpace(item.FontPath) && File.Exists(item.FontPath))
+        {
+            try
+            {
+                return new GlyphTypeface(new Uri(System.IO.Path.GetFullPath(item.FontPath), UriKind.Absolute));
+            }
+            catch (Exception exception) when (
+                exception is ArgumentException or IOException or NotSupportedException or UriFormatException)
+            {
+            }
+        }
+
+        return typeface.TryGetGlyphTypeface(out var glyphTypeface)
+            ? glyphTypeface
+            : null;
+    }
+
+    private static FontFamily ResolveFontFamily(ProjectTimelineItem item)
+    {
+        var familyName = string.IsNullOrWhiteSpace(item.FontFamily) ? "Segoe UI" : item.FontFamily;
+        if (!string.IsNullOrWhiteSpace(item.FontPath) && File.Exists(item.FontPath))
+        {
+            try
+            {
+                var directory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(item.FontPath));
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    return new FontFamily(
+                        new Uri(directory + System.IO.Path.DirectorySeparatorChar, UriKind.Absolute),
+                        $"./#{familyName}");
+                }
+            }
+            catch (Exception exception) when (
+                exception is ArgumentException or NotSupportedException or UriFormatException)
+            {
+            }
+        }
+
+        return new FontFamily(familyName);
+    }
+
+    private static string FilterUnsupportedGlyphs(string value, GlyphTypeface? glyphTypeface)
+    {
+        if (glyphTypeface is null)
+        {
+            return value;
+        }
+
+        var filtered = new StringBuilder(value.Length);
+        foreach (var rune in value.EnumerateRunes())
+        {
+            if (Rune.IsWhiteSpace(rune) || glyphTypeface.CharacterToGlyphMap.ContainsKey(rune.Value))
+            {
+                filtered.Append(rune);
+            }
+        }
+
+        return filtered.ToString();
     }
 
     private static FrameworkElement CreateMovingOverlayPlaceholder(ProjectTimelineItem item) => new Border

@@ -160,9 +160,12 @@ Feature status is grouped by area instead of placed in a wide table so it remain
 - **Landscape and portrait output — Done.** YouTube 1080p, 4K, Shorts, and custom frame sizes are available.
 - **Resolution, aspect, codec, quality, and FPS presets — Done.** Seven common presets plus custom settings
   persist per project.
-- **Safe final compilation — Done.** Rendering uses a temporary output and supports cancellation.
-- **Inspectable final FFmpeg command — Done.** Project Settings creates the current final render graph for a
-  chosen MP4 path, shows the complete command in an editable window, copies it, or executes edited arguments
+- **Safe final compilation — Done.** An in-application directory/file chooser remembers the last successful
+  selection (falling back to `CCC_output` one level above the first library source), then a modal application
+  progress window reports preparation, FFmpeg media time, output replacement, history recording, elapsed time,
+  destination, cancellation, and a timestamped activity log. Rendering uses a temporary output.
+- **Inspectable final FFmpeg command — Done.** Project Settings creates the current final render graph with a
+  unique proposed MP4 path and opens its editable window directly, copies it, or executes edited arguments
   directly through the configured FFmpeg executable. The window discloses that direct runs bypass safe output
   replacement and export history.
 - **Successful-export usage history — Done.** Completed jobs record ordered source clips and final output.
@@ -203,7 +206,7 @@ Feature status is grouped by area instead of placed in a wide table so it remain
   framework-dependent single-file executables requiring the free .NET 8 Desktop Runtime x64; their native
   apphosts supply the missing-runtime download prompt. Full packaging remains available only through an explicit
   publisher switch.
-- **Shared user-visible version — Done.** Version 0.1.35 metadata drives every component, the window title and
+- **Shared user-visible version — Done.** Version 0.1.36 metadata drives every component, the window title and
   status bar, and headless output.
 
 ### Deferred editing scope

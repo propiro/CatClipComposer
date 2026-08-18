@@ -2,6 +2,26 @@
 
 This is an append-only record of material project work. Newest entries go first. Corrections should be added as new notes rather than rewriting historical results.
 
+## 2026-08-19 — v0.1.36 text fidelity and application-native export workflow
+
+- Replaced the text gizmo's stretched WPF `TextBlock` measurement with the selected typeface's supported glyph
+  set and painted outline bounds. Unsupported fallback-only characters no longer inflate or appear in the editor
+  when FFmpeg cannot paint them. The timeline-selected overlay also receives an explicit topmost preview z-index.
+- Replaced Export's Windows save picker with a Cat Clip Composer directory/file chooser. It remembers the last
+  selected export folder, falls back to `CCC_output` one level above the first library source, navigates drives and
+  folders, creates folders, previews the exact MP4 path, and requires inline approval before replacing a file.
+- Added a separate modal export-progress window with destination/output summary, determinate percentage, processed
+  media time, elapsed time, detailed preparation/FFmpeg/replacement/history stages, a timestamped activity log,
+  cancellation, failure details, and output reveal. The shared renderer now reports those stages without adding a
+  WPF dependency to Core or Infrastructure.
+- Removed the redundant destination picker from **FFmpeg command...**. It now opens the existing editable command
+  window directly with a unique proposed path, while normal Export remains the safe/history-recorded path.
+- Advanced all source/component metadata and the visible marker to v0.1.36. No public tag or binary Release was
+  created pending manual acceptance. No dependency or redistributed payload changed.
+- Verification: repeated zero-warning/error Release builds, a 39-key/21-file XAML resource audit, explicit
+  `LastExportFolder` INI load plus CLI exposure, static confirmation that Export/command paths no longer construct
+  a save picker, v0.1.36 CLI/marker checks, and installed-runtime GUI startup to the versioned main window.
+
 ## 2026-08-18 — v0.1.35 clean-root Light and Full packaging
 
 - Replaced the v0.1.33-era framework-dependent multi-file merge with single-file publishing for both GUI and

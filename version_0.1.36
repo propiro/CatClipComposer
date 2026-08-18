@@ -1,0 +1,6 @@
+Cat Clip Composer 0.1.36
+
+- Matches Project Preview text gizmos to the actual glyphs supported and painted by FFmpeg fonts.
+- Gives the timeline-selected overlay explicit topmost Project Preview hit priority.
+- Adds application-native export destination and detailed export progress windows.
+- Opens the editable final FFmpeg command directly without interposing a file picker.

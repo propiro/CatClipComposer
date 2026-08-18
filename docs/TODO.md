@@ -416,14 +416,15 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 
 - Priority/status: P0 / Done
 - Acceptance: Shared text normalization converts CRLF/CR to one LF before both WPF measurement and FFmpeg
-  text-file output, removes only unsafe unattached combining marks, trims trailing blank lines, and keeps the
-  on-canvas proxy bounds aligned with the prerendered multiline text at every preview quality.
+  text-file output, removes only unsafe unattached combining marks, trims trailing blank lines, filters the live
+  proxy to glyphs actually available in the selected FFmpeg font, and derives bounds from painted glyph outlines
+  rather than stretched WPF line boxes at every preview quality.
 
 ### `PROJECT-PREVIEW-013` — Prioritize the timeline-selected overlay in overlap hit testing
 
 - Priority/status: P1 / Done
 - Acceptance: Project Preview draws the currently timeline-selected active overlay last for WPF hit testing,
-  so a click/drag in an overlap continues manipulating that explicit selection while normal topmost selection
+  gives it an explicit topmost z-index, so a click/drag in an overlap continues manipulating that explicit selection while normal topmost selection
   remains available wherever it is not covered by the selected item.
 
 ### `BROWSER-009` — Add most-used tag shortcuts without erasing typed tags
@@ -622,10 +623,18 @@ Visual Studio, terminals, narrow windows, and rendered Markdown.
 ### `RENDER-CMD-001` — Inspect, copy, and directly execute the final FFmpeg command
 
 - Priority/status: P1 / Done
-- Acceptance: Project Settings chooses a final output and uses the shared project mapper/command builder to show
+- Acceptance: Project Settings opens directly with a unique proposed final output and uses the shared project mapper/command builder to show
   the complete command in an editable field with Copy, Execute FFmpeg, and Close actions. Direct execution asks
   for confirmation, supports cancellation, launches no shell, rejects executable substitution, preserves
   generated text support files, and discloses its safe-replacement/export-history bypass.
+
+### `EXPORT-UI-001` — Use application-native destination and detailed progress windows
+
+- Priority/status: P0 / Done
+- Acceptance: Export uses no operating-system file/folder picker. Its own directory/file chooser defaults to the
+  last export directory or `CCC_output` one level above the first library source, requires explicit replacement
+  approval, and hands off to a modal progress surface that identifies project, output, destination, render stage,
+  FFmpeg media time, percentage, elapsed time, timestamped activity, cancellation, success, and failure.
 
 ### `DEPLOY-001` — Produce a one-folder deployment with a tidy `thirdparty` boundary
 

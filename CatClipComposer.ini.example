@@ -36,6 +36,7 @@ UndoHistoryCapacity=32
 
 [Output]
 Folder=
+LastExportFolder=
 ProjectFolder=
 
 [Tools]

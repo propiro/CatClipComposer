@@ -62,6 +62,7 @@ UndoHistoryCapacity=32
 
 [Output]
 Folder=C:\Videos\Compositions
+LastExportFolder=C:\Videos\CCC_output
 ProjectFolder=C:\Videos\CatClipComposer Projects
 
 [Tools]
@@ -135,7 +136,9 @@ it shows live per-file counts and a scan percentage inside the overall startup p
 folders use zero-based `FolderN` keys, load in numeric order, and are deduplicated case-insensitively.
 
 `MetadataFolder` contains `catalog.db`, cached `thumbnails`, cached contact-sheet `previews`, and crash
-`recovery`. `Output.Folder` is the default final-compilation destination. `Output.ProjectFolder` is the
+`recovery`. `Output.Folder` is the configured fallback final-compilation destination. `Output.LastExportFolder`
+is maintained by the application-native Export chooser; when empty, Export first tries `CCC_output` one level
+above the first library source. `Output.ProjectFolder` is the
 default location for editable `.nya` projects.
 
 `CustomFontFolder` defaults to the portable `fonts` subfolder beside the executable. TTF and OTF files there

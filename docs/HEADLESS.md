@@ -40,7 +40,7 @@ modules/diagnostics, and all effective settings, including content-browser view/
 text-preset count, panel docks,
 window/workspace dimensions, preview layout/tab, LQ preview resolution/selected-overlay quality mode, undo
 history capacity,
-focused/expanded panels, and first-startup completion state.
+focused/expanded panels, configured and last-used export folders, and first-startup completion state.
 A missing INI is valid and displays normalized defaults.
 
 ```powershell

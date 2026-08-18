@@ -56,6 +56,7 @@ internal static class ConfigCommand
                 },
                 textOverlayPresetCount = settings.TextOverlayPresets.Count,
                 settings.OutputFolder,
+                settings.LastExportFolder,
                 settings.ProjectFolder,
                 settings.FfmpegPath,
                 settings.CustomFontFolder,
@@ -115,6 +116,8 @@ internal static class ConfigCommand
         }
 
         await context.Output.WriteLineAsync($"Output folder: {settings.OutputFolder}");
+        await context.Output.WriteLineAsync(
+            $"Last export folder: {(string.IsNullOrWhiteSpace(settings.LastExportFolder) ? "(not set)" : settings.LastExportFolder)}");
         await context.Output.WriteLineAsync($"Project folder: {settings.ProjectFolder}");
         await context.Output.WriteLineAsync($"Metadata folder: {settings.MetadataFolder}");
         await context.Output.WriteLineAsync($"Preview slides: {settings.PreviewSlideCount}");
