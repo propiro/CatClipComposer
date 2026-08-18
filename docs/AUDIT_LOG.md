@@ -26,9 +26,11 @@ Findings and remediation:
 
 Verification: Release solution builds passed with zero warnings/errors after each completed code group. The final
 39-key/21-file XAML audit, version-marker and CLI checks, explicit last-export INI load/CLI exposure, static
-command/export picker audit, and installed-runtime GUI startup passed. No v0.1.36 portable package was created.
-No NuGet, FFmpeg, font, plugin implementation, or redistributed dependency changed, so a new package-vulnerability
-audit is unnecessary.
+command/export picker audit, and installed-runtime GUI startup passed. The usual local Light test package was
+then refreshed with its INI preserved; its root contains exactly the two
+single-file executables, INI, and v0.1.36 marker plus the four expected subfolders, with no root DLL/JSON files.
+No public tag or GitHub Release was created. No NuGet, FFmpeg, font, plugin implementation, or redistributed
+dependency changed, so a new package-vulnerability audit is unnecessary.
 
 ## AUDIT-2026-08-18-001 — Clean-root single-file packaging audit
 

@@ -16,11 +16,13 @@ This is an append-only record of material project work. Newest entries go first.
   WPF dependency to Core or Infrastructure.
 - Removed the redundant destination picker from **FFmpeg command...**. It now opens the existing editable command
   window directly with a unique proposed path, while normal Export remains the safe/history-recorded path.
-- Advanced all source/component metadata and the visible marker to v0.1.36. No public tag or binary Release was
+- Advanced all source/component metadata and the visible marker to v0.1.36. Refreshed the usual unversioned local
+  `publish/CatClipComposer` Light test folder while preserving its INI; no public tag or GitHub binary Release was
   created pending manual acceptance. No dependency or redistributed payload changed.
 - Verification: repeated zero-warning/error Release builds, a 39-key/21-file XAML resource audit, explicit
   `LastExportFolder` INI load plus CLI exposure, static confirmation that Export/command paths no longer construct
-  a save picker, v0.1.36 CLI/marker checks, and installed-runtime GUI startup to the versioned main window.
+  a save picker, v0.1.36 CLI/marker checks, installed-runtime GUI startup to the versioned main window, and a clean
+  local Light package root containing only both executables, the preserved INI, and the marker as files.
 
 ## 2026-08-18 — v0.1.35 clean-root Light and Full packaging
 
